@@ -2,6 +2,7 @@
 from openrl_ws.utils import make_env, get_args, MATWrapper
 from mqe.envs.utils import custom_cfg
 from openrl.utils.logger import Logger
+from openrl.utils.callbacks import checkpoint_callback
 
 from datetime import datetime
 
@@ -44,6 +45,11 @@ def train(args):
     else:
         raise NotImplementedError
     
+    dir_name = "./checkpoints/" + args.task
+    callback = checkpoint_callback(
+        save_freq=args.train_timesteps // 50,
+        save_path=dir_name)
+    
     if "po" in args.algo:
         from openrl.modules.common import PPONet
         from openrl.runners.common import PPOAgent
@@ -53,7 +59,7 @@ def train(args):
             cfg=net.cfg,
             project_name="MQE",
             scenario_name=args.task,
-            wandb_entity="ziyanx02",
+            wandb_entity="kh-ryu-university-of-california-berkeley",
             exp_name=args.exp_name,
             log_path="./log",
             use_wandb=args.use_wandb,
@@ -61,12 +67,13 @@ def train(args):
         )
         agent.train(
             total_time_steps=args.train_timesteps,
+            callback=callback,
             logger=logger
         )
     else:
         agent.train(total_time_steps=args.train_timesteps)
     # dir_name = "./checkpoints/" + args.task + "/" + start_time_str
-    dir_name = "./checkpoints/" + args.task
+    
     agent.save(dir_name)
 
 if __name__ == '__main__':
