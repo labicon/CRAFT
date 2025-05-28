@@ -1,0 +1,34 @@
+<<Environment_Description>>
+
+Example reward function format for the task is 
+```python
+def gpt_reward(self):
+
+    reward = {"agent_0": torch.zeros((self.num_envs, 1), device=self.device),
+                "agent_1": torch.zeros((self.num_envs, 1), device=self.device)}
+    rew_dict = {}
+
+    state = self.get_state()
+    target_pos = state[:, :2]
+    obs1_pos = state[:, 2:4]
+    obs2_pos = state[:, 4:6]
+    agent_0_pos = state[:, 6:8]
+    agent_0_yaw = state[:, 8]
+    agent_1_pos = state[:, 9:11]
+    agent_1_yaw = state[:, 11]
+    
+    # calculate curriculum reward here
+
+    return reward, rew_dict
+```
+
+You should re-implement reward function to assign a proper reward function for given task. 
+You can change the reward components that aligns well with the task.
+Do not include any new inputs in the functions.
+
+Note that you may assign different reward for each agent.
+
+Generate a reward function code and command for
+Task Name: <<Task_Name>>
+Description: <<Task_Description>>
+Reason: <<Task_Reason>>

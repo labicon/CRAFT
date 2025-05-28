@@ -1,0 +1,42 @@
+{
+  "os": "Linux-6.8.0-59-generic-x86_64-with-glibc2.17",
+  "python": "CPython 3.8.20",
+  "startedAt": "2025-05-28T00:18:31.540279Z",
+  "program": "skrl_ws/multiagent_train.py",
+  "codePath": "skrl_ws/multiagent_train.py",
+  "git": {
+    "remote": "https://github.com/ziyanx02/multiagent-quadruped-environment.git",
+    "commit": "606208bcba070086039443489daed00a9e2da9ff"
+  },
+  "email": "tomryou@snu.ac.kr",
+  "root": "/home/kang/multiagent-quadruped-environment",
+  "host": "kang-iconlab",
+  "executable": "/home/kang/miniconda3/envs/mqe/bin/python",
+  "codePathLocal": "skrl_ws/multiagent_train.py",
+  "cpu_count": 6,
+  "cpu_count_logical": 12,
+  "gpu": "NVIDIA GeForce RTX 3060",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "498870665216",
+      "used": "181455466496"
+    }
+  },
+  "memory": {
+    "total": "16669216768"
+  },
+  "cpu": {
+    "count": 6,
+    "countLogical": 12
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 3060",
+      "memoryTotal": "12884901888",
+      "cudaCores": 3584,
+      "architecture": "Ampere"
+    }
+  ],
+  "cudaVersion": "12.2"
+}
