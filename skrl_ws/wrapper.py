@@ -6,7 +6,6 @@ from typing import Any, Tuple, Union, Mapping, Sequence
 import gymnasium
 import torch
 import numpy as np
-import cv2
 
 from skrl.utils.spaces.torch import (
     convert_gym_space,
