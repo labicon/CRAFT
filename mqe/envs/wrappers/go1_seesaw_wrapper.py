@@ -43,6 +43,17 @@ class Go1SeesawWrapper(EmptyWrapper):
         base_info = torch.cat([base_pos, base_rpy], dim=1).reshape([self.env.num_envs, self.env.num_agents, -1])
         obs = torch.cat([self.obs_ids, base_info, torch.flip(base_info, [1])], dim=2)
 
+        self.reward_buffer = {
+            "height reward": 0,
+            "contact punishment": 0,
+            "x movement reward": 0,
+            "y punishment": 0,
+            "agent distance punishment": 0,
+            "success reward": 0,
+            "fall punishment": 0,
+            "step count": 0
+        }
+
         return obs
 
     def step(self, action):
@@ -75,25 +86,25 @@ class Go1SeesawWrapper(EmptyWrapper):
 
             self.last_x_pos = copy(x_pos)
 
-            self.reward_buffer["x movement reward"] += torch.sum(x_reward).cpu()
+            self.reward_buffer["x movement reward"] = torch.mean(x_reward).cpu().unsqueeze(0).unsqueeze(1).repeat(1, self.num_agents)
 
         # height reward
         if self.height_reward_scale != 0:
             height_reward = self.height_reward_scale * (base_pos[:, 2].reshape(self.num_envs, -1).sum(dim=1) - 0.56)
             reward[:, 0] += height_reward
-            self.reward_buffer["height reward"] += torch.sum(height_reward).cpu()
+            self.reward_buffer["height reward"] = torch.mean(height_reward).cpu().unsqueeze(0).unsqueeze(1).repeat(1, self.num_agents)
 
         # y punishment
         if self.y_punishment_scale != 0:
             y_punishment = self.y_punishment_scale * ((base_pos[:, 1].reshape(self.num_envs, -1) ** 2).sum(dim=1) - 0.5)
             reward[:, 0] += y_punishment
-            self.reward_buffer["y punishment"] += torch.sum(y_punishment).cpu()
+            self.reward_buffer["y punishment"] = torch.mean(y_punishment).cpu().unsqueeze(0).unsqueeze(1).repeat(1, self.num_agents)
 
         # contact punishment
         if self.contact_punishment_scale != 0:
             collide_reward = self.contact_punishment_scale * self.env.collide_buf
             reward += collide_reward.unsqueeze(1)
-            self.reward_buffer["contact punishment"] += torch.sum(collide_reward).cpu()
+            self.reward_buffer["contact punishment"] = torch.mean(collide_reward.type(torch.float)).cpu().unsqueeze(0).unsqueeze(1).repeat(1, self.num_agents)
 
         # agent distance punishment
         if self.agent_distance_punishment_scale != 0:
@@ -101,20 +112,20 @@ class Go1SeesawWrapper(EmptyWrapper):
             agent_dis = agent_dis.sum(dim=1).reshape(self.num_envs, -1)[:, :1]
             agent_distance_punishment = self.agent_distance_punishment_scale  / agent_dis[agent_dis < 0.25]
             reward[agent_dis < 0.25] += agent_distance_punishment
-            self.reward_buffer["agent distance punishment"] += torch.sum(agent_distance_punishment).cpu()
+            self.reward_buffer["agent distance punishment"] = torch.mean(agent_distance_punishment).cpu().unsqueeze(0).unsqueeze(1).repeat(1, self.num_agents)
 
         # success reward
         if self.success_reward_scale != 0:
             success = (base_pos[:, 0] > 7.7) * (base_pos[:, 2] > 1.3)
-            success_reward = self.success_reward_scale * success.reshape(self.num_envs, -1).sum(dim=1)
+            success_reward = self.success_reward_scale * success.reshape(self.num_envs, -1).sum(dim=1).type(torch.float)
             reward[:, 0] += success_reward
-            self.reward_buffer["success reward"] += torch.sum(success_reward).cpu()
+            self.reward_buffer["success reward"] = torch.mean(success_reward).cpu().unsqueeze(0).unsqueeze(1).repeat(1, self.num_agents)
 
         if self.fall_punishment_scale != 0:
             fall = self.env.r_term_buff | self.env.p_term_buff
             reward[fall, 0] += self.fall_punishment_scale
-            self.reward_buffer["fall punishment"] += self.fall_punishment_scale * torch.sum(fall).cpu()
+            self.reward_buffer["fall punishment"] = self.fall_punishment_scale * torch.mean(fall.type(torch.float)).cpu().unsqueeze(0).unsqueeze(1).repeat(1, self.num_agents)
         
         reward = reward.repeat(1, self.num_agents)
 
-        return obs, reward, termination, info
+        return obs, reward, termination, self.reward_buffer

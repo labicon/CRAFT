@@ -269,12 +269,18 @@ class MQEMultiAgentWrapper(MultiAgentEnvWrapper):
         terminated = terminated.unsqueeze(1).repeat(1, self.num_agents)
         truncated = truncated.unsqueeze(1).repeat(1, self.num_agents)
 
-        # # Average out the info for logging
-        # for key in info.keys():
-        #     if isinstance(info[key], torch.Tensor):
-        #         info[key] = info[key].mean()
-        #     else:
-        #         info[key] = np.mean(info[key])
+        # Average out the info for logging
+        reward_info = {}
+        for key in info.keys():
+            if key == "step count":
+                continue  # Skip step_count as it is not a reward-related info
+            for agent_idx in range(info[key].shape[0]):
+                agent_name = f"agent_{agent_idx}"
+                if isinstance(info[key], torch.Tensor):
+                    reward_info[agent_name + "_" + key] = info[key][agent_idx].mean()
+                else:
+                    reward_info[agent_name + "_" + key] = np.mean(info[key][agent_idx])
+        self._info = reward_info
         agent_wise_rewards = {}
         agent_wise_terminated = {}
         agent_wise_truncated = {}
@@ -286,9 +292,8 @@ class MQEMultiAgentWrapper(MultiAgentEnvWrapper):
             agent_wise_rewards[agent] = rewards[:, i].unsqueeze(1)
             agent_wise_terminated[agent] = terminated[:, i].unsqueeze(1)
             agent_wise_truncated[agent] = truncated[:, i].unsqueeze(1)
-            agent_wise_info[agent] = info
+            agent_wise_info[agent] = self._info.copy()
 
-        self._info = agent_wise_info
         # print("agent_wise_rewards", agent_wise_rewards)
         # print("agent wise observations", self._observations)
         return (

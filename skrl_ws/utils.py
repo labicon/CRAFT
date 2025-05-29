@@ -23,7 +23,7 @@ def create_env(task, eval=False, wrapper='multiagent'):
     args.headless = True
     args.task = task
     if not eval:
-        args.num_envs = 64
+        args.num_envs = 512
         args.record_video = False
         args.seed = np.random.randint(0, 10000)
     else:
@@ -48,21 +48,21 @@ def get_cfg(env, save_dir, exp_name, train=True, wandb_name=False):
     # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
     cfg = MAPPO_DEFAULT_CONFIG.copy()
     cfg["rollouts"] = 256  # memory_size
-    cfg["learning_epochs"] = 4
+    cfg["learning_epochs"] = 10
     cfg["mini_batches"] = 1  # horizon_length * num_actors / minibatch_size = 1000 * 64 / 16000
     cfg["discount_factor"] = 0.99
     cfg["lambda"] = 0.95
-    cfg["learning_rate"] = 5e-5
+    cfg["learning_rate"] = 5e-4
     cfg["learning_rate_scheduler"] = KLAdaptiveLR
-    cfg["learning_rate_scheduler_kwargs"] = {"kl_threshold": 0.01}
+    cfg["learning_rate_scheduler_kwargs"] = {"kl_threshold": 0.01, "max_lr": 1e-3}
     cfg["random_timesteps"] = 0
     cfg["learning_starts"] = 0
     cfg["grad_norm_clip"] = 1.0
     cfg["ratio_clip"] = 0.2
     cfg["value_clip"] = 0.2
     cfg["clip_predicted_values"] = True
-    cfg["entropy_loss_scale"] = 0.0
-    cfg["value_loss_scale"] = 1.0
+    cfg["entropy_loss_scale"] = 0.01
+    cfg["value_loss_scale"] = 0.5
     cfg["kl_threshold"] = 0
     cfg["rewards_shaper"] = None
     cfg["time_limit_bootstrap"] = False

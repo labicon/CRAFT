@@ -1,7 +1,7 @@
-export LD_LIBRARY_PATH=/home/ziyan/anaconda3/envs/mqe/lib
+# export LD_LIBRARY_PATH=/home/ziyan/anaconda3/envs/mqe/lib
 # task="go1football-defender"
-# task="go1gate"
-task="go1seesaw"
+task="go1gate"
+# task="go1seesaw"
 # task="go1sheep-easy"
 # task="go1sheep-hard"
 # task="go1pushbox-plane"
