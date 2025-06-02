@@ -1,5 +1,6 @@
 import isaacgym
-from openrl_ws.utils import make_env, get_args, custom_cfg, MATWrapper
+from openrl_ws.utils import make_env, get_args, MATWrapper
+from mqe.envs.utils import custom_cfg
 
 from openrl.envs.common import make
 from openrl.modules.common import PPONet
