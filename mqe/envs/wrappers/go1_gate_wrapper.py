@@ -66,18 +66,6 @@ class Go1GateWrapper(EmptyWrapper):
         base_info = torch.cat([base_pos, base_rpy], dim=1).reshape([self.env.num_envs, self.env.num_agents, -1])
         obs = torch.cat([self.obs_ids, base_info, torch.flip(base_info, [1]), self.gate_pos], dim=2)
 
-        self.reward_buffer = {
-            "target reward": 0,
-            "success reward": 0,
-            # "approach frame punishment": 0,
-            "agent distance punishment": 0,
-            # "command lin_vel.y punishment": 0,
-            # "command value punishment": 0,
-            "contact punishment": 0,
-            # "lin_vel.x reward": 0,
-            "step count": 0
-        }
-
         return obs
 
     def step(self, action):
@@ -148,7 +136,7 @@ class Go1GateWrapper(EmptyWrapper):
             if agent_distance_punishment.numel() == 0:
                 self.reward_buffer["agent distance punishment"] = torch.zeros(self.num_agents, device=self.env.device)
             else:
-                self.reward_buffer["agent distance punishment"] = torch.mean(agent_distance_punishment, dim=0).cpu()
+                self.reward_buffer["agent distance punishment"] = torch.mean(agent_distance_punishment, dim=0).repeat(self.num_agents).cpu()
 
         # command lin_vel.y punishment
         if self.lin_vel_y_punishment_scale != 0:
