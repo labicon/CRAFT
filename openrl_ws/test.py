@@ -65,36 +65,41 @@ def save_gif(frames, fps):
 
     print("GIF created successfully.")
 
-args = get_args()
-env, _ = make_env(args, custom_cfg(args))
-net = PPONet(env, device="cuda")  # Create neural network.
-agent = PPOAgent(net)  # Initialize the agent.
+if __name__ == "__main__":
+    args = get_args()
+    env, _ = make_env(args, custom_cfg(args))
+    net = PPONet(env, device="cuda")  # Create neural network.
+    agent = PPOAgent(net)  # Initialize the agent.
 
-if args.algo == "jrpo" or args.algo == "ppo":
-    from openrl.modules.common import PPONet
-    from openrl.runners.common import PPOAgent
-    net = PPONet(env, cfg=args, device=args.rl_device)
-    agent = PPOAgent(net)
-else:
-    from openrl.modules.common import MATNet
-    from openrl.runners.common import MATAgent
-    env = MATWrapper(env)
-    net = MATNet(env, cfg=args, device=args.rl_device)
-    agent = MATAgent(net, use_wandb=args.use_wandb)
+    if args.algo == "jrpo" or args.algo == "ppo":
+        from openrl.modules.common import PPONet
+        from openrl.runners.common import PPOAgent
+        net = PPONet(env, cfg=args, device=args.rl_device)
+        agent = PPOAgent(net)
+    else:
+        from openrl.modules.common import MATNet
+        from openrl.runners.common import MATAgent
+        env = MATWrapper(env)
+        net = MATNet(env, cfg=args, device=args.rl_device)
+        agent = MATAgent(net, use_wandb=args.use_wandb)
 
-if getattr(args, "checkpoint") is not None:
-    agent.load(args.checkpoint)
+    if getattr(args, "checkpoint") is not None:
+        agent.load(args.checkpoint)
 
-# env.start_recording()
-agent.set_env(env)  # The agent requires an interactive environment.
-obs = env.reset()  # Initialize the environment to obtain initial observations and environmental information.
-while True:
-    action, _ = agent.act(obs)  # The agent predicts the next action based on environmental observations.
-    # The environment takes one step according to the action, obtains the next observation, reward, whether it ends and environmental information.
-    obs, r, done, info = env.step(action)
-    # if done[0, 0]:
-    #     frames = env.get_complete_frames()
-    #     video_array = np.concatenate([np.expand_dims(frame, axis=0) for frame in frames ], axis=0).swapaxes(1, 3).swapaxes(2, 3)
-    #     print(video_array.shape)
-    #     print(np.mean(video_array))
-    #     save_gif(video_array, 1 / env.dt)
+    # env.start_recording()
+    agent.set_env(env)  # The agent requires an interactive environment.
+    obs = env.reset()  # Initialize the environment to obtain initial observations and environmental information.
+    while True:
+        action, _ = agent.act(obs)  # The agent predicts the next action based on environmental observations.
+        # The environment takes one step according to the action, obtains the next observation, reward, whether it ends and environmental information.
+        obs, r, done, info = env.step(action)
+        print("Obs:", obs)
+        print("Action:", action)
+        print("Target pos:", env.target_pos)
+        print("Info:", info)
+        # if done[0, 0]:
+        #     frames = env.get_complete_frames()
+        #     video_array = np.concatenate([np.expand_dims(frame, axis=0) for frame in frames ], axis=0).swapaxes(1, 3).swapaxes(2, 3)
+        #     print(video_array.shape)
+        #     print(np.mean(video_array))
+        #     save_gif(video_array, 1 / env.dt)

@@ -60,11 +60,11 @@ class mqe_openrl_wrapper(gym.Wrapper):
         rewards = reward.cpu().unsqueeze(-1).numpy()
         dones = termination.cpu().unsqueeze(-1).repeat(1, self.agent_num).numpy().astype(bool)
 
-        infos = []
-        for i in range(dones.shape[0]):
-            infos.append({})
+        # infos = []
+        # for i in range(dones.shape[0]):
+        #     infos.append({})
 
-        return obs, rewards, dones, infos
+        return obs, rewards, dones, [info]
 
     def close(self, **kwargs):
         return self.env.close()

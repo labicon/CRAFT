@@ -1,15 +1,16 @@
 
-from openrl_ws.utils import make_env, get_args, MATWrapper
+from openrl_ws.utils import make_env, get_args #, MATWrapper
 from mqe.envs.utils import custom_cfg
 from openrl.utils.logger import Logger
-from openrl.utils.callbacks import checkpoint_callback
+from openrl.modules.common import PPONet
+from openrl.runners.common import PPOAgent
 
 from datetime import datetime
 
 # import argparse
 
 def train(args):
-
+    from openrl.utils.callbacks.checkpoint_callback import CheckpointCallback
     # cfg_parser = create_config_parser()
     # cfg = cfg_parser.parse_args()
 
@@ -29,15 +30,15 @@ def train(args):
     elif args.algo == "jrpo":
         args.config = "./openrl_ws/cfgs/jrpo.yaml"
 
-    elif args.algo == "mat":
-        args.config = "./openrl_ws/cfgs/mat.yaml"
+    # elif args.algo == "mat":
+    #     args.config = "./openrl_ws/cfgs/mat.yaml"
 
-        # from openrl.envs.wrappers.mat_wrapper import MATWrapper
-        from openrl.modules.common import MATNet
-        from openrl.runners.common import MATAgent
-        env = MATWrapper(env)
-        net = MATNet(env, cfg=args, device=args.rl_device)
-        agent = MATAgent(net, use_wandb=args.use_wandb)
+    #     # from openrl.envs.wrappers.mat_wrapper import MATWrapper
+    #     from openrl.modules.common import MATNet
+    #     from openrl.runners.common import MATAgent
+    #     env = MATWrapper(env)
+    #     net = MATNet(env, cfg=args, device=args.rl_device)
+    #     agent = MATAgent(net, use_wandb=args.use_wandb)
 
     elif args.algo == "sppo" or args.algo == "dppo":
         pass
@@ -45,14 +46,12 @@ def train(args):
     else:
         raise NotImplementedError
     
-    dir_name = "./checkpoints/" + args.task
-    callback = checkpoint_callback(
+    dir_name = "./checkpoints/" + args.task + start_time_str
+    callback = CheckpointCallback(
         save_freq=args.train_timesteps // 50,
         save_path=dir_name)
     
     if "po" in args.algo:
-        from openrl.modules.common import PPONet
-        from openrl.runners.common import PPOAgent
         net = PPONet(env, cfg=args, device=args.rl_device)
         agent = PPOAgent(net)
         logger = Logger(

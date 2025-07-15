@@ -58,11 +58,6 @@ class Go1GateWrapper(EmptyWrapper):
         return obs
 
     def step(self, action):
-        print("Gate pos:", self.gate_pos)
-        print("gate distance:", self.gate_distance)
-        print("Frame left:", self.frame_left)
-        print("Frame right:", self.frame_right)
-        print("Target pos:", self.target_pos)
         action = torch.clip(action, -1, 1)
         obs_buf, _, termination, info = self.env.step((action * self.action_scale).reshape(-1, self.action_space.shape[0]))
 
@@ -162,44 +157,3 @@ class Go1GateWrapper(EmptyWrapper):
 
         return obs, reward, termination, self.reward_buffer
     
-
-    def gpt_reward(self, base_info):
-        reward = torch.zeros([self.env.num_envs, self.env.num_agents], device=self.env.device)
-
-        base_pos = base_info[:,:,:3]
-        target_pos = self.target_pos.reshape(self.env.num_envs, self.env.num_agents, -1)
-    
-        # approach reward
-        distance_to_taget = torch.abs(base_pos[:, :, 0] - target_pos[:, :, 0])
-
-        if not hasattr(self, "last_distance_to_taget"):
-            self.last_distance_to_taget = copy(distance_to_taget)
-
-        target_reward = (self.last_distance_to_taget - distance_to_taget)
-        target_reward[self.env.reset_ids] = 0
-
-        reward += target_reward
-
-        self.last_distance_to_taget = copy(distance_to_taget)
-
-        self.reward_buffer["target reward_agent 0"] = torch.mean(target_reward, dim=0)[0]
-        self.reward_buffer["target reward_agent 1"] = torch.mean(target_reward, dim=0)[1]
-
-        # success reward
-        success_reward = torch.zeros([self.env.num_envs, self.env.num_agents], device=self.env.device)
-        success_reward[base_pos[:, :, 0] > self.gate_distance.reshape(self.env.num_envs, self.env.num_agents) + 0.25] = 5.0
-        reward += success_reward
-        self.reward_buffer["success reward_agent 0"] = torch.mean(success_reward.type(torch.float), dim=0)[0]
-        self.reward_buffer["success reward_agent 1"] = torch.mean(success_reward.type(torch.float), dim=0)[1]
-
-        # relative position reward
-        agent0_x = base_pos[:, 0, 0]
-        agent1_x = base_pos[:, 1, 0]
-        condition = agent1_x < agent0_x
-        env_reward = torch.where(condition, 0.1, -0.1)
-        relative_pos_reward = env_reward.unsqueeze(1).repeat(1, self.env.num_agents)
-        reward += relative_pos_reward
-        self.reward_buffer["relative_pos_reward"] = torch.mean(relative_pos_reward)
-
-        return reward
-

@@ -1,0 +1,35 @@
+```python
+def gpt_reward(self, base_info):
+    reward = torch.zeros([self.env.num_envs, self.env.num_agents], device=self.env.device)
+
+    base_pos = base_info[:,:,:3]
+    target_pos = self.target_pos.reshape(self.env.num_envs, self.env.num_agents, -1)
+    
+    # approach reward
+    distance_to_taget = torch.abs(base_pos[:, :, 0] - target_pos[:, :, 0])
+
+    if not hasattr(self, "last_distance_to_taget"):
+        self.last_distance_to_taget = copy(distance_to_taget)
+
+    target_reward = (self.last_distance_to_taget - distance_to_taget)
+    target_reward[self.env.reset_ids] = 0
+
+    reward += target_reward
+
+    self.last_distance_to_taget = copy(distance_to_taget)
+
+    self.reward_buffer["target reward_agent 0"] = torch.mean(target_reward, dim=0)[0]
+    # self.reward_buffer["target reward_agent 1"] = torch.mean(target_reward, dim=0)[1]
+
+    # success reward
+    success_reward = torch.zeros([self.env.num_envs, self.env.num_agents], device=self.env.device)
+    success_reward[base_pos[:, :, 0] > self.gate_distance.reshape(self.env.num_envs, self.env.num_agents) + 0.25] = 5.0
+    reward += success_reward
+    self.reward_buffer["success reward_agent 0"] = torch.mean(success_reward.type(torch.float), dim=0)[0]
+    # self.reward_buffer["success reward_agent 1"] = torch.mean(success_reward.type(torch.float), dim=0)[1]
+
+    # Do not assign reward for agent 1
+    reward[:, 1] = 0.0
+
+    return reward
+```

@@ -1,0 +1,6 @@
+Task: "go1gate"
+env_path: "/home/kang/multiagent-quadruped-environment/mqe/envs/wrappers/go1_gate_wrapper_source.py"
+num_reward_samples: 3
+num_reward_feedback_samples: 2 
+iter_per_task: 1000000
+line_num: 162

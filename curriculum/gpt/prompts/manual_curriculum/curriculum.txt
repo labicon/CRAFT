@@ -1,0 +1,14 @@
+Task 1
+Name: Leader gate passing
+Description: Focus on making agent 0 to pass the gate first. 
+Reason: This task simplifies coordination by removing the complexity of passing narrow gate together and focus on leader (agent 0) to pass the gate first.
+
+Task 2
+Name: Follower following leader
+Description: Make the follower agent to stay behind the leader agent. 
+Reason: This removes congestion in the gate and avoid possible collision.
+
+Task 3
+Name: Follower gate passing
+Description: Now after leader agent passing the gate, follower agent can pass the gate.
+Reason: Following this leader-follower order helps with coordination when two agent should pass the narrow gate together.
