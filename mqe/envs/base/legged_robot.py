@@ -923,21 +923,24 @@ class LeggedRobot(BaseTask):
         self.complete_video_frames = []
 
     def _render_headless(self):
-        if self.record_now and self.complete_video_frames is not None and len(self.complete_video_frames) == 0:
-            # bx, by, bz = self.root_states[self.cfg.env.record_actor_id, 0], self.root_states[self.cfg.env.record_actor_id, 1], self.root_states[self.cfg.env.record_actor_id, 2]
-            # target_loc = [bx, by , bz]
-            # cam_distance = [0, -1.0, 1.0]
+        # if self.record_now and self.complete_video_frames is not None and len(self.complete_video_frames) == 0:
+        #     # bx, by, bz = self.root_states[self.cfg.env.record_actor_id, 0], self.root_states[self.cfg.env.record_actor_id, 1], self.root_states[self.cfg.env.record_actor_id, 2]
+        #     # target_loc = [bx, by , bz]
+        #     # cam_distance = [0, -1.0, 1.0]
+        #     self.rendering_camera.set_position(self.cfg.viewer.pos, self.cfg.viewer.lookat)
+        #     self.video_frame = self.rendering_camera.get_observation()
+        #     self.video_frames.append(self.video_frame)
+
+        if self.cfg.env.record_video and self.rendering_camera is not None:
             self.rendering_camera.set_position(self.cfg.viewer.pos, self.cfg.viewer.lookat)
             self.video_frame = self.rendering_camera.get_observation()
             self.video_frames.append(self.video_frame)
 
     def start_recording(self):
-        print("start recording")
         self.complete_video_frames = None
         self.record_now = True
 
     def pause_recording(self):
-        print("pause recording")
         self.complete_video_frames = []
         self.video_frames = []
         self.record_now = False
@@ -952,7 +955,6 @@ class LeggedRobot(BaseTask):
             if self.complete_video_frames is None:
                 self.complete_video_frames = []
             else:
-                print("Successfully store the video of last episode")
                 self.complete_video_frames = self.video_frames[:]
             self.video_frames = []
 

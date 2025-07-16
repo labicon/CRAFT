@@ -50,6 +50,7 @@ Thumbs.db
 *.mov
 *.wmv
 *.gif
+*.png
 
 # VS Code
 .vscode

@@ -142,7 +142,7 @@ class LeggedRobotField(LeggedRobot):
         if "z_high" in self.cfg.termination.termination_terms:
             self.z_high_term_buff = (z > self.cfg.termination.z_high_kwargs["threshold"]).reshape(self.num_envs, -1).sum(1).to(torch.bool)
             self.reset_buf |= self.z_high_term_buff
-        
+
         return return_
 
     def _fill_extras(self, env_ids):

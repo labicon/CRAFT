@@ -8,12 +8,13 @@ from openrl.runners.common import PPOAgent
 import argparse
 import pickle as pkl
 import os, sys
+import numpy as np
 
 def eval(load_dir):
     from openrl_ws.utils import get_args
-    from openrl_ws.test import save_gif
+    from openrl_ws.test import save_gif, save_images
     args = get_args()
-    args.headless = True
+    args.headless = False
     args.record_video = True
     env, _ = make_env(args, custom_cfg(args), single_agent=False)
     net = PPONet(env, cfg=args, device=args.rl_device)
@@ -46,11 +47,11 @@ def eval(load_dir):
                 pkl.dump(rew_dict, f)
 
             # Save the video
-            # frames = env.get_complete_frames()
-            # video_array = np.concatenate([np.expand_dims(frame, axis=0) for frame in frames ], axis=0).swapaxes(1, 3).swapaxes(2, 3)
-            # print(video_array.shape)
-            # print(np.mean(video_array))
-            # save_gif(video_array, 1 / env.dt)
+            frames = env.get_complete_frames()
+            video_array = np.concatenate([np.expand_dims(frame, axis=0) for frame in frames ], axis=0).swapaxes(1, 3).swapaxes(2, 3)
+            print(video_array.shape)
+            save_gif(video_array, 1 / env.dt * 5, output_path=os.path.join(load_dir, "output_animation.gif"))
+            save_images(video_array, output_dir=os.path.join(load_dir, "output_images"))
 
             break
 

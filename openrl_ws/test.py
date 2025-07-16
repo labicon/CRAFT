@@ -9,13 +9,11 @@ from openrl.runners.common import PPOAgent
 import cv2
 import imageio
 import numpy as np
+import os
 
-def save_video(frames, fps):
+def save_video(frames, fps, output_path='output_video.mp4'):
     # Assuming your ndarray is named 'frames'
     # frames.shape = (134, 4, 240, 360)
-
-    # Define the output video file name
-    output_video_path = 'output_video.mp4'
 
     # Define the video codec and frame rate
     codec = cv2.VideoWriter_fourcc(*'mp4v')
@@ -27,7 +25,7 @@ def save_video(frames, fps):
     frames = np.transpose(frames, (0, 2, 3, 1))
 
     # Create a VideoWriter object
-    out = cv2.VideoWriter(output_video_path, codec, fps, frame_shape)
+    out = cv2.VideoWriter(output_path, codec, fps, frame_shape)
 
     # Iterate through each frame
     for i in range(len(frames)):
@@ -46,13 +44,10 @@ def save_video(frames, fps):
 
     print("Video created successfully.")
 
-def save_gif(frames, fps):
+def save_gif(frames, fps, output_path='output_animation.gif'):
 
     # Assuming your ndarray is named 'frames'
     # frames.shape = (134, 4, 240, 360)
-
-    # Define the output GIF file name
-    output_gif_path = 'output_animation.gif'
 
     # Convert the frames to uint8 (assuming it's in range 0-1)
     frames = np.transpose(frames, (0, 2, 3, 1))
@@ -61,9 +56,27 @@ def save_gif(frames, fps):
     frames = [frames_uint8[i] for i in range(len(frames_uint8))]
 
     # Save frames as GIF
-    imageio.mimsave(output_gif_path, frames, fps=fps)
+    imageio.mimsave(output_path, frames, fps=fps)
 
-    print("GIF created successfully.")
+    print(f"GIF saved successfully to '{output_path}'.")
+
+def save_images(frames, output_dir='output_images'):
+    """Saves a sequence of frames as individual image files."""
+    
+    # Create the output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Transpose frames from (N, C, H, W) to (N, H, W, C)
+    frames = np.transpose(frames, (0, 2, 3, 1))
+    frames_uint8 = frames.astype(np.uint8)
+
+    # Save each frame as a PNG image
+    for i, frame in enumerate(frames_uint8):
+        output_path = os.path.join(output_dir, f'frame_{i:04d}.png')
+        imageio.imwrite(output_path, frame)
+
+    print(f"Successfully saved {len(frames_uint8)} images to '{output_dir}'.")
+
 
 if __name__ == "__main__":
     args = get_args()
@@ -93,13 +106,14 @@ if __name__ == "__main__":
         action, _ = agent.act(obs)  # The agent predicts the next action based on environmental observations.
         # The environment takes one step according to the action, obtains the next observation, reward, whether it ends and environmental information.
         obs, r, done, info = env.step(action)
-        print("Obs:", obs)
-        print("Action:", action)
-        print("Target pos:", env.target_pos)
-        print("Info:", info)
-        # if done[0, 0]:
-        #     frames = env.get_complete_frames()
-        #     video_array = np.concatenate([np.expand_dims(frame, axis=0) for frame in frames ], axis=0).swapaxes(1, 3).swapaxes(2, 3)
-        #     print(video_array.shape)
-        #     print(np.mean(video_array))
-        #     save_gif(video_array, 1 / env.dt)
+        # print("Obs:", obs)
+        # print("Action:", action)
+        # print("Target pos:", env.target_pos)
+        # print("Gate pos:", env.gate_pos)
+        # print("Info:", info)
+        if done[0, 0] and env.cfg.env.record_video:
+            frames = env.get_complete_frames()
+            video_array = np.concatenate([np.expand_dims(frame, axis=0) for frame in frames ], axis=0).swapaxes(1, 3).swapaxes(2, 3)
+            # print(video_array.shape)
+            save_gif(video_array, 200)
+            save_images(video_array)

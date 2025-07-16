@@ -48,8 +48,8 @@ class Go1Cfg(LeggedRobotFieldCfg):
         # recording cfgs
         record_video = False
         record_actor_id = 0
-        recording_width_px = 360
-        recording_height_px = 240
+        recording_width_px = 720
+        recording_height_px = 480
         recording_mode = "COLOR"
 
     class asset:
@@ -64,7 +64,7 @@ class Go1Cfg(LeggedRobotFieldCfg):
         name = "go1"
         foot_name = "foot"  # name of the feet bodies, used to index body state and contact force tensors
         penalize_contacts_on = ["base", "thigh"]
-        terminate_after_contacts_on = ["base"]
+        terminate_after_contacts_on = ["base"] # "base"
         disable_gravity = False
         # merge bodies connected by fixed joints. Specific fixed joints can be kept by adding " <... dont_collapse="true">
         collapse_fixed_joints = True
