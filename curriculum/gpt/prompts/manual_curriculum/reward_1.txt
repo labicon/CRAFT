@@ -31,11 +31,19 @@ def gpt_reward(self, base_info):
     # Do not assign reward to agent 1 for reaching the target
     reward[:, 1] = 0.0
 
-    # relative position reward
+    # relative position reward - distance-based
     agent0_x = base_pos[:, 0, 0]
     agent1_x = base_pos[:, 1, 0]
-    condition = agent1_x < agent0_x
-    env_reward = torch.where(condition, 0.1, -0.1)
+    
+    # Calculate x-direction distance between agents
+    x_distance = torch.abs(agent0_x - agent1_x)
+    
+    # Check if agent 0 is in front of agent 1 (higher x position)
+    condition = agent0_x > agent1_x
+    
+    # Scale reward/penalty by x-distance and clamp between -1 and 1
+    env_reward = torch.where(condition, x_distance, -x_distance)
+    env_reward = torch.clamp(env_reward, -1.0, 1.0) * 0.1
     relative_pos_reward = env_reward.unsqueeze(1).repeat(1, self.env.num_agents)
     reward += relative_pos_reward
     self.reward_buffer["relative_pos_reward"] = torch.mean(relative_pos_reward)

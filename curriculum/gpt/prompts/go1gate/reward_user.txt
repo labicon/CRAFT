@@ -26,7 +26,7 @@ You should re-implement reward function to assign a proper reward function for g
 You can change the reward components that aligns well with the task.
 Do not include any new inputs in the functions.
 
-Note that you may assign different reward for each agent.
+Note that you are designing a reward function for team, not a single agent. 
 
 Generate a reward function code and command for
 Task Name: <<Task_Name>>

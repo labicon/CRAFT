@@ -4,6 +4,5 @@ Task Name: <<Task_Name>>
 Description: <<Task_Description>>
 Reason: <<Task_Reason>>
 
-Final target task is to navigate the robot toward a goal position while avoiding obstacles.
-
+The final goal for the two quadruped is pass the narrow gate while avoiding collision to each other.
 Previous tasks in curriculum are
