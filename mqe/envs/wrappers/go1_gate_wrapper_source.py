@@ -125,14 +125,12 @@ class Go1GateWrapper(EmptyWrapper):
         if self.agent_distance_punishment_scale != 0:
             agent_dis = (base_pos[:, :2] - torch.flip(base_pos[:, :2].reshape(self.num_envs, self.num_agents, 2), dims=[1,]).reshape(-1, 2)) ** 2
             agent_dis = agent_dis.sum(dim=1).reshape(self.num_envs, -1)
-            agent_distance_punishment = self.agent_distance_punishment_scale  / agent_dis[agent_dis < 0.25]
-            reward[agent_dis < 0.25] += agent_distance_punishment
+            agent_distance_punishment = self.agent_distance_punishment_scale  / agent_dis[agent_dis < 0.4]
+            reward[agent_dis < 0.4] += agent_distance_punishment
             if agent_distance_punishment.numel() == 0:
-                self.reward_buffer["agent distance punishment_agent 0"] = torch.zeros(self.num_agents, device=self.env.device)[0]
-                self.reward_buffer["agent distance punishment_agent 1"] = torch.zeros(self.num_agents, device=self.env.device)[1]
+                self.reward_buffer["agent distance punishment"] = torch.zeros(self.num_agents, device=self.env.device)[0]
             else:
-                self.reward_buffer["agent distance punishment_agent 0"] = torch.mean(agent_distance_punishment, dim=0)
-                self.reward_buffer["agent distance punishment_agent 1"] = torch.mean(agent_distance_punishment, dim=0)
+                self.reward_buffer["agent distance punishment"] = torch.mean(agent_distance_punishment, dim=0)
 
         # command lin_vel.y punishment
         if self.lin_vel_y_punishment_scale != 0:

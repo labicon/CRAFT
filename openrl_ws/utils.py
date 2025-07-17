@@ -276,9 +276,13 @@ def reset_value_network(args, agent):
                 return False
         return True
 
-    if not compare_models(original_value_network.base, agent.net.module.models['critic'].base) and \
-         not compare_models(original_value_network.rnn, agent.net.module.models['critic'].rnn) and \
-            not compare_models(original_value_network.v_out, agent.net.module.models['critic'].v_out):
+    base_different = not compare_models(original_value_network.base, agent.net.module.models['critic'].base)
+    rnn_different = True
+    if hasattr(original_value_network, 'rnn') and hasattr(agent.net.module.models['critic'], 'rnn'):
+        rnn_different = not compare_models(original_value_network.rnn, agent.net.module.models['critic'].rnn)
+    v_out_different = not compare_models(original_value_network.v_out, agent.net.module.models['critic'].v_out)
+
+    if base_different or rnn_different or v_out_different:
         print("Value network reset successfully. Weights are different from the original.")
     else:
         raise ValueError("Value network reset failed, weights are identical to the original.")
