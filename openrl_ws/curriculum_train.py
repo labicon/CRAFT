@@ -1,4 +1,4 @@
-from openrl_ws.utils import make_env, get_args
+from openrl_ws.utils import make_env, get_args, reset_value_network
 from mqe.envs.utils import custom_cfg
 from openrl.utils.logger import Logger
 from openrl.modules.common import PPONet
@@ -12,12 +12,20 @@ import sys
 def train(save_dir, exp_name, training_iter=1000000):
     from openrl.utils.callbacks.checkpoint_callback import CheckpointCallback
     args = get_args()  
+    args.train_timesteps = training_iter
     args.num_envs = 200
     args.headless = True
+
     env, env_cfg = make_env(args, custom_cfg(args), single_agent=False)
     
-    args.config = "./openrl_ws/cfgs/ppo.yaml"
-    args.train_timesteps = training_iter
+    # args.config = "./openrl_ws/cfgs/ppo.yaml" # Somehow this does not work
+    args.lr = 7e-4
+    args.critic_lr = 7e-4
+    args.log_interval = 5
+    args.use_recurrent_policy = True
+    args.use_joint_action_loss = False
+    args.use_valuenorm = True
+    args.use_adv_normalize = True
 
     callback = CheckpointCallback(
         save_freq=5000,
@@ -50,10 +58,18 @@ def load_train(save_dir, exp_name, load_dir, training_iter=1000000):
     args = get_args()
     args.num_envs = 200
     args.headless = True
-    env, env_cfg = make_env(args, custom_cfg(args), single_agent=False)
-    
-    args.config = "./openrl_ws/cfgs/ppo.yaml"
     args.train_timesteps = training_iter
+
+    env, env_cfg = make_env(args, custom_cfg(args), single_agent=False)
+
+    # args.config = "./openrl_ws/cfgs/ppo.yaml" # Somehow this does not work
+    args.lr = 7e-4
+    args.critic_lr = 7e-4
+    args.log_interval = 5
+    args.use_recurrent_policy = True
+    args.use_joint_action_loss = False
+    args.use_valuenorm = True
+    args.use_adv_normalize = True
 
     callback = CheckpointCallback(
         save_freq=5000,
@@ -75,6 +91,8 @@ def load_train(save_dir, exp_name, load_dir, training_iter=1000000):
     print(f"Loading model from {load_dir}")
     agent.load(load_dir)
     agent.set_env(env)
+
+    agent = reset_value_network(args, agent)
 
     agent.train(
         total_time_steps=args.train_timesteps,

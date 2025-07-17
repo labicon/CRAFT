@@ -24,27 +24,7 @@ def train(args):
     
     env, env_cfg = make_env(args, custom_cfg(args), single_agent)
     
-    if args.algo == "ppo":
-        args.config = "./openrl_ws/cfgs/ppo.yaml"
-    
-    elif args.algo == "jrpo":
-        args.config = "./openrl_ws/cfgs/jrpo.yaml"
-
-    # elif args.algo == "mat":
-    #     args.config = "./openrl_ws/cfgs/mat.yaml"
-
-    #     # from openrl.envs.wrappers.mat_wrapper import MATWrapper
-    #     from openrl.modules.common import MATNet
-    #     from openrl.runners.common import MATAgent
-    #     env = MATWrapper(env)
-    #     net = MATNet(env, cfg=args, device=args.rl_device)
-    #     agent = MATAgent(net, use_wandb=args.use_wandb)
-
-    elif args.algo == "sppo" or args.algo == "dppo":
-        pass
-
-    else:
-        raise NotImplementedError
+    args.config = "./openrl_ws/cfgs/ppo.yaml"
     
     dir_name = "./checkpoints/" + args.task + start_time_str
     callback = CheckpointCallback(

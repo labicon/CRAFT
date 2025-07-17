@@ -56,7 +56,7 @@ def save_gif(frames, fps, output_path='output_animation.gif'):
     frames = [frames_uint8[i] for i in range(len(frames_uint8))]
 
     # Save frames as GIF
-    imageio.mimsave(output_path, frames, fps=fps)
+    imageio.mimsave(output_path, frames, duration=2)
 
     print(f"GIF saved successfully to '{output_path}'.")
 
@@ -81,6 +81,16 @@ def save_images(frames, output_dir='output_images'):
 if __name__ == "__main__":
     args = get_args()
     env, _ = make_env(args, custom_cfg(args))
+
+    # args.config = "./openrl_ws/cfgs/ppo.yaml" # Somehow this does not work
+    args.lr = 7e-4
+    args.critic_lr = 7e-4
+    args.log_interval = 5
+    args.use_recurrent_policy = True
+    args.use_joint_action_loss = False
+    args.use_valuenorm = True
+    args.use_adv_normalize = True
+
     net = PPONet(env, device="cuda")  # Create neural network.
     agent = PPOAgent(net)  # Initialize the agent.
 

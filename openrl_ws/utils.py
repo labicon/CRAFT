@@ -4,29 +4,17 @@ from __future__ import print_function, division, absolute_import
 from typing import Any, Dict, Optional, Union
 import isaacgym
 
-import numpy as np
 import torch
 import gym
-from gym import spaces
 
 from mqe.envs.utils import make_mqe_env
 
 from openrl.configs.config import create_config_parser
-from isaacgym import gymutil
-from typing import List
-from openrl.configs.utils import ProcessYamlAction
-
-from abc import ABC, abstractmethod
-import math
-import numpy as np
-import argparse
-from bisect import bisect
 
 from isaacgym import gymapi
 from isaacgym.gymutil import parse_device_str
 
-from mqe.envs.go1.go1_config import Go1Cfg
-from openrl.envs.vec_env import BaseVecEnv
+import copy
 
 def make_env(args, custom_cfg=None, single_agent=False):
     
@@ -262,3 +250,37 @@ def get_args():
     if args.sim_device=='cuda':
         args.sim_device += f":{args.sim_device_id}"
     return args
+
+def reset_value_network(args, agent):
+    if args.use_recurrent_policy != agent.net.cfg.use_recurrent_policy:
+        raise ValueError(
+            f"Argument recurrent policy setting {args.use_recurrent_policy} does not match loaded model setting {agent.net.cfg.use_recurrent_policy}. "
+            "Please ensure the agent and model configurations are consistent."
+        )
+
+    print("Current agent models:", agent.net.module.models)
+    original_value_network = copy.deepcopy(agent.net.module.models['critic'])
+    
+    from openrl.modules.networks.value_network import ValueNetwork
+    agent.net.module.models['critic'] = ValueNetwork(
+        cfg=agent.net.cfg,
+        input_space=agent.net.module.critic_input_space,
+        device=agent.net.device
+    )
+
+    def compare_models(model1, model2):
+        import torch
+        """Compare if two models have identical parameters"""
+        for p1, p2 in zip(model1.parameters(), model2.parameters()):
+            if not torch.equal(p1, p2):
+                return False
+        return True
+
+    if not compare_models(original_value_network.base, agent.net.module.models['critic'].base) and \
+         not compare_models(original_value_network.rnn, agent.net.module.models['critic'].rnn) and \
+            not compare_models(original_value_network.v_out, agent.net.module.models['critic'].v_out):
+        print("Value network reset successfully. Weights are different from the original.")
+    else:
+        raise ValueError("Value network reset failed, weights are identical to the original.")
+    
+    return agent
