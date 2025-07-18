@@ -70,12 +70,29 @@ def save_images(frames, output_dir='output_images'):
     frames = np.transpose(frames, (0, 2, 3, 1))
     frames_uint8 = frames.astype(np.uint8)
 
-    # Save each frame as a PNG image
-    for i, frame in enumerate(frames_uint8):
-        output_path = os.path.join(output_dir, f'frame_{i:04d}.png')
+    # Skip the first 5 frames (they are usually wrong)
+    skip_frames = 5
+    if len(frames_uint8) > skip_frames:
+        frames_uint8 = frames_uint8[skip_frames:]
+    
+    # Calculate indices for 5 evenly spaced frames from the remaining frames
+    num_frames = len(frames_uint8)
+    if num_frames <= 5:
+        # Save all remaining frames if there are 5 or fewer
+        selected_indices = list(range(num_frames))
+    else:
+        # Select 5 evenly spaced frames from the remaining frames
+        selected_indices = [int(i * (num_frames - 1) / 4) for i in range(5)]
+
+    # Save selected frames as PNG images
+    for i, frame_idx in enumerate(selected_indices):
+        frame = frames_uint8[frame_idx]
+        # Adjust frame index to account for skipped frames
+        actual_frame_idx = frame_idx + skip_frames
+        output_path = os.path.join(output_dir, f'snapshot_{actual_frame_idx:04d}.png')
         imageio.imwrite(output_path, frame)
 
-    print(f"Successfully saved {len(frames_uint8)} images to '{output_dir}'.")
+    print(f"Successfully saved {len(selected_indices)} images to '{output_dir}'.")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,9 @@
+Current task is:
+<<Current task>>
+Former tasks that RL succeeded to learn is:
+<<Former tasks>>
+
+Given images are snapshots in chronological order of the rollout.
+
+Trajectory data:
+<<Trajectory>>

@@ -128,6 +128,10 @@ class Go1GateCfg(Go1Cfg):
             lin_vel_y_punishment_scale = 0
             command_value_punishment_scale = -0.01
 
+    # class viewer(Go1Cfg.viewer):
+    #     pos = [-2., 2.5, 4.]  # [m]
+    #     lookat = [4., 2.5, 0.]  # [m]
+
     class viewer(Go1Cfg.viewer):
-        pos = [-2., 2.5, 4.]  # [m]
-        lookat = [4., 2.5, 0.]  # [m]
+        pos = [3.2, 0., 4.]
+        lookat = [3.2, 2.5, 0.]

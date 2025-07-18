@@ -51,7 +51,7 @@ def eval(load_dir):
             video_array = np.concatenate([np.expand_dims(frame, axis=0) for frame in frames ], axis=0).swapaxes(1, 3).swapaxes(2, 3)
             print(video_array.shape)
             save_gif(video_array, 1 / env.dt * 5, output_path=os.path.join(load_dir, "output_animation.gif"))
-            save_images(video_array, output_dir=os.path.join(load_dir, "output_images"))
+            save_images(video_array, output_dir=os.path.join(load_dir, "images"))
 
             break
 
