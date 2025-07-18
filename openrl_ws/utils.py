@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional, Union
 import isaacgym
 
 import torch
+import torch.nn as nn
 import gym
 
 from mqe.envs.utils import make_mqe_env
@@ -251,6 +252,25 @@ def get_args():
         args.sim_device += f":{args.sim_device_id}"
     return args
 
+def compare_models(model1, model2):
+    """Compare if two models have identical parameters"""
+    for p1, p2 in zip(model1.parameters(), model2.parameters()):
+        if not torch.equal(p1, p2):
+            return False
+        print(f"Parameters {p1} and {p2} are equal.")
+    return True
+
+def reset_weights(model):
+    for p in model.parameters():
+        if p.requires_grad:
+            if hasattr(p, 'reset_parameters'):
+                p.reset_parameters()
+            else:
+                if len(p.shape) > 1:
+                    nn.init.xavier_uniform_(p)
+                else:
+                    nn.init.zeros_(p)
+
 def reset_value_network(args, agent):
     if args.use_recurrent_policy != agent.net.cfg.use_recurrent_policy:
         raise ValueError(
@@ -261,20 +281,19 @@ def reset_value_network(args, agent):
     print("Current agent models:", agent.net.module.models)
     original_value_network = copy.deepcopy(agent.net.module.models['critic'])
     
-    from openrl.modules.networks.value_network import ValueNetwork
-    agent.net.module.models['critic'] = ValueNetwork(
-        cfg=agent.net.cfg,
-        input_space=agent.net.module.critic_input_space,
-        device=agent.net.device
-    )
+    # from openrl.modules.networks.value_network import ValueNetwork
+    # new_value_network = ValueNetwork(
+    #     cfg=agent.net.cfg,
+    #     input_space=agent.net.module.critic_input_space,
+    #     device=agent.net.device
+    # )
 
-    def compare_models(model1, model2):
-        import torch
-        """Compare if two models have identical parameters"""
-        for p1, p2 in zip(model1.parameters(), model2.parameters()):
-            if not torch.equal(p1, p2):
-                return False
-        return True
+    # agent.net.module.models['critic'] = new_value_network
+
+    reset_weights(agent.net.module.models['critic'].base)
+    if hasattr(agent.net.module.models['critic'], 'rnn'):
+        reset_weights(agent.net.module.models['critic'].rnn)
+    reset_weights(agent.net.module.models['critic'].v_out)
 
     base_different = not compare_models(original_value_network.base, agent.net.module.models['critic'].base)
     rnn_different = True
@@ -286,5 +305,22 @@ def reset_value_network(args, agent):
         print("Value network reset successfully. Weights are different from the original.")
     else:
         raise ValueError("Value network reset failed, weights are identical to the original.")
+    
+    return agent
+
+def reset_policy_std(agent):
+    from openrl.modules.networks.utils.act import ACTLayer
+
+    original_policy_std = copy.deepcopy(agent.net.module.models['policy'].act)
+
+    reset_weights(agent.net.module.models['policy'].act.action_out.fc_mean)
+    reset_weights(agent.net.module.models['policy'].act.action_out.logstd)
+
+    act_different = not compare_models(original_policy_std.action_out, agent.net.module.models['policy'].act.action_out)
+
+    if act_different:
+        print("Policy std reset successfully. Weights are different from the original.")
+    else:
+        raise ValueError("Policy std reset failed, weights are identical to the original.")
     
     return agent

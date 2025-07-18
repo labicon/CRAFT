@@ -1,4 +1,4 @@
-from openrl_ws.utils import make_env, get_args, reset_value_network
+from openrl_ws.utils import make_env, get_args, reset_value_network, reset_policy_std
 from mqe.envs.utils import custom_cfg
 from openrl.utils.logger import Logger
 from openrl.modules.common import PPONet
@@ -13,7 +13,7 @@ def train(save_dir, exp_name, training_iter=1000000):
     from openrl.utils.callbacks.checkpoint_callback import CheckpointCallback
     args = get_args()  
     args.train_timesteps = training_iter
-    args.num_envs = 200
+    args.num_envs = 500
     args.headless = True
 
     env, env_cfg = make_env(args, custom_cfg(args), single_agent=False)
@@ -56,7 +56,7 @@ def train(save_dir, exp_name, training_iter=1000000):
 def load_train(save_dir, exp_name, load_dir, training_iter=1000000):  
     from openrl.utils.callbacks.checkpoint_callback import CheckpointCallback
     args = get_args()
-    args.num_envs = 200
+    args.num_envs = 500
     args.headless = True
     args.train_timesteps = training_iter
 
@@ -93,6 +93,7 @@ def load_train(save_dir, exp_name, load_dir, training_iter=1000000):
     agent.set_env(env)
 
     agent = reset_value_network(args, agent)
+    agent = reset_policy_std(agent)
 
     agent.train(
         total_time_steps=args.train_timesteps,

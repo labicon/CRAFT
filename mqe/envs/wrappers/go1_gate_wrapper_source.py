@@ -30,8 +30,8 @@ class Go1GateWrapper(EmptyWrapper):
         self.gate_pos = obs.env_info["gate_deviation"]
         self.gate_pos[:, 0] += self.BarrierTrack_kwargs["init"]["block_length"] + self.BarrierTrack_kwargs["gate"]["block_length"] / 2
         self.gate_pos = self.gate_pos.unsqueeze(1).repeat(1, self.num_agents, 1)
-        self.frame_left = self.gate_pos.reshape(-1, 2)
-        self.frame_right = self.gate_pos.reshape(-1, 2)
+        self.frame_left = self.gate_pos.reshape(-1, 2).clone()
+        self.frame_right = self.gate_pos.reshape(-1, 2).clone()
         self.frame_left[:, 1] += self.BarrierTrack_kwargs["gate"]["width"] / 2
         self.frame_right[:, 1] -= self.BarrierTrack_kwargs["gate"]["width"] / 2
         self.gate_distance = self.gate_pos.reshape(-1, 2)[:, 0]
