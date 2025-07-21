@@ -22,19 +22,19 @@ class Go1GateWrapper(EmptyWrapper):
         self.gate_pos = obs.env_info["gate_deviation"]
         self.gate_pos[:, 0] += self.BarrierTrack_kwargs["init"]["block_length"] + self.BarrierTrack_kwargs["gate"]["block_length"] / 2
         self.gate_pos = self.gate_pos.unsqueeze(1).repeat(1, self.num_agents, 1)
-        self.frame_left = self.gate_pos.reshape(-1, 2)
-        self.frame_right = self.gate_pos.reshape(-1, 2)
+        self.frame_left = self.gate_pos.reshape(-1, 2).clone()
+        self.frame_right = self.gate_pos.reshape(-1, 2).clone()
         self.frame_left[:, 1] += self.BarrierTrack_kwargs["gate"]["width"] / 2
         self.frame_right[:, 1] -= self.BarrierTrack_kwargs["gate"]["width"] / 2
         self.gate_distance = self.gate_pos.reshape(-1, 2)[:, 0]
 
         self.target_pos = self.gate_pos.clone()
         self.target_pos[:, :, 0] += 1.0
-        # self.target_pos = torch.zeros_like(self.gate_pos, dtype=self.gate_pos.dtype, device=self.gate_pos.device)
-        # self.target_pos[:, :, 0] = self.BarrierTrack_kwargs["init"]["block_length"] + self.BarrierTrack_kwargs["gate"]["block_length"] + self.BarrierTrack_kwargs["plane"]["block_length"] / 2
-        # self.target_pos[:, 0, 1] = self.BarrierTrack_kwargs["track_width"] / 4
-        # self.target_pos[:, 1, 1] = - self.BarrierTrack_kwargs["track_width"] / 4
-        # self.target_pos = self.target_pos.reshape(-1, 2)
+        self.target_pos = torch.zeros_like(self.gate_pos, dtype=self.gate_pos.dtype, device=self.gate_pos.device)
+        self.target_pos[:, :, 0] = self.BarrierTrack_kwargs["init"]["block_length"] + self.BarrierTrack_kwargs["gate"]["block_length"] + self.BarrierTrack_kwargs["plane"]["block_length"] / 2
+        self.target_pos[:, 0, 1] = self.BarrierTrack_kwargs["track_width"] / 4
+        self.target_pos[:, 1, 1] = - self.BarrierTrack_kwargs["track_width"] / 4
+        self.target_pos = self.target_pos.reshape(-1, 2)
 
         return
 
@@ -166,5 +166,8 @@ class Go1GateWrapper(EmptyWrapper):
             return reward
         elif reward.shape == (self.num_envs, 1):
             return reward.repeat(1, self.num_agents)
+        elif reward.shape == (self.num_envs,):
+            return reward.unsqueeze(1).repeat(1, self.num_agents)
         else:
             raise ValueError(f"Invalid reward shape: {reward.shape}. Expected (num_envs, num_agents) or (num_envs, 1).")
+        

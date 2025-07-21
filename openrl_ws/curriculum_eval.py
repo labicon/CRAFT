@@ -56,7 +56,6 @@ def eval(load_dir):
             break
 
 def analyze_go1gate_trajectory(traj_buffer, rew_buffer, target_pos):
-    import numpy as np
     stepsize = len(traj_buffer)
     max_samples = 20
     step = max(1, stepsize // max_samples)
@@ -88,10 +87,10 @@ def analyze_go1gate_trajectory(traj_buffer, rew_buffer, target_pos):
     target_pos = np.round(np.array(target_pos.reshape(-1, 2).detach().cpu().numpy()), decimals=2)
 
     traj_dict = {
-        "gate_pos": gate_pos.tolist()[0],
-        "target_pos": target_pos.tolist(),
-        "agent_0_pos": agent_0_pos.tolist(),
-        "agent_1_pos": agent_1_pos.tolist(),
+        "gate_pos": gate_pos[0],
+        "target_pos": target_pos,
+        "agent_0_pos": agent_0_pos,
+        "agent_1_pos": agent_1_pos,
     }
 
     rew_dict = {
@@ -116,7 +115,7 @@ if __name__ == "__main__":
     del args, parser
     sys.argv = [sys.argv[0]]
 
-    save_dir = os.path.join("runs", run_date, curriculum_task, f"sample_{sample_idx}")
+    save_dir = os.path.join("logs", run_date, curriculum_task, f"sample_{sample_idx}", "model")
     if not os.path.exists(save_dir):
         raise FileNotFoundError(f"Log directory {save_dir} does not exist. Please check the run date and curriculum task.")
     exp_name = f"{run_date}_{curriculum_task}_sample_{sample_idx}"

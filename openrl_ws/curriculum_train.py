@@ -22,7 +22,7 @@ def train(save_dir, exp_name, training_iter=1000000):
     args.lr = 7e-4
     args.critic_lr = 7e-4
     args.log_interval = 5
-    args.use_recurrent_policy = True
+    # args.use_recurrent_policy = True
     args.use_joint_action_loss = False
     args.use_valuenorm = True
     args.use_adv_normalize = True
@@ -66,7 +66,7 @@ def load_train(save_dir, exp_name, load_dir, training_iter=1000000):
     args.lr = 7e-4
     args.critic_lr = 7e-4
     args.log_interval = 5
-    args.use_recurrent_policy = True
+    # args.use_recurrent_policy = True
     args.use_joint_action_loss = False
     args.use_valuenorm = True
     args.use_adv_normalize = True
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     del args, parser
     sys.argv = [sys.argv[0]]
 
-    save_dir = os.path.join("runs", run_date, curriculum_task, f"sample_{sample_idx}")
+    save_dir = os.path.join("logs", run_date, curriculum_task, f"sample_{sample_idx}", "model")
     if os.path.exists(save_dir):
         shutil.rmtree(save_dir)
     os.makedirs(save_dir)
@@ -134,7 +134,7 @@ if __name__ == '__main__':
     exp_name = f"{curriculum_task}_sample_{sample_idx}"
 
     if load:
-        load_dir = os.path.join("runs", run_date, load_task, f"sample_{load_sample_idx}")
+        load_dir = os.path.join("logs", run_date, load_task, f"sample_{load_sample_idx}", "model")
         if not os.path.exists(load_dir):
             raise FileNotFoundError(f"Log directory {load_dir} does not exist. Please check the run date and curriculum task.")
 

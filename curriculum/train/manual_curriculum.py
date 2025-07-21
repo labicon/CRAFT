@@ -98,9 +98,9 @@ class Manual_Module:
         print(reward_code)    
         
         # Update env code
-        # self.gpt_api.update_env_code(self.env_path, self.curriculum, curriculum_idx, 
-        #                                             reward_code=reward_code, 
-        #                                             version_number=sample_num)
+        self.gpt_api.update_env_code(self.env_path, self.curriculum, curriculum_idx, 
+                                                    reward_code=reward_code, 
+                                                    version_number=sample_num)
         self.current_reward_code_list.append(reward_code)
         
 
@@ -114,7 +114,7 @@ class Manual_Module:
                                     "--sample_idx", str(sample_num),
                                     ])
         # Load the trajectory and reward data
-        save_path = os.path.join("runs", self.experiment_time, task['Name'], f"sample_{sample_num}")
+        save_path = os.path.join("logs", self.experiment_time, task['Name'], f"sample_{sample_num}", "model")
         with open(os.path.join(save_path, "traj_dict.pkl"), 'rb') as f:
             traj = pickle.load(f)
         with open(os.path.join(save_path, "rew_dict.pkl"), 'rb') as f:

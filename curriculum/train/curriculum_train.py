@@ -282,7 +282,7 @@ class Curriculum_Module:
         #     file.write(process.stdout)
         #     file.write(process.stderr)
         # Load the trajectory and reward data
-        save_path = os.path.join("runs", self.experiment_time, task['Name'], f"sample_{sample_num}")
+        save_path = os.path.join("logs", self.experiment_time, task['Name'], f"sample_{sample_num}", "model")
         with open(os.path.join(save_path, "traj_dict.pkl"), 'rb') as f:
             traj = pickle.load(f)
         with open(os.path.join(save_path, "rew_dict.pkl"), 'rb') as f:
@@ -339,11 +339,13 @@ class Curriculum_Module:
         best_sample_idx = None
         trial = 0
         while best_sample_idx is None:
-            print("Statistics Analysis error. Try again.")
             best_sample_idx = self.gpt_api.feedback(self.curriculum, subtask_idx, traj_rollout, rew_rollout)
             trial += 1
             if trial == 5:
                 best_sample_idx = 0
+            
+            if best_sample_idx is None and trial > 1:
+                print("Statistics Analysis error. Try again.")
 
         self.best_model_idx_list.append(best_sample_idx)
         # Update best reward code list

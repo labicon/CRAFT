@@ -71,26 +71,26 @@ class Go1GateWrapper(EmptyWrapper):
 
         self.reward_buffer["step count"] += 1
 
-        # reward = torch.zeros([self.env.num_envs, self.env.num_agents], device=self.env.device)
-        reward = self.gpt_reward(base_info)
+        reward = torch.zeros([self.env.num_envs, self.env.num_agents], device=self.env.device)
+        # reward = self.gpt_reward(base_info)
 
-        # # approach reward
-        # if self.target_reward_scale != 0:
-        #     distance_to_taget = torch.norm(base_pos[:, :2] - self.target_pos, p=2, dim=1)
+        # approach reward
+        if self.target_reward_scale != 0:
+            distance_to_taget = torch.norm(base_pos[:, :2] - self.target_pos, p=2, dim=1)
 
-        #     if not hasattr(self, "last_distance_to_taget"):
-        #         self.last_distance_to_taget = copy(distance_to_taget)
+            if not hasattr(self, "last_distance_to_taget"):
+                self.last_distance_to_taget = copy(distance_to_taget)
             
-        #     target_reward = (self.last_distance_to_taget - distance_to_taget).reshape(self.num_envs, -1)
-        #     target_reward[self.env.reset_ids] = 0
+            target_reward = (self.last_distance_to_taget - distance_to_taget).reshape(self.num_envs, -1)
+            target_reward[self.env.reset_ids] = 0
 
-        #     target_reward *= self.target_reward_scale
-        #     reward += target_reward
+            target_reward *= self.target_reward_scale
+            reward += target_reward
 
-        #     self.last_distance_to_taget = copy(distance_to_taget)
+            self.last_distance_to_taget = copy(distance_to_taget)
 
-        #     self.reward_buffer["target reward_agent 0"] = torch.mean(target_reward, dim=0)[0]
-        #     self.reward_buffer["target reward_agent 1"] = torch.mean(target_reward, dim=0)[1]
+            self.reward_buffer["target reward_agent 0"] = torch.mean(target_reward, dim=0)[0]
+            self.reward_buffer["target reward_agent 1"] = torch.mean(target_reward, dim=0)[1]
 
         # contact punishment
         if self.contact_punishment_scale != 0:
@@ -99,13 +99,13 @@ class Go1GateWrapper(EmptyWrapper):
             self.reward_buffer["contact punishment_agent 0"] = torch.mean(collide_reward.unsqueeze(1).repeat(1, self.num_agents).type(torch.float), dim=0)[0]
             self.reward_buffer["contact punishment_agent 1"] = torch.mean(collide_reward.unsqueeze(1).repeat(1, self.num_agents).type(torch.float), dim=0)[1]
 
-        # # success reward
-        # if self.success_reward_scale != 0:
-        #     success_reward = torch.zeros([self.env.num_envs * self.env.num_agents], device="cuda")
-        #     success_reward[base_pos[:, 0] > self.gate_distance + 0.25] = self.success_reward_scale
-        #     reward += success_reward.reshape([self.env.num_envs, self.env.num_agents])
-        #     self.reward_buffer["success reward_agent 0"] = torch.mean(success_reward.reshape([self.env.num_envs, self.env.num_agents]).type(torch.float), dim=0)[0]
-        #     self.reward_buffer["success reward_agent 1"] = torch.mean(success_reward.reshape([self.env.num_envs, self.env.num_agents]).type(torch.float), dim=0)[1]
+        # success reward
+        if self.success_reward_scale != 0:
+            success_reward = torch.zeros([self.env.num_envs * self.env.num_agents], device="cuda")
+            success_reward[base_pos[:, 0] > self.gate_distance + 0.25] = self.success_reward_scale
+            reward += success_reward.reshape([self.env.num_envs, self.env.num_agents])
+            self.reward_buffer["success reward_agent 0"] = torch.mean(success_reward.reshape([self.env.num_envs, self.env.num_agents]).type(torch.float), dim=0)[0]
+            self.reward_buffer["success reward_agent 1"] = torch.mean(success_reward.reshape([self.env.num_envs, self.env.num_agents]).type(torch.float), dim=0)[1]
 
         # approach frame punishment
         if self.approach_frame_punishment_scale != 0:
