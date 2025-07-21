@@ -1,52 +1,62 @@
 ```python
-def gpt_reward(self, base_info):
+def gpt_reward(self, state, action):
     reward = torch.zeros([self.env.num_envs, self.env.num_agents], device=self.env.device)
+    reward_buffer = {}
 
-    base_pos = base_info[:,:,:3]
-    target_pos = self.target_pos.reshape(self.env.num_envs, self.env.num_agents, -1)
-    
+    base_pos = state["agent_pos"].reshape([self.env.num_envs*self.env.num_agents, -1])
+
     # approach reward
-    distance_to_taget = torch.norm(base_pos[:, :, :2] - self.gate_pos, p=2, dim=-1)
+    if self.target_reward_scale != 0:
+        distance_to_taget = torch.norm(base_pos[:, :2] - self.target_pos, p=2, dim=1)
 
-    if not hasattr(self, "last_distance_to_taget"):
+        if not hasattr(self, "last_distance_to_taget"):
+            self.last_distance_to_taget = copy(distance_to_taget)
+        
+        target_reward = (self.last_distance_to_taget - distance_to_taget).reshape(self.num_envs, -1)
+        target_reward[self.env.reset_ids] = 0
+
+        target_reward *= self.target_reward_scale
+        reward += target_reward
+
         self.last_distance_to_taget = copy(distance_to_taget)
 
-    target_reward = (self.last_distance_to_taget - distance_to_taget)
-    target_reward[self.env.reset_ids] = 0
+        reward_buffer["target reward_agent 0"] = torch.mean(target_reward, dim=0)[0]
+        reward_buffer["target reward_agent 1"] = torch.mean(target_reward, dim=0)[1]
 
-    reward += target_reward
-
-    self.last_distance_to_taget = copy(distance_to_taget)
-
-    self.reward_buffer["target reward_agent 0"] = torch.mean(target_reward, dim=0)[0]
-    # self.reward_buffer["target reward_agent 1"] = torch.mean(target_reward, dim=0)[1]
+    # contact punishment
+    if self.contact_punishment_scale != 0:
+        collide_reward = self.contact_punishment_scale * self.env.collide_buf
+        reward += collide_reward.unsqueeze(1).repeat(1, self.num_agents)
+        reward_buffer["contact punishment_agent 0"] = torch.mean(collide_reward.float())
+        reward_buffer["contact punishment_agent 1"] = torch.mean(collide_reward.float())
 
     # success reward
-    success_reward = torch.zeros([self.env.num_envs, self.env.num_agents], device=self.env.device)
-    success_reward[base_pos[:, :, 0] > self.gate_distance.reshape(self.env.num_envs, self.env.num_agents) + 0.1] = 5.0
-    reward += success_reward
-    self.reward_buffer["success reward_agent 0"] = torch.mean(success_reward.type(torch.float), dim=0)[0]
-    # self.reward_buffer["success reward_agent 1"] = torch.mean(success_reward.type(torch.float), dim=0)[1]
+    if self.success_reward_scale != 0:
+        success_reward = torch.zeros([self.env.num_envs * self.env.num_agents], device="cuda")
+        success_reward[base_pos[:, 0] > self.gate_distance + 0.25] = self.success_reward_scale
+        success_reward = success_reward.reshape([self.env.num_envs, self.env.num_agents])
+        success_reward[:, 1] = 0.0
+        reward += success_reward
+        reward_buffer["success reward_agent 0"] = torch.mean(success_reward.reshape([self.env.num_envs, self.env.num_agents]).type(torch.float), dim=0)[0]
+        reward_buffer["success reward_agent 1"] = torch.mean(success_reward.reshape([self.env.num_envs, self.env.num_agents]).type(torch.float), dim=0)[1]
 
-    # Do not assign reward to agent 1 for reaching the target
-    reward[:, 1] = 0.0
+    # agent distance punishment
+    if self.agent_distance_punishment_scale != 0:
+        agent_dis = (base_pos[:, :2] - torch.flip(base_pos[:, :2].reshape(self.num_envs, self.num_agents, 2), dims=[1,]).reshape(-1, 2)) ** 2
+        agent_dis = agent_dis.sum(dim=1).reshape(self.num_envs, -1)
+        agent_distance_punishment = self.agent_distance_punishment_scale  / agent_dis[agent_dis < 0.4]
+        reward[agent_dis < 0.4] += agent_distance_punishment
+        if agent_distance_punishment.numel() == 0:
+            reward_buffer["agent distance punishment"] = torch.zeros(self.num_agents, device=self.env.device)[0]
+        else:
+            reward_buffer["agent distance punishment"] = torch.mean(agent_distance_punishment, dim=0)
 
-    # relative position reward - distance-based
-    agent0_x = base_pos[:, 0, 0]
-    agent1_x = base_pos[:, 1, 0]
-    
-    # Calculate x-direction distance between agents
-    x_distance = torch.abs(agent0_x - agent1_x)
-    
-    # Check if agent 0 is in front of agent 1 (higher x position)
-    condition = agent0_x > agent1_x
-    
-    # Scale reward/penalty by x-distance and clamp between -1 and 1
-    env_reward = torch.where(condition, x_distance, -x_distance)
-    env_reward = torch.clamp(env_reward, -1.0, 1.0) * 0.1
-    relative_pos_reward = env_reward.unsqueeze(1).repeat(1, self.env.num_agents)
-    reward += relative_pos_reward
-    self.reward_buffer["relative_pos_reward"] = torch.mean(relative_pos_reward)
+    # command value punishment
+    if self.command_value_punishment_scale != 0:
+        command_value_punishment = self.command_value_punishment_scale * torch.clip(action ** 2 - 1, 0, 1).sum(dim=2)
+        reward += command_value_punishment
+        reward_buffer["command value punishment_agent 0"] = torch.mean(command_value_punishment, dim=0)[0]
+        reward_buffer["command value punishment_agent 1"] = torch.mean(command_value_punishment, dim=0)[1]
 
-    return reward
+    return reward, reward_buffer, 0.0
 ```

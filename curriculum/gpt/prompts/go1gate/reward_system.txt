@@ -11,6 +11,6 @@ Some helpful tips for writing a reward function code:
 (1) Use torch functions to write the reward function. torch is already imported as torch. Do not import additional library.
 (2) You may put higher weight on the reward for current task, but also include rewards from past tasks to avoid forgetting.
 (3) Total reward must stay within [0, 1]. Always, scale the reward to have maximum 1. 
-(4) Only use provided variables.
+(4) Only use provided help function. Do not use state and action variables without help functions.
 (5) Do not change other predefined parts in the code. 
 (6) Make sure that returned reward shape is (self.num_envs, self.num_agents). If you are not sure, verify it using self._check_reward_shape function
