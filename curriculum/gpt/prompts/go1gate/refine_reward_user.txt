@@ -1,0 +1,24 @@
+You can use help functions to calculate reward.
+self._progress_to_gate(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they progressed to the center of the gate compared to previous step
+self._distance_to_gate(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they have to the center of the gate
+self._agent_distance(state, action): returns tensor (num_envs, num_agents) for each environment for distance between each agents 
+self._success_evaluation(state, action): returns tensor (num_envs, num_agents) which returns 1 if the agent passed the gate and 0 otherwise
+self._get_gate_frame(state, action): returns tensor (num_envs, num_agents, 2) for y coordinates of gate edge
+self._command_value(state, action): returns tensor (num_envs, num_agents) for normalized command value
+self._command_lin_vel_x(state, action): returns tensor (num_envs, num_agents) for x direction command value
+self._command_lin_vel_y(state, action): returns tensor (num_envs, num_agents) for y direction command value.
+self._check_reward_shape(reward): returns reshaped reward tensor to avoid index error
+
+Current task is:
+<<Current_Task>>
+Former tasks that RL succeeded to learn is:
+<<Former_Tasks>>
+
+Reward function that was tried:
+<<Reward_Function>>
+
+Advice on how to improve the reward function:
+<<Advice>>
+
+Do not deviate from the reward structure given in the example.
+Note that the advice might not acount for what information it can use in the reward function. So not all the advice might be applicable.

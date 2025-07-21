@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 
 from train.manual_curriculum import Manual_Module
+from train.curriculum_train import Curriculum_Module
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Recieve task name, experiment name, and seed number")
@@ -22,6 +23,7 @@ if __name__ == "__main__":
 
     env_path = cfg['env_path']
 
-    module = Manual_Module(env_path, logger_path, current_datetime, cfg, seed)
+    # module = Manual_Module(env_path, logger_path, current_datetime, cfg, seed)
+    module = Curriculum_Module(env_path, logger_path, current_datetime, cfg, seed)
     module.train()
     # module.resume_train(resume_idx=2, resume_sample_idx=0, resume_from_training=True)

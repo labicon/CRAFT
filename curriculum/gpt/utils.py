@@ -62,8 +62,8 @@ def gpt_interaction_image(client, gpt_model, system_string, user_string, base64_
         trial += 1
 
     # print("Used token: ", completion.usage)
-    # print("GPT System Input: ", system_string)
-    # print("GPT User Input: ", user_string)
+    print("GPT System Input: ", system_string)
+    print("GPT User Input: ", user_string)
     print(completion.choices[0].message.content)
     return completion.choices[0].message.content
 

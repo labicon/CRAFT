@@ -75,7 +75,7 @@ def analyze_go1gate_trajectory(traj_buffer, rew_buffer, target_pos):
     # We can extract all info from agent 0's perspective.
     # Assuming num_envs = 1, which is typical for evaluation.
     # Shape becomes (T, num_agents, obs_dim)
-    obs_agent_0 = obs_trajectory[:, 0, 0, :] # Trajectory of obs for agent 0 in env 0
+    obs_agent_0 = np.round(obs_trajectory[:, 0, 0, :], decimals=2) # Trajectory of obs for agent 0 in env 0
 
     # Extract XY positions
     # agent_0_pos is indices 2,3 (x,y)
@@ -85,7 +85,7 @@ def analyze_go1gate_trajectory(traj_buffer, rew_buffer, target_pos):
     # gate_pos is indices 14,15 (x,y)
     gate_pos = obs_agent_0[:, 14:16]
 
-    target_pos = np.array(target_pos.reshape(-1, 2).detach().cpu().numpy())
+    target_pos = np.round(np.array(target_pos.reshape(-1, 2).detach().cpu().numpy()), decimals=2)
 
     traj_dict = {
         "gate_pos": gate_pos.tolist()[0],

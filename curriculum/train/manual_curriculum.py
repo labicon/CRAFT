@@ -98,9 +98,9 @@ class Manual_Module:
         print(reward_code)    
         
         # Update env code
-        self.gpt_api.update_env_code(self.env_path, self.curriculum, curriculum_idx, 
-                                                    reward_code=reward_code, 
-                                                    version_number=sample_num)
+        # self.gpt_api.update_env_code(self.env_path, self.curriculum, curriculum_idx, 
+        #                                             reward_code=reward_code, 
+        #                                             version_number=sample_num)
         self.current_reward_code_list.append(reward_code)
         
 

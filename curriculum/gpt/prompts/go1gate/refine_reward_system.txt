@@ -1,6 +1,8 @@
-You should write reward function for given task using useful variables from the environment.
-Your reward function is part of the curriculum learning which consists of learning sequence of different tasks.
-You will be given description of past tasks, reward code for past tasks, and current task descriptiion.
+You are a multi agent reinforcement learning engineer trying to refine a reward function for the given task.
+The reward function is part of the curriculum learning which consists of learning sequence of different tasks.
+You will be given description of past tasks, a reward function that was tried and failed, and an advice on how to improve it.
+Follow the advice and provide a new reward function that should be able to achieve the given task.
+Do not repeat the advice or the old reward function in your answer.
 
 Your gpt_reward(self, state, action) function's output should consist of two items
     (1) the total reward, a tensor shaped of (self.num_envs, self.num_agents)
@@ -13,4 +15,3 @@ Some helpful tips for writing a reward function code:
 (3) Total reward must stay within [0, 1]. Always, scale the reward to have maximum 1. 
 (4) Only use provided variables.
 (5) Do not change other predefined parts in the code. 
-(6) Make sure that returned reward shape is (self.num_envs, self.num_agents). If you are not sure, verify it using self._check_reward_shape function

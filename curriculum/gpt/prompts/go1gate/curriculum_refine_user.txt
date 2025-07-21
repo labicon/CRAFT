@@ -1,11 +1,11 @@
 <<Environment_Description>>
 
 Varaibles you can use for curriculum descriptions are
-- xy coordinate of each agent
+- xy position of gate center
+- xy position of target after passing the gate
+- xy position of each agent
 - yaw angle of each agent
-- xy position of the center of the gate
-- xy position for the left end of the gate
-- xy position for the right end of the gate
+- y coordinate of gate edges
 
 These are the rules that you have to consider when writing a curriculum
 (1) You cannot change start position of agents and gate.

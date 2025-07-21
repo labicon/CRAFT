@@ -58,6 +58,7 @@ Thumbs.db
 logs
 runs
 wandb
+training-log
 
 # other
 *.egg-info

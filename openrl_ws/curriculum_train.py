@@ -39,9 +39,9 @@ def train(save_dir, exp_name, training_iter=1000000):
         scenario_name=args.task,
         wandb_entity="kh-ryu-university-of-california-berkeley",
         exp_name=exp_name,
-        log_path="./log",
+        log_path="./training-log",
         use_wandb=True,
-        use_tensorboard=False,
+        use_tensorboard=True,
     )
 
     print("Start training from scratch")
@@ -83,9 +83,9 @@ def load_train(save_dir, exp_name, load_dir, training_iter=1000000):
         scenario_name=args.task,
         wandb_entity="kh-ryu-university-of-california-berkeley",
         exp_name=exp_name,
-        log_path="./log",
+        log_path="./training-log",
         use_wandb=True,
-        use_tensorboard=False,
+        use_tensorboard=True,
     )
 
     print(f"Loading model from {load_dir}")
@@ -130,7 +130,8 @@ if __name__ == '__main__':
     if os.path.exists(save_dir):
         shutil.rmtree(save_dir)
     os.makedirs(save_dir)
-    exp_name = f"{run_date}_{curriculum_task}_sample_{sample_idx}"
+    # exp_name = f"{run_date}_{curriculum_task}_sample_{sample_idx}"
+    exp_name = f"{curriculum_task}_sample_{sample_idx}"
 
     if load:
         load_dir = os.path.join("runs", run_date, load_task, f"sample_{load_sample_idx}")

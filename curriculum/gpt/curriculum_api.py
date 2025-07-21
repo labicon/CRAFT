@@ -1,13 +1,16 @@
 import os
 import re
 import textwrap
-from collections import defaultdict
+import glob
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 from gpt.utils import *
 
-GPT_MODEL = "gpt-4o" # gpt-4-1106-preview, gpt-4-0613, gpt-4-32k, gpt-3.5-turbo-1106 gpt-4-turbo-preview
-
+GPT_LLM_MODEL = "gpt-4o" # gpt-4-1106-preview, gpt-4-0613, gpt-4-32k, gpt-3.5-turbo-1106 gpt-4-turbo-preview
+GPT_VLM_MODEL = "o4-mini"
 
 class CurriculumAPI:
     def __init__(self, prompt_path, log_path, line_num):
@@ -24,8 +27,26 @@ class CurriculumAPI:
         env_description = file_to_string(self.prompt_path + "/environment_description.txt")
         initial_user = initial_user.replace("<<Environment_Description>>", env_description)
         
-        # Get the curriculum from GPT
-        tasks_string = gpt_interaction(self.client, GPT_MODEL, initial_system, initial_user)
+        # Get three curriculums from GPT
+        candidates = []
+        for _ in range(3):
+            tasks_string = gpt_interaction(self.client, GPT_LLM_MODEL, initial_system, initial_user)
+            candidates.append(tasks_string)
+
+        # Curriculum refinement
+        curriculum_refine_system = file_to_string(self.prompt_path + "/curriculum_refine_system.txt")
+        curriculum_refine_user = file_to_string(self.prompt_path + "/curriculum_refine_user.txt")
+        curriculum_refine_user = curriculum_refine_user.replace("<<Environment_Description>>", env_description)
+        for i, curriculum in enumerate(candidates):
+            curriculum_refine_user = curriculum_refine_user.replace(f"<<Candidate_{i+1}>>", curriculum)
+
+        # Save the user prompt for curriculum refinement
+        os.makedirs(os.path.dirname(self.log_path), exist_ok=True)
+        with open(self.log_path + "/curriculum_refine_user.md", "w") as file:
+            file.write(curriculum_refine_user)
+
+        # Get the final curriculum from GPT
+        tasks_string = gpt_interaction(self.client, GPT_LLM_MODEL, curriculum_refine_system, curriculum_refine_user)
 
         # Ensure the directory exists and write the curriculum to a file
         os.makedirs(os.path.dirname(self.log_path), exist_ok=True)
@@ -38,11 +59,192 @@ class CurriculumAPI:
         # Extract details for all tasks
         datetime = os.path.basename(os.path.normpath(self.log_path))
         tasks_details = [extract_task_details(section, datetime) for section in task_sections]
+        tasks_details = [d for d in tasks_details if d] # filter out empty dictionaries
 
         # Return list of dictionaries with task details
         return tasks_details
     
-    def generate_rewards(self, curriculum, curriculum_idx, sample_num, reward_code_history):
+    def evaluate_result(self, curriculum, curriculum_idx, sample_num, snapshots, traj_dict):
+        # Evalute success/failure of the subtask
+        # traj_dict is the last trajectory in traj_rollout
+
+        evaluation_system = file_to_string(self.prompt_path + "/evaluation_system.txt")
+        evaluation_user = file_to_string(self.prompt_path + "/evaluation_user.txt")
+
+        # Add task details
+        task_detail = file_to_string(self.prompt_path + "/feedback_history.txt")
+        current_task = curriculum[curriculum_idx]
+        task_detail = task_detail.replace("<<Task_Name>>", f'{current_task["Task_num"]}_{current_task["Subtask"]}')
+        task_detail = task_detail.replace("<<Task_Description>>", current_task["Description"])
+        task_detail = task_detail.replace("<<Task_Reason>>", current_task["Reason"])
+        evaluation_user = evaluation_user.replace("<<Current task>>", task_detail)
+
+        # Add previous task information
+        former_task_string = ""
+        if curriculum_idx > 0:
+            for i in range(curriculum_idx):
+                task_details = curriculum[i]
+                evaluation_history = file_to_string(self.prompt_path + "/feedback_history.txt")
+                evaluation_history = evaluation_history.replace("<<Task_Name>>", f'{task_details["Task_num"]}_{task_details["Subtask"]}')
+                evaluation_history = evaluation_history.replace("<<Task_Description>>", task_details["Description"])
+                evaluation_history = evaluation_history.replace("<<Task_Reason>>", task_details["Reason"])
+
+                former_task_string = former_task_string + "\n" + evaluation_history
+        else: 
+            former_task_string = "No previous task learned."
+        evaluation_user = evaluation_user.replace("<<Former tasks>>", former_task_string)
+
+        # Add trajectory
+        trajectory_string = ""
+        try:
+            for key in traj_dict.keys():
+                if 'orientation' in key or 'distance' in key:
+                    continue
+                trajectory_string += f"{key}:\n"
+                if type(traj_dict[key]) == str:  # if the value is a string, write it directly
+                    trajectory_string += f"{traj_dict[key]}\n"
+                else:
+                    trajectory_string += np.array2string(
+                        traj_dict[key],
+                        formatter={'float_kind': lambda x: f"{x:.3f}"}) + "\n"
+        except:
+            trajectory_string += "No statistics available\n\n"
+        evaluation_user = evaluation_user.replace("<<Trajectory>>", trajectory_string)
+        
+        if curriculum_idx != len(curriculum) - 1: # not the last task in the curriculum
+            evaluation_user += "\nNote that this is not the final goal in the curriculum, don't be too strict on the decision."
+
+        # Save the user prompt for evaluation
+        os.makedirs(os.path.dirname(self.log_path), exist_ok=True)
+        with open(self.log_path + f"{current_task['Name']}/sample_{sample_num}/" + "evaluation_user.md", "w") as file:
+            file.write(evaluation_user)
+
+        # Encode snapshots
+        # encoded_image_list = []
+        # for snapshot in snapshots:
+        #     encoded_image_list.append(encode_image_from_array(snapshot))
+
+        encoded_image_list = snapshots # Snapshots are already base64 encoded
+
+        gpt_answer = gpt_interaction_image(self.client, GPT_VLM_MODEL, evaluation_system, evaluation_user, encoded_image_list)
+
+        # Save the GPT answer
+        with open(self.log_path + f"{current_task['Name']}/sample_{sample_num}/" + "evaluation_answer.md", "w") as file:
+            file.write(gpt_answer)
+
+        # Parse the decision from GPT's response
+        result = {"decision": None, "reason": ""}
+
+        lines = gpt_answer.strip().splitlines()
+        for idx, raw in enumerate(lines):
+            line = raw.strip()
+
+            # 1) If it starts with "Decision:", extract Success/Failure
+            if line.startswith("Decision:"):
+                # Try matching "[Success]" or "[Failure]" inside brackets first
+                m = re.search(r"Decision:\s*\[(Success|Failure)\]", line)
+                if m:
+                    decision_text = m.group(1)
+                else:
+                    decision_text = line[len("Decision:"):].strip()
+
+                if decision_text.lower() == "success":
+                    result["decision"] = True
+                elif decision_text.lower() == "failure":
+                    result["decision"] = False
+                else:
+                    result["decision"] = None
+                continue
+
+            # 2) If it starts with "Reason:", capture that line’s remainder plus all following lines
+            if line.startswith("Reason:"):
+                after_colon = line[len("Reason:"):].strip()
+                reason_lines = []
+                if after_colon:
+                    reason_lines.append(after_colon)
+
+                # Append every line after the current one
+                for j in range(idx + 1, len(lines)):
+                    reason_lines.append(lines[j].rstrip())
+                result["reason"] = "\n".join(reason_lines).strip()
+                break
+
+        return result
+    
+
+    def get_advice(self, curriculum, curriculum_idx, sample_num, failed_reward, failure_reason):
+        advice_system = file_to_string(self.prompt_path + "/advice_system.txt")
+        advice_user = file_to_string(self.prompt_path + "/advice_user.txt")
+
+        # Add current task
+        task = curriculum[curriculum_idx]
+        advice_user = advice_user.replace("<<Task_Name>>", f'{task["Task_num"]}_{task["Subtask"]}')
+        advice_user = advice_user.replace("<<Task_Description>>", task["Description"])
+        advice_user = advice_user.replace("<<Task_Reason>>", task["Reason"])
+
+        # Add current reward function
+        advice_user = advice_user.replace("<<Reward_Function>>", failed_reward)
+
+        # Add failure reason
+        advice_user = advice_user.replace("<<Failure_Reason>>", failure_reason)
+
+        # Find tensorboard event file
+        pattern = os.path.join("./training-log", "MQE-Curriculum", "go1gate", 
+                               f"{task['Name']}_sample_{sample_num}/", 
+                                "tensorboard",
+                               "events.out.tfevents.*")
+        event_files = glob.glob(pattern)
+        if not event_files:
+            raise FileNotFoundError(f"No event files found in {pattern}")
+        event_file = max(event_files, key=os.path.getmtime)
+        print(f"Using event file: {event_file}")
+        ea = EventAccumulator(event_file)
+        ea.Reload()
+
+        # Collect reward curve - save than reload (easier this way)
+        curve_img_path = []
+        for tag in ea.Tags()["scalars"]:
+            if 'Reward' in tag:
+                reward_curve = []
+                for scalar in ea.Scalars(tag):
+                    reward_curve.append([scalar.step, scalar.value])
+                reward_curve = np.array(reward_curve)  
+                # name = tag # .removeprefix('Reward / ')
+                def remove_prefix(text, prefix):
+                    if text.startswith(prefix):
+                        return text[len(prefix):]
+                    return text
+                name = remove_prefix(tag, 'Reward/')
+
+                plt.figure(figsize=(5, 4))
+                plt.plot(reward_curve[:, 0], reward_curve[:, 1])
+                plt.xlabel('Step', fontsize=16)
+                plt.title(f"{name}", fontsize=20)
+                ax = plt.gca()
+                ax.set_xlim(left=0)
+                ax.xaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=False))
+                ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x/1000)}k"))
+                ax.set_ylim(bottom=0)
+                ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=5, integer=False))
+                ax.tick_params(axis='both', which='major', labelsize=14)
+
+                plt.tight_layout()
+                img_path = self.log_path + f"{task['Name']}/sample_{sample_num}/{name}.png"
+                # os.makedirs(os.path.join(self.log_path, f"{task['Name']}/sample_{sample_num}/Reward"), exist_ok=True)
+                plt.savefig(img_path)
+                curve_img_path.append(img_path)
+        
+        # Encode reward curve images
+        encoded_image_list = []
+        for img_path in curve_img_path:
+            encoded_image_list.append(encode_image(img_path))
+        
+        # Get advice from GPT
+        gpt_answer = gpt_interaction_image(self.client, GPT_VLM_MODEL, advice_system, advice_user, encoded_image_list)
+
+        return gpt_answer
+
+    def generate_rewards(self, curriculum, curriculum_idx, sample_num, reward_code_history, reward_samples, failure_reasons):
         task_detail = curriculum[curriculum_idx]
 
         reward_system = file_to_string(self.prompt_path + "/reward_system.txt")
@@ -70,8 +272,17 @@ class CurriculumAPI:
 
             reward_user = reward_user + "\n" + reward_history
 
+        # Add failure reward function samples and reasons
+        if sample_num > 0:
+            reward_user += "\nHere are some reward function samples tried for the current task, along with the reasons why the task failed.\n"
+            for i in range(sample_num):
+                reward_user += f"\nReward Sample {i+1}:"
+                reward_user += reward_samples[i] + "\n"
+                reward_user += f"Failure reason:\n"
+                reward_user += failure_reasons[i] + "\n"
+
         # Get reward function from GPT
-        reward_answer = gpt_interaction(self.client, GPT_MODEL, reward_system, reward_user)
+        reward_answer = gpt_interaction(self.client, GPT_LLM_MODEL, reward_system, reward_user)
 
         pattern = r"`python(.*?)`"
         reward_match = re.search(pattern, reward_answer, re.DOTALL)
@@ -91,68 +302,47 @@ class CurriculumAPI:
             print("No code block found.")
         return None
 
-    def redesign_rewards(self, curriculum, curriculum_idx, sample_num, reward_code_list, previous_rew_rollout, previous_traj_rollout):
-        task_detail = curriculum[curriculum_idx]
+    def refine_reward(self, curriculum, curriculum_idx, sample_num, failed_reward, advice):
+        refine_system = file_to_string(self.prompt_path + "/refine_reward_system.txt")
+        refine_user = file_to_string(self.prompt_path + "/refine_reward_user.txt")
 
-        redesign_rew_system = file_to_string(self.prompt_path + "/redesign_reward_system.txt")
-        redesign_rew_user = file_to_string(self.prompt_path + "/redesign_reward_user.txt")
+        # Add current task
+        task = curriculum[curriculum_idx]
+        current_task_string = f'{task["Task_num"]}_{task["Subtask"]}\n{task["Description"]}\n{task["Reason"]}'
+        refine_user = refine_user.replace("<<Current_Task>>", current_task_string)
 
-        # Add env description
-        env_description = file_to_string(self.prompt_path + "/environment_description.txt")
-        redesign_rew_user = redesign_rew_user.replace("<<Environment_Description>>", env_description)
+        # Add former task
+        former_task_string = ""
+        if curriculum_idx > 0:
+            for i in range(curriculum_idx):
+                task_details = curriculum[i]
+                former_task_string += f'{task_details["Task_num"]}_{task_details["Subtask"]}\n{task_details["Description"]}\n{task_details["Reason"]}\n'
+        else:
+            former_task_string = "No previous task learned."
+        refine_user = refine_user.replace("<<Former_Tasks>>", former_task_string)
 
-        # Concatenate the task details into the user strings
-        redesign_rew_user = redesign_rew_user.replace("<<Task_Name>>", f'{task_detail["Task_num"]}_{task_detail["Subtask"]}')
-        redesign_rew_user = redesign_rew_user.replace("<<Task_Description>>", task_detail["Description"])
-        redesign_rew_user = redesign_rew_user.replace("<<Task_Reason>>", task_detail["Reason"])
+        # Add failed reward function
+        refine_user = refine_user.replace("<<Reward_Function>>", failed_reward)
 
-        # Replace sample reward code
-        redesign_rew_user = redesign_rew_user.replace("<<Reward_Code0>>", reward_code_list[0])
-        redesign_rew_user = redesign_rew_user.replace("<<Reward_Code1>>", reward_code_list[1])
+        # Add advice
+        refine_user = refine_user.replace("<<Advice>>", advice)
 
-        # Add rollout statistics
-        for sample_idx in range(len(previous_rew_rollout)):
-            feedback_statistics = "\n"
-            try:
-                # Reward statistics
-                feedback_statistics += f"Episode rewards:\n"
-                for key in previous_rew_rollout[sample_idx].keys():
-                    if key == 'total_reward': # write total_reward at the end
-                        continue
-                    feedback_statistics += f"{key}: {previous_rew_rollout[sample_idx][key]}\n"
-                feedback_statistics += f"Total Reward: {previous_rew_rollout[sample_idx]['total_reward']}\n"
-                
-                # Trajectory statistics
-                feedback_statistics += "\nTrajectory rollout:\n"
-                if 'nan_reward' in previous_traj_rollout[sample_idx].keys():
-                    feedback_statistics += "Experiment failed due to NaN reward value. \nThis is likely because the reward magnitude is too big.\n\n"
-                else:
-                    for key in previous_traj_rollout[sample_idx].keys():
-                        if key == 'is_success': # skip is_success
-                            continue
-                        feedback_statistics += f"{key}:\n"
-                        feedback_statistics += f"{previous_traj_rollout[sample_idx][key]}\n"
-                    feedback_statistics += f"Package reached goal: "
-                    feedback_statistics += "True" if previous_traj_rollout[sample_idx]['is_success'] == 1 else "False"
-                    feedback_statistics += "\n"
-            except:
-                feedback_statistics += "No statistics available\n\n"
-            redesign_rew_user = redesign_rew_user.replace(f"<<Statistics{sample_idx}>>", feedback_statistics)
-
-        # Get reward function from GPT
-        reward_answer = gpt_interaction(self.client, GPT_MODEL, redesign_rew_system, redesign_rew_user)
+        # Save the user prompt for reward refinement
+        os.makedirs(self.log_path + f"{task['Name']}/sample_{sample_num}/", exist_ok=True)
+        with open(self.log_path + f"{task['Name']}/sample_{sample_num}/" + "refine_user.md", "w") as file:
+            file.write(refine_user)
+        
+        # Get refined reward function from GPT
+        reward_answer = gpt_interaction(self.client, GPT_LLM_MODEL, refine_system, refine_user)
+        
+        # Save GPT answer
+        with open(self.log_path + f"{task['Name']}/sample_{sample_num}/" + "refine_answer.md", "w") as file:
+            file.write(reward_answer)
 
         pattern = r"`python(.*?)`"
         reward_match = re.search(pattern, reward_answer, re.DOTALL)
-
         if reward_match:
             reward_code_block = reward_match.group(1)
-            os.makedirs(os.path.join(self.log_path, f'{task_detail["Name"]}'), exist_ok=True)
-            with open(self.log_path + f'{task_detail["Name"]}/' + f"redesign_reward_prompt_{sample_num}.md", "w") as file:
-                file.write(redesign_rew_system + "\n\n\n" + redesign_rew_user)
-            with open(self.log_path + f'{task_detail["Name"]}/' + f"redesign_reward_answer_{sample_num}.md", "w") as file:
-                file.write(reward_answer)
-            
             return reward_code_block
         else:
             print("No code block found.")
@@ -215,7 +405,12 @@ class CurriculumAPI:
                 traj_dict = trajectories[experiment_idx]
                 for key in traj_dict.keys():
                     feedback_statistics += f"{key}:\n"
-                    feedback_statistics += f"{traj_dict[key]}\n"
+                    if type(traj_dict[key]) == str:  # if the value is a string, write it directly
+                        feedback_statistics += f"{traj_dict[key]}\n"
+                    else:
+                        feedback_statistics += np.array2string(
+                            traj_dict[key],
+                            formatter={'float_kind': lambda x: f"{x:.3f}"}) + "\n"
                 
                 # feedback_statistics += "Episode rewards:\n"
                 # rew_dict = rewards[experiment_idx]
@@ -229,7 +424,7 @@ class CurriculumAPI:
 
         feedback_user = feedback_user + "\n" + feedback_statistics
 
-        gpt_answer = gpt_interaction(self.client, GPT_MODEL, feedback_system, feedback_user)
+        gpt_answer = gpt_interaction(self.client, GPT_LLM_MODEL, feedback_system, feedback_user)
 
         # Ensure the directory exists and write the curriculum to a file
         os.makedirs(os.path.dirname(self.log_path), exist_ok=True)
