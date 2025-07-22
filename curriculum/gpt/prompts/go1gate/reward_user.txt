@@ -1,25 +1,37 @@
 <<Environment_Description>>
 
-You can use help functions to calculate reward.
-self._progress_to_gate(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they progressed to the center of the gate compared to previous step
+The 'state' variable is a dictionary that contains:
+"gate_pos": tensor (num_envs, num_agents, 2) for the center coordinates of the gate
+"gate_left": tensor (num_envs, num_agents, 2) for the coordinates of the gate's left edge
+"gate_right": tensor (num_envs, num_agents, 2) for the coordinates of the gate's right edge
+"target_pos": tensor (num_envs, num_agents, 2) for the target coordinates
+"agent_pos": tensor (num_envs, num_agents, 2) for the agent's xy coordinates
+"agent_yaw": tensor (num_envs, num_agents) for the agent's yaw angle
+
+The 'action' variable is a tensor (num_envs, num_agents, 3) for (x linear velocity command, y linear velocity command, yaw angular velocity command)
+Note that the coordinates in the state are in the global frame and the coordinates of the action are in the agent's local frame.
+
+You can use helper functions to calculate reward.
+self._progress_to_gate(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they progressed toward the center of the gate compared to the previous step
 self._distance_to_gate(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they have to the center of the gate
-self._agent_distance(state, action): returns tensor (num_envs, num_agents) for each environment for distance between each agents 
+self._distance_to_target(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they have to the target position, which is behind the gate
+self._agent_distance(state, action): returns tensor (num_envs, num_agents) for each environment for the distance between agents 
 self._success_evaluation(state, action): returns tensor (num_envs, num_agents) which returns 1 if the agent passed the gate and 0 otherwise
 self._get_gate_frame(state, action): returns tensor (num_envs, num_agents, 2) for y coordinates of gate edges
 self._command_value(state, action): returns tensor (num_envs, num_agents) for normalized command value
 self._command_lin_vel_x(state, action): returns tensor (num_envs, num_agents) for x direction command value
-self._command_lin_vel_y(state, action): returns tensor (num_envs, num_agents) for y direction command value.
+self._command_lin_vel_y(state, action): returns tensor (num_envs, num_agents) for y direction command value
 self._check_reward_shape(reward): returns reshaped reward tensor to avoid index error
 
-Example reward function format for the task is 
+An example reward function format for the task is 
 ```python
 def gpt_reward(self, state, action):
 
     reward = torch.zeros((self.num_envs, self.num_agents), device=self.env.device)
     rew_dict = {}
-    max_reward = 5.0
+    max_reward = 10.0
 
-    # Reward for getting closer to the gate - max 2.0
+    # Reward for getting closer to the gate - max 3.0
     progress_reward = 3.0 * self._progress_to_gate(state, action)
     # Check reward shape
     progress_reward = self._check_reward_shape(progress_reward)
@@ -37,18 +49,18 @@ def gpt_reward(self, state, action):
 
     # Reward for using small command value - max 0.5
     command_values = self._command_value(state, action)
-    small_command_reward = 0.5 * torch.exp(2.0 * command_values)
+    small_command_reward = 0.5 * torch.exp(-2.0 * command_values)
     small_command_reward = self._check_reward_shape(small_command_reward)
     rew_dict["small_command"] = torch.mean(small_command_reward)
 
-    # Reward for success - max 1.5
+    # Reward for success - max 5.0
     success = self._success_evaluation(state, action)
-    success_reward = 1.5 * success.float()
+    success_reward = 5.0 * success.float()
     success_reward = self._check_reward_shape(success_reward)
     rew_dict["agent_0_success"] = torch.mean(success_reward[:,0])
     rew_dict["agent_1_success"] = torch.mean(success_reward[:,1])
 
-    # If both agent have succeed passing gate, give maximum reward, if not, combine the other rewards
+    # If both agents have succeeded in passing the gate, give maximum reward; if not, combine the other rewards
     both_agents_success = torch.all(success > 0, dim=1, keepdim=True).float()
     both_agents_success = self._check_reward_shape(both_agents_success)
     other_rewards = progress_reward + safe_distance_reward + small_command_reward + success_reward
@@ -61,13 +73,13 @@ def gpt_reward(self, state, action):
     return reward, rew_dict, max_reward
 ```
 
-You should re-implement reward function to assign a proper reward function for given task. 
-You can change the reward components that aligns well with the task.
+You should re-implement the reward function to assign a proper reward function for the given task. 
+You can change the reward components that align well with the task.
 Do not include any new inputs in the functions.
 
-Note that you are designing a reward function for team, not a single agent. 
+Note that you are designing a reward function for a team, not a single agent. 
 
-Generate a reward function code and command for
+Generate a reward function code and command for:
 Task Name: <<Task_Name>>
 Description: <<Task_Description>>
 Reason: <<Task_Reason>>

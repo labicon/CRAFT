@@ -4,7 +4,8 @@ A low-level controller for the robot is already available;
 therefore, the learning objective is limited to generating high-level velocity commands in the form of [linear_velocity_x, linear_velocity_y, yaw_angular_velocity] that will lead to goal position.
 
 The task is defind as success if both agent passes the gate,
-which means x coordinate of both agents should be larger than gate's x coordinate.
+which means x coordinate of both robots should be larger than gate's x coordinate.
+When passing the gate, robot's y coordinate should be between gate left and right edge's y coordinates.
 While navigating the area, they should avoid the collision to each other. 
 If the distance between two robot is smaller than 0.25, it is defined as collision.
 Agent 0 is colored with blue and Agent 1 is colored with green.

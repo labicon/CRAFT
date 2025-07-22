@@ -133,10 +133,10 @@ if __name__ == "__main__":
         action, _ = agent.act(obs)  # The agent predicts the next action based on environmental observations.
         # The environment takes one step according to the action, obtains the next observation, reward, whether it ends and environmental information.
         obs, r, done, info = env.step(action)
-        # print("Obs:", obs)
-        # print("Action:", action)
-        # print("Target pos:", env.target_pos)
-        # print("Gate pos:", env.gate_pos)
+        print("Obs:", obs)
+        print("Action:", action)
+        print("Target pos:", env.target_pos)
+        print("Gate pos:", env.gate_pos)
         # print("Info:", info)
         if done[0, 0] and env.cfg.env.record_video:
             frames = env.get_complete_frames()

@@ -29,11 +29,11 @@ class Go1GateWrapper(EmptyWrapper):
         self.gate_distance = self.gate_pos.reshape(-1, 2)[:, 0]
 
         self.target_pos = self.gate_pos.clone()
-        self.target_pos[:, :, 0] += 1.0
-        self.target_pos = torch.zeros_like(self.gate_pos, dtype=self.gate_pos.dtype, device=self.gate_pos.device)
+        # self.target_pos[:, :, 0] += 1.0
+        # self.target_pos = torch.zeros_like(self.gate_pos, dtype=self.gate_pos.dtype, device=self.gate_pos.device)
         self.target_pos[:, :, 0] = self.BarrierTrack_kwargs["init"]["block_length"] + self.BarrierTrack_kwargs["gate"]["block_length"] + self.BarrierTrack_kwargs["plane"]["block_length"] / 2
-        self.target_pos[:, 0, 1] = self.BarrierTrack_kwargs["track_width"] / 4
-        self.target_pos[:, 1, 1] = - self.BarrierTrack_kwargs["track_width"] / 4
+        # self.target_pos[:, 0, 1] = self.BarrierTrack_kwargs["track_width"] / 4
+        # self.target_pos[:, 1, 1] = - self.BarrierTrack_kwargs["track_width"] / 4
         self.target_pos = self.target_pos.reshape(-1, 2)
 
         return
@@ -91,7 +91,7 @@ class Go1GateWrapper(EmptyWrapper):
         if not hasattr(self, "last_distance_to_gate"):
             self.last_distance_to_gate = copy(distance_to_gate)
 
-        progress = (self.last_distance_to_gate - distance_to_gate)
+        progress = (self.last_distance_to_gate - distance_to_gate) * 10.0
         progress[self.env.reset_ids] = 0
 
         self.last_distance_to_gate = copy(distance_to_gate)
@@ -105,6 +105,14 @@ class Go1GateWrapper(EmptyWrapper):
         # approach reward
         distance_to_gate = torch.norm(base_pos[:, :, :2] - gate_pos, p=2, dim=-1)
         return distance_to_gate
+    
+    def _distance_to_target(self, state, action):
+        base_pos = state["agent_pos"]
+        target_pos = state["target_pos"]
+
+        # approach reward
+        distance_to_target = torch.norm(base_pos[:, :, :2] - target_pos, p=2, dim=-1)
+        return distance_to_target
     
     def _get_gate_frame(self, state, action):
         frame_left = self.frame_left.reshape(self.num_envs, self.num_agents, -1)
@@ -133,17 +141,17 @@ class Go1GateWrapper(EmptyWrapper):
     
     def _command_lin_vel_y(self, state, action):
         # command lin_vel.y punishment
-        v_y_punishment = action[:, :, 1]
+        v_y_punishment = action[:, :, 1] * 0.01
         return v_y_punishment
     
     def _command_lin_vel_x(self, state, action):
         # lin_vel.x reward
-        v_x_reward = action[:, :, 0]
+        v_x_reward = action[:, :, 0] * 0.01
         return v_x_reward
     
     def _command_value(self, state, action):
         # command value punishment
-        command_value_punishment = torch.norm(action, p=2, dim=2)
+        command_value_punishment = torch.norm(action, p=2, dim=2) * 0.01
         return command_value_punishment
     
     def _success_evaluation(self, state, action):
