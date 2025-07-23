@@ -10,12 +10,13 @@ import pickle as pkl
 import os, sys
 import numpy as np
 
-def eval(load_dir):
+def eval(load_dir, seed=0):
     from openrl_ws.utils import get_args
     from openrl_ws.test import save_gif, save_images
     args = get_args()
     args.headless = False
     args.record_video = True
+    args.seed = seed
     env, _ = make_env(args, custom_cfg(args), single_agent=False)
     net = PPONet(env, cfg=args, device=args.rl_device)
     agent = PPOAgent(net)
@@ -106,11 +107,13 @@ if __name__ == "__main__":
     parser.add_argument("--run_date", type=str, default=None, help="Run date for the experiment")
     parser.add_argument("--curriculum_task", type=str, default=None, help="Curriculum task name")
     parser.add_argument("--sample_idx", type=int, default=None, help="Sample index for the experiment")
+    parser.add_argument("--seed", type=int, default=0, help="Random seed for evaluation")
     
     args = parser.parse_args()
     run_date = args.run_date
     curriculum_task = args.curriculum_task
     sample_idx = args.sample_idx
+    seed = args.seed
 
     del args, parser
     sys.argv = [sys.argv[0]]
@@ -121,4 +124,4 @@ if __name__ == "__main__":
     exp_name = f"{run_date}_{curriculum_task}_sample_{sample_idx}"
 
     print(f"Evaluating model from {save_dir}")
-    eval(load_dir=save_dir)
+    eval(load_dir=save_dir, seed=seed)

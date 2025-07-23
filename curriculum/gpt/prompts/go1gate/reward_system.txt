@@ -14,3 +14,4 @@ Some helpful tips for writing reward function code:
 (4) Only use provided helper functions. Do not use state and action variables without helper functions.
 (5) Do not change other predefined parts in the code. 
 (6) Make sure that the returned reward shape is (self.num_envs, self.num_agents). If you are not sure, verify it using the self._check_reward_shape function.
+(7) When assigning success reward, You should assign high weights as it is the most important measure for the task. Assign at least 5.0 for the success reward.
