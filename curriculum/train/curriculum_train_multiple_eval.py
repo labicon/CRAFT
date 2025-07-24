@@ -15,7 +15,7 @@ MAX_ATTEMPT = 10
 class Curriculum_Module:
     def __init__(self, env_path, logger_path, run_datetime, cfg, seed=0):
         self.env_path = env_path
-        self.prompt_path = "/home/kang/multiagent-quadruped-environment/curriculum/gpt/prompts/go1gate"
+        self.prompt_path = "/home/kang/mqe-curriculum/curriculum/gpt/prompts/go1gate"
         self.gpt_api = CurriculumAPI(self.prompt_path, logger_path, 
                                      line_num=cfg['line_num'])
         self.logger_path = logger_path
@@ -91,7 +91,7 @@ class Curriculum_Module:
                         else:
                             self.refine_reward_code(curriculum_idx, sample_num, advices)
                         self.train_single(curriculum_idx, task, sample_num)
-                    
+
                     except Exception as e:
                         print(f"Error in training task {task['Name']} sample {sample_num}")
                         print(e)
@@ -108,46 +108,56 @@ class Curriculum_Module:
                         trial_num += 1
                         continue # if generating reward code fails, skip evaluation and pass to the next iteration
 
-                N_ROLLOUTS = 5 # Collect 5 rollouts to evaluate the task
-                evaluation_decision = False
-                for rollout in range(N_ROLLOUTS):
-                    try:
-                        rew, traj, snapshots = self.collect_evaluation_data(task, sample_num, rollout)
-                        rew_rollout.append(rew)
-                        traj_rollout.append(traj)
-                        snapshot_rollout.append(snapshots)
+                    N_ROLLOUTS = 5 # Collect 5 rollouts to evaluate the task
+                    task_success = False
+                    evaluation_decision = -1
+                    for rollout in range(N_ROLLOUTS):
+                        try:
+                            rew, traj, snapshots = self.collect_evaluation_data(task, sample_num, rollout)
+                            rew_rollout.append(rew)
+                            traj_rollout.append(traj)
+                            snapshot_rollout.append(snapshots)
 
-                        break # if training and rollout is successful, break the loop
+                            # Check if succeeded in current task
+                            decision = self.evaluate_subtask(curriculum_idx, sample_num, snapshot_rollout[-1], traj_rollout[-1])
+                            if decision is not None and decision != -1:
+                                task_success = task_success or decision['decision']
+                                evaluation_decision = decision
+                                if task_success is True:
+                                    break # Task is successfully trained, break the loop
+                                elif rollout == N_ROLLOUTS - 1:
+                                    print(f"Task {task['Name']} sample {sample_num} failed in every {N_ROLLOUTS} rollouts.")
+                                    break
+                                else:
+                                    # If the rollout failed, remove the last entries
+                                    rew_rollout.pop()
+                                    traj_rollout.pop()
+                                    snapshot_rollout.pop()
 
-                    except Exception as e:
-                        print(f"Error in rollout of task {task['Name']} sample {sample_num}")
-                        print(e)
-                        traceback.print_exc()
-                        
-                        # Save error message in log path and discard current reward code & directory
-                        with open(self.logger_path + f"{task['Name']}/sample_{sample_num}_evaluation_error_{trial_num}.txt", "w") as file:
-                            file.write(str(e))
-                        self.current_reward_code_list.pop()
-                        if os.path.exists(self.logger_path + f"{task['Name']}/sample_{sample_num}"):
-                            shutil.rmtree(self.logger_path + f"{task['Name']}/sample_{sample_num}")
-                        print("Discarded current reward code & directory. Retrying...")
-                        
-                        trial_num += 1
+                        except Exception as e:
+                            print(f"Error in rollout of task {task['Name']} sample {sample_num}")
+                            print(e)
+                            traceback.print_exc()
+                            
+                            # Save error message in log path and discard current reward code & directory
+                            with open(self.logger_path + f"{task['Name']}/sample_{sample_num}_evaluation_error_{trial_num}.txt", "w") as file:
+                                file.write(str(e))
+                            self.current_reward_code_list.pop()
+                            if os.path.exists(self.logger_path + f"{task['Name']}/sample_{sample_num}"):
+                                shutil.rmtree(self.logger_path + f"{task['Name']}/sample_{sample_num}")
+                            print("Discarded current reward code & directory. Retrying...")
+                            
+                            break # If evaluation fails, break the loop and retry training
 
-                    # Check if succeeded in current task
-                    decision = self.evaluate_subtask(curriculum_idx, sample_num, snapshot_rollout[-1], traj_rollout[-1])
-                    if decision is not None and decision != -1:
-                        evaluation_decision = evaluation_decision or decision
-                        if evaluation_decision is True:
-                            break # Task is successfully trained, break the loop
-
+                    if task_success or rollout == N_ROLLOUTS - 1:
+                        break # If task is successfully trained, break the loop
 
                 if evaluation_decision == -1:
                     print(f"Failed to evaluate task {task['Name']} sample {sample_num}. Terminating.")
                     self.terminate_training = True
                     break
 
-                elif evaluation_decision['decision']: # Success
+                elif task_success: # Success
                     print(f"Successfully trained task {task['Name']} sample {sample_num}.")
         
                     # Update best reward 
@@ -192,29 +202,29 @@ class Curriculum_Module:
         if curriculum_idx == 0:
             print(f"Training task {task['Name']} sample {sample_num} from scratch")
             process = subprocess.run(["python", 
-                                        "/home/kang/multiagent-quadruped-environment/openrl_ws/curriculum_train.py",
+                                        "/home/kang/mqe-curriculum/openrl_ws/curriculum_train.py",
                                         "--run_date", self.experiment_time,
                                         "--curriculum_task", task['Name'], 
                                         "--sample_idx", str(sample_num),
                                         "--training_iter", str(iter_per_task),
                                         ],
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        text=True
+                                        # stdout=subprocess.PIPE,
+                                        # stderr=subprocess.PIPE,
+                                        # text=True
                                         )
             # print(process.stdout)
             # print(process.stderr)
             # Save stdout and stderr to log file
-            with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/training_log.txt", "w") as file:
-                file.write(process.stdout)
-                file.write(process.stderr)
+            # with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/training_log.txt", "w") as file:
+            #     file.write(process.stdout)
+            #     file.write(process.stderr)
 
         else:
             previous_task = self.curriculum[curriculum_idx - 1]
             load_sample_num = self.best_model_idx_list[curriculum_idx - 1]
             print(f"Training task {task['Name']} sample {sample_num} from previous task {previous_task['Name']} sample {load_sample_num}")
             process = subprocess.run(["python", 
-                                        "/home/kang/multiagent-quadruped-environment/openrl_ws/curriculum_train.py", 
+                                        "/home/kang/mqe-curriculum/openrl_ws/curriculum_train.py", 
                                         "--run_date", self.experiment_time,
                                         "--curriculum_task", task['Name'], 
                                         "--sample_idx", str(sample_num),
@@ -223,15 +233,15 @@ class Curriculum_Module:
                                         "--load_sample_idx", str(load_sample_num),
                                         "--training_iter", str(iter_per_task),
                                         ],
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        text=True
+                                        # stdout=subprocess.PIPE,
+                                        # stderr=subprocess.PIPE,
+                                        # text=True
                                         )
             # print(process.stdout)
             # print(process.stderr)
-            with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/training_log.txt", "w") as file:
-                file.write(process.stdout)
-                file.write(process.stderr)
+            # with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/training_log.txt", "w") as file:
+            #     file.write(process.stdout)
+            #     file.write(process.stderr)
 
 
     def generate_reward_code(self, curriculum_idx, sample_num, failure_reasons):
@@ -277,20 +287,20 @@ class Curriculum_Module:
         print(f"Collecting evaluation data for task {task['Name']} sample {sample_num}") 
         # Save the trajectory analysis in the log path        
         process = subprocess.run(["python",
-                                    "/home/kang/multiagent-quadruped-environment/openrl_ws/curriculum_eval.py",
+                                    "/home/kang/mqe-curriculum/openrl_ws/curriculum_eval.py",
                                     "--run_date", self.experiment_time,
                                     "--curriculum_task", task['Name'],
                                     "--sample_idx", str(sample_num),
                                     "--seed", str(rollout),
                                     ],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
-                                    text=True
+                                    # stdout=subprocess.PIPE,
+                                    # stderr=subprocess.PIPE,
+                                    # text=True
                                     )
         # Save stdout and stderr to log file
-        with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/evaluation_log.txt", "w") as file:
-            file.write(process.stdout)
-            file.write(process.stderr)
+        # with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/evaluation_log.txt", "w") as file:
+        #     file.write(process.stdout)
+        #     file.write(process.stderr)
         # Load the trajectory and reward data
         save_path = os.path.join("logs", self.experiment_time, task['Name'], f"sample_{sample_num}", "model")
         with open(os.path.join(save_path, "traj_dict.pkl"), 'rb') as f:

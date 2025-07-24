@@ -29,12 +29,13 @@ class Go1GateWrapper(EmptyWrapper):
         self.gate_distance = self.gate_pos.reshape(-1, 2)[:, 0]
 
         self.target_pos = self.gate_pos.clone()
-        # self.target_pos[:, :, 0] += 1.0
         # self.target_pos = torch.zeros_like(self.gate_pos, dtype=self.gate_pos.dtype, device=self.gate_pos.device)
         self.target_pos[:, :, 0] = self.BarrierTrack_kwargs["init"]["block_length"] + self.BarrierTrack_kwargs["gate"]["block_length"] + self.BarrierTrack_kwargs["plane"]["block_length"] / 2
         # self.target_pos[:, 0, 1] = self.BarrierTrack_kwargs["track_width"] / 4
         # self.target_pos[:, 1, 1] = - self.BarrierTrack_kwargs["track_width"] / 4
         self.target_pos = self.target_pos.reshape(-1, 2)
+
+        self.progress = torch.zeros((self.num_envs, self.num_agents), device=self.env.device)
 
         return
 
@@ -98,6 +99,7 @@ class Go1GateWrapper(EmptyWrapper):
 
         progress = (self.last_distance_to_gate - distance_to_gate) * 10.0
         progress[self.env.reset_ids] = 0
+        self.progress = progress
 
         self.last_distance_to_gate = copy(distance_to_gate)
 
@@ -130,7 +132,7 @@ class Go1GateWrapper(EmptyWrapper):
         return gate_frame
 
     def _contact_punishment(self, state, action):
-        collide_reward = torch.tensor(self.env.collide_buf.clone(), dtype=torch.float)
+        collide_reward = self.env.collide_buf.clone().detach().float()
         return collide_reward.unsqueeze(1).repeat(1, self.num_agents)
 
     def _agent_distance(self, state, action):
@@ -140,8 +142,7 @@ class Go1GateWrapper(EmptyWrapper):
         agent_1_pos = base_pos[:, 1, :2]
         distance = torch.norm(agent_0_pos - agent_1_pos, p=2, dim=-1)
 
-        # Reshape to match the number of agents
-        distance = distance.unsqueeze(1)
+        distance = distance.unsqueeze(1).repeat(1, self.num_agents)
         return distance
     
     def _command_lin_vel_y(self, state, action):
@@ -189,12 +190,11 @@ class Go1GateWrapper(EmptyWrapper):
         agent_0_success_rate = success[:, 0].mean().item()
         agent_1_success_rate = success[:, 1].mean().item()
 
-        progress = self._progress_to_gate(state, action)
-        agent_0_progress = progress[:, 0].mean().item()
-        agent_1_progress = progress[:, 1].mean().item()
+        agent_0_progress = self.progress[:, 0].mean().item()
+        agent_1_progress = self.progress[:, 1].mean().item()
 
-        agent_collision = self._contact_punishment(state, action)
-        collision = agent_collision.mean().item()
+        agent_distance = self._agent_distance(state, action)
+        collision = agent_distance[agent_distance < 0.25].mean().item() if agent_distance[agent_distance < 0.25].numel() > 0 else 0.0
 
         base_contact = self._contact_punishment(state, action)
         base_contact = base_contact.mean().item()
