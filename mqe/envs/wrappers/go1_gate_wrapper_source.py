@@ -79,6 +79,11 @@ class Go1GateWrapper(EmptyWrapper):
             reward_key = f"Reward/{key}"
             self.reward_buffer[reward_key] = value
 
+        eval_dict = self._eval(global_state, action)
+        for key, value in eval_dict.items():
+            eval_key = f"Eval/{key}"
+            self.reward_buffer[eval_key] = value
+
         return obs, reward, termination, self.reward_buffer
     
     def _progress_to_gate(self, state, action):
@@ -125,7 +130,7 @@ class Go1GateWrapper(EmptyWrapper):
         return gate_frame
 
     def _contact_punishment(self, state, action):
-        collide_reward = torch.tensor(self.env.collide_buf, dtype=torch.float)
+        collide_reward = torch.tensor(self.env.collide_buf.clone(), dtype=torch.float)
         return collide_reward.unsqueeze(1).repeat(1, self.num_agents)
 
     def _agent_distance(self, state, action):
@@ -179,3 +184,29 @@ class Go1GateWrapper(EmptyWrapper):
         else:
             raise ValueError(f"Invalid reward shape: {reward.shape}. Expected (num_envs, num_agents) or (num_envs, 1).")
         
+    def _eval(self, state, action):
+        success = self._success_evaluation(state, action)
+        agent_0_success_rate = success[:, 0].mean().item()
+        agent_1_success_rate = success[:, 1].mean().item()
+
+        progress = self._progress_to_gate(state, action)
+        agent_0_progress = progress[:, 0].mean().item()
+        agent_1_progress = progress[:, 1].mean().item()
+
+        agent_collision = self._contact_punishment(state, action)
+        collision = agent_collision.mean().item()
+
+        base_contact = self._contact_punishment(state, action)
+        base_contact = base_contact.mean().item()
+
+        eval_dict = {
+            "agent_0_success_rate": agent_0_success_rate,
+            "agent_1_success_rate": agent_1_success_rate,
+            "agent_0_progress": agent_0_progress,
+            "agent_1_progress": agent_1_progress,
+            "collision": collision,
+            "base_contact": base_contact
+        }
+
+        return eval_dict
+    

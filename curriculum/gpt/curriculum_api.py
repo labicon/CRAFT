@@ -119,11 +119,6 @@ class CurriculumAPI:
         with open(self.log_path + f"{current_task['Name']}/sample_{sample_num}/" + "evaluation_user.md", "w") as file:
             file.write(evaluation_user)
 
-        # Encode snapshots
-        # encoded_image_list = []
-        # for snapshot in snapshots:
-        #     encoded_image_list.append(encode_image_from_array(snapshot))
-
         encoded_image_list = snapshots # Snapshots are already base64 encoded
 
         gpt_answer = gpt_interaction_image(self.client, GPT_VLM_MODEL, evaluation_system, evaluation_user, encoded_image_list)
