@@ -89,7 +89,7 @@ def save_images(frames, output_dir='output_images'):
         frame = frames_uint8[frame_idx]
         # Adjust frame index to account for skipped frames
         actual_frame_idx = frame_idx + skip_frames
-        output_path = os.path.join(output_dir, f'snapshot_{actual_frame_idx:04d}.png')
+        output_path = os.path.join(output_dir, f'snapshot_{i}.png')
         imageio.imwrite(output_path, frame)
 
     print(f"Successfully saved {len(selected_indices)} images to '{output_dir}'.")
