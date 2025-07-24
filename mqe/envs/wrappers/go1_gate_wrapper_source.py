@@ -96,7 +96,7 @@ class Go1GateWrapper(EmptyWrapper):
         if not hasattr(self, "last_distance_to_gate"):
             self.last_distance_to_gate = copy(distance_to_gate)
 
-        progress = (self.last_distance_to_gate - distance_to_gate) * 10.0
+        progress = (self.last_distance_to_gate - distance_to_gate) * 30.0
         progress[self.env.reset_ids] = 0
         self.progress = progress
 
@@ -109,7 +109,7 @@ class Go1GateWrapper(EmptyWrapper):
         gate_pos = state["gate_pos"]
 
         # approach reward
-        distance_to_gate = torch.norm(base_pos[:, :, :2] - gate_pos, p=2, dim=-1)
+        distance_to_gate = torch.norm(base_pos[:, :, :2] - gate_pos, p=2, dim=-1) / 2.0
         return distance_to_gate
     
     def _distance_to_target(self, state, action):
@@ -117,7 +117,7 @@ class Go1GateWrapper(EmptyWrapper):
         target_pos = state["target_pos"]
 
         # approach reward
-        distance_to_target = torch.norm(base_pos[:, :, :2] - target_pos, p=2, dim=-1)
+        distance_to_target = torch.norm(base_pos[:, :, :2] - target_pos, p=2, dim=-1) / 2.0
         return distance_to_target
     
     def _get_gate_frame(self, state, action):
@@ -130,7 +130,7 @@ class Go1GateWrapper(EmptyWrapper):
 
         return gate_frame
 
-    def _contact_punishment(self, state, action):
+    def _contact_termination(self, state, action):
         collide_reward = self.env.collide_buf.clone().detach().float()
         return collide_reward.unsqueeze(1).repeat(1, self.num_agents)
 
@@ -146,17 +146,17 @@ class Go1GateWrapper(EmptyWrapper):
     
     def _command_lin_vel_y(self, state, action):
         # command lin_vel.y punishment
-        v_y_punishment = action[:, :, 1] * 0.01
+        v_y_punishment = torch.abs(action[:, :, 1]) * 1.0
         return v_y_punishment
     
     def _command_lin_vel_x(self, state, action):
         # lin_vel.x reward
-        v_x_reward = action[:, :, 0] * 0.01
+        v_x_reward = torch.abs(action[:, :, 0]) * 0.5
         return v_x_reward
     
     def _command_value(self, state, action):
         # command value punishment
-        command_value_punishment = torch.norm(action, p=2, dim=2) * 0.01
+        command_value_punishment = self._command_lin_vel_y(state, action) + self._command_lin_vel_x(state, action)
         return command_value_punishment
     
     def _success_evaluation(self, state, action):
@@ -195,7 +195,7 @@ class Go1GateWrapper(EmptyWrapper):
         agent_distance = self._agent_distance(state, action)
         collision = agent_distance[agent_distance < 0.25].mean().item() if agent_distance[agent_distance < 0.25].numel() > 0 else 0.0
 
-        base_contact = self._contact_punishment(state, action)
+        base_contact = self._contact_termination(state, action)
         base_contact = base_contact.mean().item()
 
         eval_dict = {
