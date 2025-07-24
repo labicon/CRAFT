@@ -6,7 +6,6 @@ The 'state' variable is a dictionary that contains:
 "gate_right": tensor (num_envs, num_agents, 2) for the coordinates of the gate's right edge
 "target_pos": tensor (num_envs, num_agents, 2) for the target coordinates
 "agent_pos": tensor (num_envs, num_agents, 2) for the agent's xy coordinates
-"agent_yaw": tensor (num_envs, num_agents) for the agent's yaw angle
 
 The 'action' variable is a tensor (num_envs, num_agents, 3) for (x linear velocity command, y linear velocity command, yaw angular velocity command)
 Note that the coordinates in the state are in the global frame and the coordinates of the action are in the agent's local frame.

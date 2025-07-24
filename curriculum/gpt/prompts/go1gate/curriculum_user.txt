@@ -2,9 +2,8 @@
 
 Varaibles you can use for curriculum descriptions are
 - xy position of gate center
-- xy position of target after passing the gate
+- xy position of target behind the gate
 - xy position of each agent
-- yaw angle of each agent
 - y coordinate of gate edges
 
 These are the rules that you have to consider when writing a curriculum

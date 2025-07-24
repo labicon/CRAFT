@@ -70,7 +70,6 @@ class Go1GateWrapper(EmptyWrapper):
             "gate_right": self.frame_right.reshape(self.num_envs, self.num_agents, -1),
             "target_pos": self.target_pos.reshape(self.num_envs, self.num_agents, -1),
             "agent_pos": base_info[:, :, :2],
-            "agent_yaw": base_info[:, :, 5],
         }
 
         self.reward_buffer["step count"] += 1
