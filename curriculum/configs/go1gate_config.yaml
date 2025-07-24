@@ -3,4 +3,4 @@ env_path: "/home/kang/multiagent-quadruped-environment/mqe/envs/wrappers/go1_gat
 num_reward_samples: 3
 num_reward_feedback_samples: 2 
 iter_per_task: 20000000
-line_num: 182
+line_num: 213

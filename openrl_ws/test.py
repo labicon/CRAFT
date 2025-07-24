@@ -137,7 +137,8 @@ if __name__ == "__main__":
         print("Action:", action)
         print("Target pos:", env.target_pos)
         print("Gate pos:", env.gate_pos)
-        # print("Info:", info)
+        for key, value in info[0].items():
+            print(f"{key}: {value}")
         if done[0, 0] and env.cfg.env.record_video:
             frames = env.get_complete_frames()
             video_array = np.concatenate([np.expand_dims(frame, axis=0) for frame in frames ], axis=0).swapaxes(1, 3).swapaxes(2, 3)

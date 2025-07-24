@@ -55,7 +55,7 @@ def gpt_reward(self, state, action):
 
     # Reward for using small command value - max 1.0
     command_values = self._command_value(state, action)
-    small_command_reward = 0.5 * torch.exp(-2.0 * command_values)
+    small_command_reward = 1.0 * torch.exp(-2.0 * command_values)
     small_command_reward = self._check_reward_shape(small_command_reward)
     rew_dict["small_command"] = torch.mean(small_command_reward)
 

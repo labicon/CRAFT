@@ -11,7 +11,7 @@ class Go1GateCfg(Go1Cfg):
         episode_length_s = 10 # episode length in seconds
 
     class asset(Go1Cfg.asset):
-        terminate_after_contacts_on = []
+        terminate_after_contacts_on = ["base"]
 
     class terrain(Go1Cfg.terrain):
 
