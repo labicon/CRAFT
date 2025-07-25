@@ -221,7 +221,7 @@ def get_args():
     openrl_parser = create_config_parser()
     
     custom_parameters = [
-        {"name": "--task", "type": str, "default": "go1gate", "help": "Select task via name"},
+        {"name": "--task", "type": str, "default": "go2gate", "help": "Select task via name"},
         {"name": "--algo", "type": str, "default": "ppo", "help": "Select pipeline via name"},
         {"name": "--resume", "action": "store_true", "default": False,  "help": "Resume training from a checkpoint"},
         {"name": "--run_name", "type": str,  "help": "Name of the run. Overrides config file if provided."},
