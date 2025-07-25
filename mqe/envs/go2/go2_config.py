@@ -107,8 +107,8 @@ class Go2Cfg(LeggedRobotFieldCfg):
 
     class control(LeggedRobotFieldCfg.control):
         control_type = 'C' # P: position, V: velocity, T: torques, C: command
-        stiffness = {'joint': 20.}
-        damping = {'joint': 0.5}
+        stiffness = {'joint': 25.}
+        damping = {'joint': 0.6}
         # action_scale = [0.2, 0.4, 0.4] * 4 # for walk
         action_scale = 0.25
         # for climb, leap
@@ -119,8 +119,8 @@ class Go2Cfg(LeggedRobotFieldCfg):
         decimation = 4
         hip_scale_reduction = 0.5
 
-        locomotion_policy_dir = "./mqe/utils/locomotion_checkpoints/walk_these_ways"
-        actuator_network_path = "./resources/actuator_nets"
+        locomotion_policy_dir = "./mqe/utils/locomotion_checkpoints/walk_these_ways_go2"
+        actuator_network_path = "./resources/actuator_nets_go2"
 
         class default_command:
 

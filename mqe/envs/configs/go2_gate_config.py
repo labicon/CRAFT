@@ -10,6 +10,9 @@ class Go2GateCfg(Go2Cfg):
         num_agents = 2
         episode_length_s = 30 # episode length in seconds
 
+    class asset(Go2Cfg.asset):
+        terminate_after_contacts_on = ["base", "Head_upper"]
+
     class terrain(Go2Cfg.terrain):
 
         num_rows = 1
@@ -60,13 +63,13 @@ class Go2GateCfg(Go2Cfg):
         init_state_class = Go2Cfg.init_state
         init_states = [
             init_state_class(
-                pos = [0.0, 0.0, 0.42],
+                pos = [0.0, 0.0, 0.36],
                 rot = [0.0, 0.0, 0.0, 1.0],
                 lin_vel = [0.0, 0.0, 0.0],
                 ang_vel = [0.0, 0.0, 0.0],
             ),
             init_state_class(
-                pos = [0.0, 0.0, 0.42],
+                pos = [0.0, 0.0, 0.36],
                 rot = [0.0, 0.0, 0.0, 1.0],
                 lin_vel = [0.0, 0.0, 0.0],
                 ang_vel = [0.0, 0.0, 0.0],
