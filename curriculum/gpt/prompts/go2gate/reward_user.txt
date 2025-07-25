@@ -39,15 +39,15 @@ def gpt_reward(self, state, action):
 
     # Reward for not colliding each other - max 1.0
     agent_distance = self._agent_distance(state, action)
-    distance_threshold = 0.25
+    distance_threshold = 0.5
     penalty_threshold = 1.0
-    # Give reward 1.0 if distance > 1.0, linearly interpolate between 0.25 and 0.5, otherwise 0.0
+    # Give reward 1.0 if distance > 1.0, otherwise 0.0
     safe_distance_reward = torch.zeros_like(agent_distance)
     safe_distance_reward[agent_distance >= penalty_threshold] = 1.0
     safe_distance_reward[agent_distance <= distance_threshold] = 0.0
-    # Linear interpolation for distances between thresholds
+    # Interpolation for distances between thresholds
     mask = (agent_distance > distance_threshold) & (agent_distance < penalty_threshold)
-    safe_distance_reward[mask] = (agent_distance[mask] - distance_threshold) / (penalty_threshold - distance_threshold)
+    safe_distance_reward[mask] = ((agent_distance[mask] - distance_threshold) / 0.5) ** 2
     safe_distance_reward = self._check_reward_shape(safe_distance_reward)
     # Add to your reward dictionary for logging
     rew_dict["safe_distance"] = torch.mean(safe_distance_reward)

@@ -7,5 +7,5 @@ The task is defind as success if both agent passes the gate,
 which means x coordinate of both robots should be larger than gate's x coordinate.
 When passing the gate, robot's y coordinate should be between gate left and right edge's y coordinates.
 While navigating the area, they should avoid the collision to each other. 
-If the distance between two robot is smaller than 0.25, it is defined as collision.
+If the distance between two robot is smaller than 0.5, it is defined as collision.
 Agent 0 is colored with blue and Agent 1 is colored with green.
