@@ -1,0 +1,13 @@
+Find the best experiment result for following task description in below
+
+Task Name: <<Task_Name>>
+Description: <<Task_Description>>
+Reason: <<Task_Reason>>
+
+The final goal for the two quadruped is pass the narrow gate while avoiding collision to each other,
+which means x coordinate of both robots should be larger than gate's x coordinate.
+When passing the gate, robot's y coordinate should be between gate left and right edge's y coordinates.
+While navigating the area, they should avoid the collision to each other. 
+If the distance between two robot is smaller than 0.25, it is defined as collision.
+
+Previous tasks in curriculum are

@@ -1,0 +1,35 @@
+The 'state' variable is a dictionary that contains:
+"gate_pos": tensor (num_envs, num_agents, 2) for the center coordinates of the gate
+"gate_left": tensor (num_envs, num_agents, 2) for the coordinates of the gate's left edge
+"gate_right": tensor (num_envs, num_agents, 2) for the coordinates of the gate's right edge
+"target_pos": tensor (num_envs, num_agents, 2) for the target coordinates
+"agent_pos": tensor (num_envs, num_agents, 2) for the agent's xy coordinates
+
+The 'action' variable is a tensor (num_envs, num_agents, 3) for (x linear velocity command, y linear velocity command, yaw angular velocity command)
+Note that the coordinates in the state are in the global frame and the coordinates of the action are in the agent's local frame.
+
+You can use helper functions to calculate reward.
+self._progress_to_gate(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they progressed toward the center of the gate compared to the previous step
+self._distance_to_gate(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they have to the center of the gate
+self._distance_to_target(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they have to the target position, which is behind the gate
+self._agent_distance(state, action): returns tensor (num_envs, num_agents) for each environment for the distance between agents 
+self._success_evaluation(state, action): returns tensor (num_envs, num_agents) which returns 1 if the agent passed the gate and 0 otherwise
+self._get_gate_frame(state, action): returns tensor (num_envs, num_agents, 2) for y coordinates of gate edges
+self._command_value(state, action): returns tensor (num_envs, num_agents) for normalized command value
+self._command_lin_vel_x(state, action): returns tensor (num_envs, num_agents) for x direction command value
+self._command_lin_vel_y(state, action): returns tensor (num_envs, num_agents) for y direction command value
+self._check_reward_shape(reward): returns reshaped reward tensor to avoid index error
+
+Current task is:
+<<Current_Task>>
+Former tasks that RL succeeded in learning:
+<<Former_Tasks>>
+
+Reward function that was tried:
+<<Reward_Function>>
+
+Advice on how to improve the reward function:
+<<Advice>>
+
+Do not deviate from the reward structure given in the example.
+Note that the advice might not account for what information it can use in the reward function. So not all the advice might be applicable.

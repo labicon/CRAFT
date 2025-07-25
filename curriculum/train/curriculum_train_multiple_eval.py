@@ -15,7 +15,7 @@ MAX_ATTEMPT = 10
 class Curriculum_Module:
     def __init__(self, env_path, logger_path, run_datetime, cfg, seed=0):
         self.env_path = env_path
-        self.prompt_path = "/home/kang/multiagent-quadruped-environment/curriculum/gpt/prompts/go1gate"
+        self.prompt_path = "/home/kang/multiagent-quadruped-environment/curriculum/gpt/prompts/go2gate"
         self.gpt_api = CurriculumAPI(self.prompt_path, logger_path, 
                                      line_num=cfg['line_num'])
         self.logger_path = logger_path
