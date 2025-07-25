@@ -193,7 +193,7 @@ class Go2GateWrapper(EmptyWrapper):
         agent_1_progress = self.progress[:, 1].mean().item()
 
         agent_distance = self._agent_distance(state, action)
-        collision = agent_distance[agent_distance < 0.25].mean().item() if agent_distance[agent_distance < 0.25].numel() > 0 else 0.0
+        collision = agent_distance[agent_distance < 0.5].mean().item() if agent_distance[agent_distance < 0.5].numel() > 0 else 0.0
 
         base_contact = self._contact_termination(state, action)
         base_contact = base_contact.mean().item()
