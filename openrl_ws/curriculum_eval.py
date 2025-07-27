@@ -1,5 +1,5 @@
 from openrl_ws.utils import make_env
-# from openrl_ws.test import save_gif
+# from openrl_ws.test import save_video
 from mqe.envs.utils import custom_cfg
 
 from openrl.modules.common import PPONet
@@ -12,7 +12,7 @@ import numpy as np
 
 def eval(load_dir, seed=0):
     from openrl_ws.utils import get_args
-    from openrl_ws.test import save_gif, save_images
+    from openrl_ws.test import save_video, save_images
     args = get_args()
     args.headless = False
     args.record_video = True
@@ -51,7 +51,7 @@ def eval(load_dir, seed=0):
             frames = env.get_complete_frames()
             video_array = np.concatenate([np.expand_dims(frame, axis=0) for frame in frames ], axis=0).swapaxes(1, 3).swapaxes(2, 3)
             print(video_array.shape)
-            save_gif(video_array, 1 / env.dt * 5, output_path=os.path.join(load_dir, "output_animation.gif"))
+            save_video(video_array, 50, output_path=os.path.join(load_dir, f"rollout_{seed}.mp4"))
             save_images(video_array, output_dir=os.path.join(load_dir, "images"))
 
             break
