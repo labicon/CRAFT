@@ -12,37 +12,46 @@ import numpy as np
 import os
 
 def save_video(frames, fps, output_path='output_video.mp4'):
-    # Assuming your ndarray is named 'frames'
-    # frames.shape = (134, 4, 240, 360)
+    # Get the shape info for debugging
+    height, width = frames.shape[2], frames.shape[3]
+    
+    # Process frames for video creation
+    frames = frames[:, :3, :, :]  # Take only RGB channels
+    frames = np.transpose(frames, (0, 2, 3, 1))  # Convert to (N, H, W, C)
 
-    # Define the video codec and frame rate
-    codec = cv2.VideoWriter_fourcc(*'mp4v')
+    # Debug: Print frame info
+    print(f"Frame shape: {frames.shape}")
+    print(f"Frame dtype: {frames.dtype}")
+    print(f"Frame min/max: {frames.min():.3f}/{frames.max():.3f}")
 
-    # Get the shape of a single frame
-    frame_shape = frames.shape[2], frames.shape[3]
-
-    frames = frames[:, :3, :, :]
-    frames = np.transpose(frames, (0, 2, 3, 1))
-
-    # Create a VideoWriter object
-    out = cv2.VideoWriter(output_path, codec, fps, frame_shape)
-
-    # Iterate through each frame
+    # Prepare frames for imageio
+    imageio_frames = []
     for i in range(len(frames)):
-        # Convert frame to uint8 (assuming it's in range 0-255)
         frame = frames[i]
-        frame = frame.astype(np.uint8)
         
-        # Transpose frame from (4, 240, 360) to (240, 360, 3) if needed
-        # frame = np.transpose(frame, (1, 2, 0))
+        # Ensure frame values are in 0-255 range
+        if frame.max() <= 1.0:
+            frame = (frame * 255).astype(np.uint8)
+        else:
+            frame = frame.astype(np.uint8)
         
-        # Write the frame to the video file
-        out.write(frame)
-
-    # Release the VideoWriter object
-    out.release()
-
-    print("Video created successfully.")
+        # Ensure frame has exactly 3 channels
+        if frame.shape[2] == 4:
+            frame = frame[:, :, :3]
+        
+        imageio_frames.append(frame)
+    
+    try:
+        # Save as MP4 using imageio
+        imageio.mimsave(output_path, imageio_frames, fps=fps, codec='libx264')
+        print(f"Video created successfully at '{output_path}'")
+    except Exception as e:
+        print(f"Video creation failed: {e}")
+        # Fallback to saving as image sequence
+        print("Saving as image sequence instead...")
+        # Convert back to original format for save_images
+        original_frames = np.transpose(np.array(imageio_frames), (0, 3, 1, 2))
+        save_images(original_frames, output_dir='failed_video_frames')
 
 def save_gif(frames, fps, output_path='output_animation.gif'):
 
@@ -128,20 +137,28 @@ if __name__ == "__main__":
 
     # env.start_recording()
     agent.set_env(env)  # The agent requires an interactive environment.
-    obs = env.reset()  # Initialize the environment to obtain initial observations and environmental information.
+    seed = np.random.randint(0, 10000)
+    obs = env.reset(seed=seed)  # Initialize the environment to obtain initial observations and environmental information.
     while True:
         action, _ = agent.act(obs)  # The agent predicts the next action based on environmental observations.
         # The environment takes one step according to the action, obtains the next observation, reward, whether it ends and environmental information.
         obs, r, done, info = env.step(action)
-        print("Obs:", obs)
-        print("Action:", action)
-        print("Target pos:", env.target_pos)
-        print("Gate pos:", env.gate_pos)
-        for key, value in info[0].items():
-            print(f"{key}: {value}")
+        # print("Obs:", obs)
+        # print("Action:", action)
+        # print("Target pos:", env.target_pos)
+        # print("Gate pos:", env.gate_pos)
+        print("agent distance: ", np.linalg.norm(obs[0, 0, 2:4] - obs[0, 1, 2:4]))
+        # for key, value in info[0].items():
+        #     print(f"{key}: {value}")
+        if done[0, 0]:
+            if np.linalg.norm(obs[0, 0, 2:4] - obs[0, 1, 2:4]) < 0.51:
+                print("Terminated due to close proximity")
+            else:
+                print("Terminated due to other reasons")
         if done[0, 0] and env.cfg.env.record_video:
             frames = env.get_complete_frames()
             video_array = np.concatenate([np.expand_dims(frame, axis=0) for frame in frames ], axis=0).swapaxes(1, 3).swapaxes(2, 3)
             # print(video_array.shape)
-            save_gif(video_array, 200)
+            # save_gif(video_array, 200)
+            save_video(video_array, 50)
             save_images(video_array)
