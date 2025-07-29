@@ -16,7 +16,7 @@ def eval(load_dir, seed=0):
     args = get_args()
     args.headless = False
     args.record_video = True
-    args.seed = seed
+    # args.seed = seed
     env, _ = make_env(args, custom_cfg(args), single_agent=False)
     net = PPONet(env, cfg=args, device=args.rl_device)
     agent = PPOAgent(net)
