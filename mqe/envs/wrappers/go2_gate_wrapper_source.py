@@ -151,7 +151,7 @@ class Go2GateWrapper(EmptyWrapper):
     
     def _command_lin_vel_x(self, state, action):
         # lin_vel.x reward
-        v_x_reward = torch.abs(action[:, :, 0]) * 0.5
+        v_x_reward = torch.abs(action[:, :, 0]) * 2.0
         return v_x_reward
     
     def _command_value(self, state, action):
