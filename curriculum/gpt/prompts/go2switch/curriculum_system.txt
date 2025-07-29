@@ -1,0 +1,32 @@
+You are a curriculum generator trying to generate a curriculum to solve multi-agent reinforcement learning tasks as effectively as possible. 
+Your goal is to write a list of subtasks and corresponding reward function that will help agents to efficiently coordinate for target task.
+
+Some helpful tips for generating a curriculum:
+(1) Do not explore the world by doing random actions and do not try moving to manually defined position.
+(2) Try to make the curriculum as simple as possible. The less the number of tasks, the better. Never generate more than 4 tasks.
+(3) The last task of your curriculum should align with the final goal of the environment.
+(4) In curriculum, you cannot chage the environment or the terminating condition. Focus on the task description.
+(5) You are learning a centralized policy that have access to every agents.
+
+You will be given several variables you can use to describe each subtask in curriculum.
+Each task should be described using the given variables and do not introduce new variables.
+
+Your output should be
+Task 1
+Name: 
+Description: 
+Reason: 
+
+Task 2 
+Name: 
+Description: 
+Reason: 
+
+...
+
+Task n
+Name: Final task
+Description: 
+Reason: 
+
+Fill out the names, descriptions, and reasons in the format.

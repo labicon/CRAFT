@@ -6,6 +6,8 @@ from mqe.envs.npc.go1_sheep import Go1Sheep
 from mqe.envs.npc.go1_object import Go1Object
 from mqe.envs.npc.go1_football_defender import Go1FootballDefender
 
+from mqe.envs.npc.go2_object import Go2Object
+
 # configs
 from mqe.envs.field.legged_robot_field_config import LeggedRobotFieldCfg
 from mqe.envs.configs.go1_plane_config import Go1PlaneCfg
@@ -21,6 +23,7 @@ from mqe.envs.configs.go1_rotation_config import Go1RotationCfg
 from mqe.envs.configs.go1_bridge_config import Go1BridgeCfg
 
 from mqe.envs.configs.go2_gate_config import Go2GateCfg
+from mqe.envs.configs.go2_switch_config import Go2SwitchCfg
 
 # wrappers
 from mqe.envs.wrappers.empty_wrapper import EmptyWrapper
@@ -35,6 +38,7 @@ from mqe.envs.wrappers.go1_rotation_wrapper import Go1RotationWrapper
 from mqe.envs.wrappers.go1_bridge_wrapper import Go1BridgeWrapper
 
 from mqe.envs.wrappers.go2_gate_wrapper import Go2GateWrapper
+from mqe.envs.wrappers.go2_switch_wrapper import Go2SwitchWrapper
 
 from mqe.utils import get_args, make_env
 
@@ -110,6 +114,11 @@ ENV_DICT = {
         "class": Go2,
         "config": Go2GateCfg,
         "wrapper": Go2GateWrapper
+    },
+    "go2switch": {
+        "class": Go2Object,
+        "config": Go2SwitchCfg,
+        "wrapper": Go2SwitchWrapper
     }
 }
 

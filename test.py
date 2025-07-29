@@ -40,11 +40,13 @@ if __name__ == '__main__':
     # task_name = "go1sheep-hard"
     # task_name = "go1seesaw"
     # task_name = "go1door"
-    task_name = "go1pushbox"
+    # task_name = "go1pushbox"
     # task_name = "go1tug"
     # task_name = "go1wrestling"
     # task_name = "go1rotationdoor"
     # task_name = "go1bridge"
+
+    task_name = "go2switch"
 
     args.num_envs = 1
     args.headless = False
