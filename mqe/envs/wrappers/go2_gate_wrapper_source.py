@@ -9,7 +9,7 @@ class Go2GateWrapper(EmptyWrapper):
     def __init__(self, env):
         super().__init__(env)
 
-        self.observation_space = spaces.Box(low=-float('inf'), high=float('inf'), shape=(8,), dtype=float)
+        self.observation_space = spaces.Box(low=-float('inf'), high=float('inf'), shape=(14 + self.num_agents,), dtype=float)
         self.action_space = spaces.Box(low=-1, high=1, shape=(3,), dtype=float)
         self.action_scale = torch.tensor([[[2, 0.5, 0.5],],], device="cuda").repeat(self.num_envs, self.num_agents, 1)
 
@@ -45,10 +45,10 @@ class Go2GateWrapper(EmptyWrapper):
         if getattr(self, "gate_pos", None) is None:
             self._init_extras(obs_buf)
 
-        base_pos = obs_buf.base_pos[:, :2]
-        base_rpy = obs_buf.base_rpy[:, 2].unsqueeze(1)
+        base_pos = obs_buf.base_pos
+        base_rpy = obs_buf.base_rpy
         base_info = torch.cat([base_pos, base_rpy], dim=1).reshape([self.env.num_envs, self.env.num_agents, -1])
-        obs = torch.cat([self.obs_ids, base_info, torch.flip(base_info, [1])], dim=2)
+        obs = torch.cat([self.obs_ids, base_info, torch.flip(base_info, [1]), self.gate_pos], dim=2)
 
         return obs
 
@@ -59,10 +59,10 @@ class Go2GateWrapper(EmptyWrapper):
         if getattr(self, "gate_pos", None) is None:
             self._init_extras(obs_buf)
 
-        base_pos = obs_buf.base_pos[:, :2]
-        base_rpy = obs_buf.base_rpy[:, 2].unsqueeze(1)
+        base_pos = obs_buf.base_pos
+        base_rpy = obs_buf.base_rpy
         base_info = torch.cat([base_pos, base_rpy], dim=1).reshape([self.env.num_envs, self.env.num_agents, -1])
-        obs = torch.cat([self.obs_ids, base_info, torch.flip(base_info, [1])], dim=2)
+        obs = torch.cat([self.obs_ids, base_info, torch.flip(base_info, [1]), self.gate_pos], dim=2)
 
         global_state = {
             "gate_pos": self.gate_pos.reshape(self.num_envs, self.num_agents, -1),
