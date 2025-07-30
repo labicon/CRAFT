@@ -15,7 +15,7 @@ def train(args):
     # cfg = cfg_parser.parse_args()
 
     start_time = datetime.now()
-    start_time_str = start_time.strftime("%m/%d/%Y-%H:%M:%S")
+    start_time_str = start_time.strftime("%m-%d_%H-%M")
 
     if args.algo == "sppo" or args.algo == "dppo":
         single_agent = True
@@ -24,11 +24,19 @@ def train(args):
     
     env, env_cfg = make_env(args, custom_cfg(args), single_agent)
     
-    args.config = "./openrl_ws/cfgs/ppo.yaml"
+    # args.config = "./openrl_ws/cfgs/ppo.yaml"
+    args.lr = 7e-4
+    args.critic_lr = 7e-4
+    args.log_interval = 5
+    # args.use_recurrent_policy = True
+    args.use_joint_action_loss = False
+    args.use_valuenorm = True
+    args.use_adv_normalize = True
+    args.entropy_coef = 0.0001
     
     dir_name = "./checkpoints/" + args.task + start_time_str
     callback = CheckpointCallback(
-        save_freq=args.train_timesteps // 50,
+        save_freq=5000,
         save_path=dir_name)
     
     if "po" in args.algo:
