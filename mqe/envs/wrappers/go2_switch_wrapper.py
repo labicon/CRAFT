@@ -12,6 +12,7 @@ class Go2SwitchWrapper(EmptyWrapper):
         self.observation_space = spaces.Box(low=-float('inf'), high=float('inf'), shape=(12,), dtype=float)
         self.action_space = spaces.Box(low=-1, high=1, shape=(3,), dtype=float)
         self.action_scale = torch.tensor([[[2, 0.5, 0.5],],], device="cuda").repeat(self.num_envs, self.num_agents, 1)
+        self.num_obstacles = 0
 
         self.reward_buffer = {
             "target reward": 0,
@@ -21,7 +22,7 @@ class Go2SwitchWrapper(EmptyWrapper):
         }
 
     def _init_extras(self, obs):
-        self.target_pos = self.root_states_npc[:, :3].reshape([self.env.num_envs, self.env.num_agents, -1]) - \
+        self.target_pos = self.root_states_npc[:, :3].reshape([self.env.num_envs, self.env.num_npcs+self.num_obstacles, -1])[:, :self.env.num_npcs, :] - \
             self.env.env_origins.reshape([self.env.num_envs, 1, -1]).repeat([1, self.env.num_agents, 1])
         self.target_pos = self.target_pos[:, :, :2]
         self.center_pos = self.target_pos[:, 0, :2].clone() + self.target_pos[:, 1, :2].clone()

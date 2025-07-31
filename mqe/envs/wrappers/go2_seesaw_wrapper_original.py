@@ -5,7 +5,7 @@ import torch
 from copy import copy
 from mqe.envs.wrappers.empty_wrapper import EmptyWrapper
 
-class Go1SeesawWrapper(EmptyWrapper):
+class Go2SeesawWrapper(EmptyWrapper):
     def __init__(self, env):
         super().__init__(env)
 

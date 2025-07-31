@@ -23,7 +23,7 @@ from mqe.envs.configs.go1_rotation_config import Go1RotationCfg
 from mqe.envs.configs.go1_bridge_config import Go1BridgeCfg
 
 from mqe.envs.configs.go2_gate_config import Go2GateCfg
-from mqe.envs.configs.go2_switch_config import Go2SwitchCfg
+from mqe.envs.configs.go2_seesaw_config import Go2SeesawCfg
 
 # wrappers
 from mqe.envs.wrappers.empty_wrapper import EmptyWrapper
@@ -38,7 +38,7 @@ from mqe.envs.wrappers.go1_rotation_wrapper import Go1RotationWrapper
 from mqe.envs.wrappers.go1_bridge_wrapper import Go1BridgeWrapper
 
 from mqe.envs.wrappers.go2_gate_wrapper import Go2GateWrapper
-from mqe.envs.wrappers.go2_switch_wrapper import Go2SwitchWrapper
+from mqe.envs.wrappers.go2_seesaw_wrapper import Go2SeesawWrapper
 
 from mqe.utils import get_args, make_env
 
@@ -115,10 +115,10 @@ ENV_DICT = {
         "config": Go2GateCfg,
         "wrapper": Go2GateWrapper
     },
-    "go2switch": {
+    "go2seesaw": {
         "class": Go2Object,
-        "config": Go2SwitchCfg,
-        "wrapper": Go2SwitchWrapper
+        "config": Go2SeesawCfg,
+        "wrapper": Go2SeesawWrapper
     }
 }
 
