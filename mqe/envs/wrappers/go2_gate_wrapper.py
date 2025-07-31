@@ -58,7 +58,7 @@ class Go2GateWrapper(EmptyWrapper):
 
         if getattr(self, "gate_pos", None) is None:
             self._init_extras(obs_buf)
-        
+
         base_pos = obs_buf.base_pos
         base_rpy = obs_buf.base_rpy
         base_info = torch.cat([base_pos, base_rpy], dim=1).reshape([self.env.num_envs, self.env.num_agents, -1])
@@ -151,7 +151,7 @@ class Go2GateWrapper(EmptyWrapper):
     
     def _command_lin_vel_x(self, state, action):
         # lin_vel.x reward
-        v_x_reward = torch.abs(action[:, :, 0]) * 0.5
+        v_x_reward = torch.abs(action[:, :, 0]) * 2.0
         return v_x_reward
     
     def _command_value(self, state, action):
@@ -193,7 +193,7 @@ class Go2GateWrapper(EmptyWrapper):
         agent_1_progress = self.progress[:, 1].mean().item()
 
         agent_distance = self._agent_distance(state, action)
-        collision = agent_distance[agent_distance < 0.25].mean().item() if agent_distance[agent_distance < 0.25].numel() > 0 else 0.0
+        collision = agent_distance[agent_distance < 0.5].mean().item() if agent_distance[agent_distance < 0.5].numel() > 0 else 0.0
 
         base_contact = self._contact_termination(state, action)
         base_contact = base_contact.mean().item()
@@ -211,59 +211,51 @@ class Go2GateWrapper(EmptyWrapper):
     
 
     def gpt_reward(self, state, action):
-
         reward = torch.zeros((self.num_envs, self.num_agents), device=self.env.device)
         rew_dict = {}
-        max_reward = 25.0
+        max_reward = 40.0
 
-        # Reward for progressing towards the gate - max 3.0
-        progress_reward = 3.0 * self._progress_to_gate(state, action)
-        # Check reward shape
-        progress_reward = self._check_reward_shape(progress_reward)
-        rew_dict["agent_0_progress"] = torch.mean(progress_reward[:, 0])
-        rew_dict["agent_1_progress"] = torch.mean(progress_reward[:, 1])
+        # 1. High reward for successful navigation through the gate to the target with proper coordination
+        success = self._success_evaluation(state, action).float()
+        full_success_reward = 10.0 * success
+        full_success_reward = self._check_reward_shape(full_success_reward)
+        rew_dict["full_success"] = torch.mean(full_success_reward)
 
-        # Reward for not colliding with each other - max 2.0
-        agent_distance = self._agent_distance(state, action)
-        distance_threshold = 0.25
-        penalty_threshold = 0.5
-        safe_distance_reward = torch.zeros_like(agent_distance)
-        safe_distance_reward[agent_distance >= penalty_threshold] = 2.0
-        safe_distance_reward[agent_distance <= distance_threshold] = 0.0
-        mask = (agent_distance > distance_threshold) & (agent_distance < penalty_threshold)
-        safe_distance_reward[mask] = (agent_distance[mask] - distance_threshold) / (penalty_threshold - distance_threshold) * 2.0
-        safe_distance_reward = self._check_reward_shape(safe_distance_reward)
-        rew_dict["safe_distance"] = torch.mean(safe_distance_reward)
-
-        # Reward for maintaining small command values - max 1.0
-        command_values = self._command_value(state, action)
-        small_command_reward = 1.0 * torch.exp(-2.0 * command_values)
-        small_command_reward = self._check_reward_shape(small_command_reward)
-        rew_dict["small_command"] = torch.mean(small_command_reward)
-
-        # Reward for sequential success - high weight of 10.0
-        success = self._success_evaluation(state, action)
-        sequential_success_reward = 10.0 * success.float()
-        sequential_success_reward = self._check_reward_shape(sequential_success_reward)
-        rew_dict["agent_0_sequential_success"] = torch.mean(sequential_success_reward[:, 0])
-        rew_dict["agent_1_sequential_success"] = torch.mean(sequential_success_reward[:, 1])
-
-        # Reward to ensure one agent pauses for sequential passing - max 5.0
-        # Here we reward agents that don't pass the gate at the same time
-        only_one_agent_success = torch.logical_or(success[:,0] > success[:,1], success[:,1] > success[:,0]).float()
-        only_one_agent_reward = 5.0 * only_one_agent_success
-        only_one_agent_reward = self._check_reward_shape(only_one_agent_reward)
-        rew_dict["sequential_coordination"] = torch.mean(only_one_agent_reward)
-
-        # Calculate other rewards combined
-        other_rewards = progress_reward + safe_distance_reward + small_command_reward + sequential_success_reward + only_one_agent_reward
-
-        # Reward for getting agent pairs to coordinate properly to pass the gate
+        # 2. Bonus reward for both agents achieving the goal
         both_agents_success = torch.all(success > 0, dim=1, keepdim=True).float()
-        both_agents_success = self._check_reward_shape(both_agents_success)
-        reward = torch.where(both_agents_success > 0.5, max_reward, other_rewards)
+        both_agents_success_reward = 10.0 * both_agents_success
+        both_agents_success_reward = self._check_reward_shape(both_agents_success_reward)
+        rew_dict["both_success"] = torch.mean(both_agents_success_reward)
 
-        # Normalize the reward
+        # 3. Reshaped reward for reducing distance to the target
+        distance_to_target = self._distance_to_target(state, action)
+        distance_reward = 10.0 * torch.exp(-0.1 * distance_to_target)
+        distance_reward = self._check_reward_shape(distance_reward)
+        rew_dict["distance_reward"] = torch.mean(distance_reward)
+
+        # 4. Y-alignment inside the gate
+        gate_center_y = (state["gate_left"][..., 1] + state["gate_right"][..., 1]) / 2
+        y_alignment = torch.exp(-0.5 * (state["agent_pos"][..., 1] - gate_center_y) ** 2)
+        y_alignment_reward = 5.0 * y_alignment
+        y_alignment_reward = self._check_reward_shape(y_alignment_reward)
+        rew_dict["y_alignment"] = torch.mean(y_alignment_reward)
+
+        # 5. Intermediate "gate-crossing" reward gated on correct y
+        gate_crossing_reward = torch.zeros_like(reward)
+        gate_half_height = torch.abs(state["gate_right"][..., 1] - gate_center_y) / 2
+        within_gate_y = torch.abs(state["agent_pos"][..., 1] - gate_center_y) <= gate_half_height
+
+        gate_crossing_point = state["gate_pos"].clone()
+        gate_crossing_point[..., 0] += 3.55
+        distance_to_gate_crossing = torch.linalg.norm(state["agent_pos"] - gate_crossing_point, dim=-1)
+        gate_crossing_reward[within_gate_y] = 5.0 * torch.exp(-0.1 * distance_to_gate_crossing)[within_gate_y]
+        gate_crossing_reward = self._check_reward_shape(gate_crossing_reward)
+        rew_dict["gate_crossing"] = torch.mean(gate_crossing_reward)
+
+        # Total reward is combined from all the components
+        reward = full_success_reward + both_agents_success_reward + distance_reward + y_alignment_reward + gate_crossing_reward
+
+        # Normalize the reward to within [0, 1]
         reward = self._check_reward_shape(reward)
         reward *= 1 / max_reward
 

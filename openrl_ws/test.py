@@ -147,7 +147,6 @@ if __name__ == "__main__":
         # print("Action:", action)
         # print("Target pos:", env.target_pos)
         # print("Gate pos:", env.gate_pos)
-        print("agent distance: ", np.linalg.norm(obs[0, 0, 2:4] - obs[0, 1, 2:4]))
         # for key, value in info[0].items():
         #     print(f"{key}: {value}")
         if done[0, 0]:

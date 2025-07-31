@@ -39,7 +39,7 @@ class Go2GateCfg(Go2Cfg):
                 width = 0.8,
                 depth = 0.1, # size along the forward axis
                 offset = (0, 0),
-                random = (0.5, 0.5),
+                random = (0.0, 0.0),
             ),
             plane = dict(
                 block_length = 1.0,
