@@ -13,6 +13,7 @@ class Go2SeesawCfg(Go2Cfg):
         episode_length_s = 10 # episode length in seconds
 
     class asset(Go2Cfg.asset):
+        terminate_after_contacts_on = []
         file_npc = "{LEGGED_GYM_ROOT_DIR}/resources/objects/seesaw.urdf"
         name_npc = "seesaw"
         npc_collision = True

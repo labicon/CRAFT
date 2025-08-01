@@ -28,26 +28,26 @@ def gpt_reward(self, state, action):
 
     reward = torch.zeros((self.num_envs, self.num_agents), device=self.env.device)
     rew_dict = {}
-    max_reward = 15.0
+    max_reward = 12.0
 
-    # Reward for getting closer to the gate - max 3.0
-    progress_reward = 3.0 * self._progress_to_gate(state, action)
+    # Reward for getting closer to the gate - max 1.0
+    progress_reward = 1.0 * self._progress_to_gate(state, action)
     # Check reward shape
     progress_reward = self._check_reward_shape(progress_reward)
     rew_dict["agent_0_progress"] = torch.mean(progress_reward[:, 0])
     rew_dict["agent_1_progress"] = torch.mean(progress_reward[:, 1])
 
-    # Reward for not colliding each other - max 1.0
+    # Reward for not colliding each other - max 5.0
     agent_distance = self._agent_distance(state, action)
     distance_threshold = 0.5
     penalty_threshold = 1.0
-    # Give reward 1.0 if distance > 1.0, otherwise 0.0
+    # Give reward 5.0 if distance > 1.0, otherwise 0.0
     safe_distance_reward = torch.zeros_like(agent_distance)
-    safe_distance_reward[agent_distance >= penalty_threshold] = 1.0
+    safe_distance_reward[agent_distance >= penalty_threshold] = 5.0
     safe_distance_reward[agent_distance <= distance_threshold] = 0.0
     # Interpolation for distances between thresholds
     mask = (agent_distance > distance_threshold) & (agent_distance < penalty_threshold)
-    safe_distance_reward[mask] = ((agent_distance[mask] - distance_threshold) / 0.5) ** 2
+    safe_distance_reward[mask] = 5.0 * ((agent_distance[mask] - distance_threshold) / (penalty_threshold - distance_threshold)) ** 2
     safe_distance_reward = self._check_reward_shape(safe_distance_reward)
     # Add to your reward dictionary for logging
     rew_dict["safe_distance"] = torch.mean(safe_distance_reward)
@@ -58,7 +58,7 @@ def gpt_reward(self, state, action):
     small_command_reward = self._check_reward_shape(small_command_reward)
     rew_dict["small_command"] = torch.mean(small_command_reward)
 
-    # Reward for success - max 10.0
+    # Reward for success - max 5.0
     success = self._success_evaluation(state, action)
     success_reward = 5.0 * success.float()
     success_reward = self._check_reward_shape(success_reward)

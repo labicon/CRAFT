@@ -1,13 +1,14 @@
 <<Environment_Description>>
 
 Varaibles you can use for curriculum descriptions are
-- xy position of gate center
-- xy position of target behind the gate
+- xy position of the target that agent should climb up using seesaw
+- xy position of the seesaw end that is close to the target
+- xy position of the seesaw end that is opposite of the target
+- xy position of the seesaw center
 - xy position of each agent
-- y coordinate of gate edges
 
 These are the rules that you have to consider when writing a curriculum
-(1) You cannot change start position of agents and gate.
+(1) You cannot change start position of agents and seesaw.
 (2) You cannot change the number of agents.
 
 Three candidates of curriculums are:

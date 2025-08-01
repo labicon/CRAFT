@@ -1,0 +1,104 @@
+<<Environment_Description>>
+
+The 'state' variable is a dictionary that contains:
+"target_pos": tensor (num_envs, num_agents, 3) for the target platform's xyz coordinates
+"agent_pos": tensor (num_envs, num_agents, 3) for the agent's xyz coordinates
+"seesaw_center": tensor (num_envs, num_agents, 3) for the seesaw center's xyz coordinates
+"seesaw_start": tensor (num_envs, num_agents, 2) for the xy coordinates of the seesaw's one end that agents should enter
+"seesaw_end": tensor (num_envs, num_agents, 2) for the xy coordinates of the seesaw's one end that is closer to the target platform
+
+The 'action' variable is a tensor (num_envs, num_agents, 3) for (x linear velocity command, y linear velocity command, yaw angular velocity command)
+Note that the coordinates in the state are in the global frame and the coordinates of the action are in the agent's local frame.
+
+You can use helper functions to calculate reward.
+self._progress_in_x(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they progressed in x direction compared to the previous step
+self._distance_to_seesaw_center(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they have to the center of the seesaw
+self._distance_to_seesaw_start(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they have to the start of the seesaw
+self._distance_to_seesaw_end(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they have to the end of the seesaw
+self._distance_to_target(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they have to the target platform, which have to climb up through seesaw
+self._agent_distance(state, action): returns tensor (num_envs, num_agents) for each environment for the distance between agents 
+self._normalized_height(state, action): returns tensor (num_envs, num_agents) for each environment and agent about each agent's normalized height
+self._wall_collision(state, action): returns tensor (num_envs, num_agents) which returns 1 if robot collided with the wall or other structure and 0 otherwise
+self._fall(state, action): returns tensor (num_envs, num_agents) which returns 1 if robot fell from the seesaw and 0 otherwise
+self._success(state, action): returns tensor (num_envs, num_agents) which returns 1 if one of the agent reached platform and 0 otherwise
+self._command_value(state, action): returns tensor (num_envs, num_agents) for normalized command value
+self._check_reward_shape(reward): returns reshaped reward tensor to avoid index error
+
+An example reward function format for the task is 
+```python
+def gpt_reward(self, state, action):
+
+    reward = torch.zeros((self.num_envs, self.num_agents), device=self.env.device)
+    rew_dict = {}
+    max_reward = 20.0
+
+    # Assign agent 0 to reach out to one side of the seesaw to lift the seesaw - max 1.0
+    seesaw_start_distance = self._distance_to_seesaw_start(state, action)
+    lift_reward = 1.0 * torch.exp(-seesaw_start_distance)
+    lift_reward[:, 1] = 0.0 # only reward agent 0
+    # Check reward shape
+    lift_reward = self._check_reward_shape(lift_reward)
+    reward += lift_reward
+    rew_dict["agent_0_lift"] = torch.mean(lift_reward[:, 0])
+
+    # Assign agent 1 to reach other side of the seesay while agent 0 is lifthing the seesaw - max 3.0
+    seesaw_end_distance = self._distance_to_seesaw_end(state, action)
+    climb_reward = 3.0 * torch.exp(-seesaw_end_distance)
+    climb_reward[:, 0] = 0.0 # Do not reward agent 0 for climbing up
+    climb_reward = self._check_reward_shape(climb_reward)
+    reward += climb_reward
+    rew_dict["agent_1_climb"] = torch.mean(climb_reward[:, 1])
+
+    # Reward for agent 1 getting higher - max 1.0
+    height_reward = self._normalized_height(state, action)
+    height_reward[:, 0] = 0.0 # Agent 0 should not climb up
+    height_reward = self._check_reward_shape(height_reward)
+    reward += height_reward
+    rew_dict['height_reward'] = torch.mean(height_reward)
+
+    # Reward for progressing in x direction - max 1.0
+    x_progress_reward = self._progress_in_x(state, action)
+    x_progress_reward = self._check_reward_shape(state, action)
+    reward += x_progress_reward
+    rew_dict["x_progress"] = torch.mean(x_progress_reward)
+
+    # Reward for aligning y location to be on top of the seesaw - max 1.0
+    y_coodinates = state['agent_pos'][:, :, 1]
+    y_deviation = torch.abs(y_coodinates)
+    y_deviation_reward = torch.exp(-y_deviation)
+    y_deviation_reward = self._check_reward_shape(y_deviation_reward)
+    reward += y_deviation_reward
+    rew_dict['y_deviation'] = torch.mean(y_deviation_reward)
+
+    # Reward for not colliding each other - max 3.0
+    agent_distance = self._agent_distance(state, action)
+    distance_threshold = 0.7 # While env terminates when distance is smaller than 0.5, add 0.2 gap for safety
+    # Give reward 1.0 if distance > 0.7, otherwise 0.0
+    safe_distance_reward = torch.zeros_like(agent_distance)
+    safe_distance_reward[agent_distance >= distance_threshold] = 1.0
+    safe_distance_reward = self._check_reward_shape(safe_distance_reward)
+    rew_dict["safe_distance"] = torch.mean(safe_distance_reward)
+
+    # Reward for success - max 10.0
+    success = self._success_evaluation(state, action)
+    success_reward = 10.0 * success.float()
+    success_reward = self._check_reward_shape(success_reward)
+    rew_dict["success"] = torch.mean(success_reward)
+
+    # normalize the reward
+    reward = self._check_reward_shape(reward)
+    reward *= 1 / max_reward
+
+    return reward, rew_dict, max_reward
+```
+
+You should re-implement the reward function to assign a proper reward function for the given task. 
+You can change the reward components that align well with the task.
+Do not include any new inputs in the functions.
+
+Note that you are designing a reward function for a team, not a single agent. 
+
+Generate a reward function code and command for:
+Task Name: <<Task_Name>>
+Description: <<Task_Description>>
+Reason: <<Task_Reason>>

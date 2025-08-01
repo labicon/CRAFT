@@ -1,0 +1,15 @@
+You are working with a quadruped robot capable of walking in a manner similar to a dog. 
+In the environment, there is a flat seesaw allows one end to be elevated to the platform.
+The primary task in the environment is to coordination of two quadruped wherein one robot occupies the farther end of the seesaw, maintaining its stability, 
+while the second robot ascends along the seesaw and reach the target platform.
+A low-level controller for the robot is already available; 
+therefore, the learning objective is limited to generating high-level velocity commands in the form of [linear_velocity_x, linear_velocity_y, yaw_angular_velocity] that will lead to successful coordination.
+
+The task is defind as success if one of the agent reaches target platform,
+which means x coordinate of the agent should be larger 7.7 and height should be larger than 1.3.
+Seesaw's length is 4m, spanning from x = 3.5 to x = 7.5
+Seesaw's width is 1.5m, spanning from y = -0.75 to y = 0.75
+Seesaw's center is (5.5, 0.0)
+While climbing up the seesaw, they should avoid the collision to each other. 
+If the distance between two robot is smaller than 0.5, it is defined as collision.
+Agent 0 is colored with blue and Agent 1 is colored with green.
