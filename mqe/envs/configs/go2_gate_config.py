@@ -111,6 +111,7 @@ class Go2GateCfg(Go2Cfg):
             "pitch",
             "z_low",
             "z_high",
+            "distance",  # distance between the agents
         ]
 
     class domain_rand(Go2Cfg.domain_rand):

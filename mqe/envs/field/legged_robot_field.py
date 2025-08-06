@@ -143,11 +143,12 @@ class LeggedRobotField(LeggedRobot):
             self.z_high_term_buff = (z > self.cfg.termination.z_high_kwargs["threshold"]).reshape(self.num_envs, -1).sum(1).to(torch.bool)
             self.reset_buf |= self.z_high_term_buff
 
-        # Terminate if the distance between the agents is too small
-        pos = self.base_pos[:, :2].reshape(self.num_envs, self.num_agents, 2)
-        pos_diff = torch.norm(pos[:, 0, :] - pos[:, 1, :], dim=1)
-        self.reset_buf |= (pos_diff < 0.5).reshape(self.num_envs, -1).sum(1).to(torch.bool)
-        
+        if "distance" in self.cfg.termination.termination_terms:
+            # Terminate if the distance between the agents is too small
+            pos = self.base_pos[:, :2].reshape(self.num_envs, self.num_agents, 2)
+            pos_diff = torch.norm(pos[:, 0, :] - pos[:, 1, :], dim=1)
+            self.reset_buf |= (pos_diff < 0.5).reshape(self.num_envs, -1).sum(1).to(torch.bool)
+            
         return return_
 
     def _fill_extras(self, env_ids):
