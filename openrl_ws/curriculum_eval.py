@@ -14,6 +14,7 @@ def eval(load_dir, seed=0):
     from openrl_ws.utils import get_args
     from openrl_ws.test import save_video, save_images
     args = get_args()
+    args.task = "go2seesaw"
     args.headless = False
     args.record_video = True
     args.seed = seed
@@ -35,7 +36,8 @@ def eval(load_dir, seed=0):
         reward_buffer["agent_0"] += reward[0, 0]
         reward_buffer["agent_1"] += reward[0, 1]
         if done[0, 0]:
-            traj_dict, rew_dict = analyze_go1gate_trajectory(obs_buffer, reward_buffer, target_pos)
+            # traj_dict, rew_dict = analyze_go1gate_trajectory(obs_buffer, reward_buffer, target_pos)
+            traj_dict, rew_dict = analyze_go2seesaw_trajectory(obs_buffer, reward_buffer, env)
             print(f"Total reward for agent 0: {reward_buffer['agent_0']}, agent 1: {reward_buffer['agent_1']}")
             for key, value in traj_dict.items():
                 print(f"{key}: {value}")
@@ -101,6 +103,53 @@ def analyze_go1gate_trajectory(traj_buffer, rew_buffer, target_pos):
 
     return traj_dict, rew_dict
 
+def analyze_go2seesaw_trajectory(traj_buffer, rew_buffer, env):
+    stepsize = len(traj_buffer)
+    max_samples = 20
+    step = max(1, stepsize // max_samples)
+
+    # Downsample the trajectory buffer
+    sampled_traj_buffer = traj_buffer[::step]
+
+    # traj_buffer is a list of obs arrays, each with shape (num_envs, num_agents, obs_dim)
+    # Stack them to get a single array of shape (T, num_envs, num_agents, obs_dim)
+    obs_trajectory = np.stack(sampled_traj_buffer, axis=0)
+
+    # The observation for each agent is:
+    # [agent_id(2), self_base_info(6), other_agent_base_info(6)]
+    # self_base_info is [pos(3), rpy(3)]
+
+    # We can extract all info from agent 0's perspective.
+    # Assuming num_envs = 1, which is typical for evaluation.
+    # Shape becomes (T, num_agents, obs_dim)
+    obs_agent_0 = np.round(obs_trajectory[:, 0, 0, :], decimals=2) # Trajectory of obs for agent 0 in env 0
+
+    # Extract XY positions
+    # agent_0_pos is indices 2,3,4 (x,y,z)
+    agent_0_pos = obs_agent_0[:, 2:5]
+    # agent_1_pos is indices 8,9,10 (x,y,z)
+    agent_1_pos = obs_agent_0[:, 8:11]
+    
+    seesaw_center = env.seesaw_center[0, 0, :].detach().cpu().numpy()
+    seesaw_start = env.seesaw_start[0, 0, :].detach().cpu().numpy()
+    seesaw_end = env.seesaw_end[0, 0, :].detach().cpu().numpy()
+    target_pos = env.target_pos[0, 0, :].detach().cpu().numpy()
+
+    traj_dict = {
+        "seesaw_center": seesaw_center,
+        "seesaw_start": seesaw_start,
+        "seesaw_end": seesaw_end,
+        "target_pos": target_pos,
+        "agent_0_pos": agent_0_pos,
+        "agent_1_pos": agent_1_pos,
+    }
+
+    rew_dict = {
+        "total_reward_agent_0": rew_buffer["agent_0"],
+        "total_reward_agent_1": rew_buffer["agent_1"],
+    }
+
+    return traj_dict, rew_dict
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate a trained model")

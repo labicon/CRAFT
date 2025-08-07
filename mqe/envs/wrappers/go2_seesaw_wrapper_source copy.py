@@ -93,72 +93,30 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         return x_movement
     
-    def _y_alignment(self, state, action):
+    def _distance_to_seesaw_start(self, state, action):
         base_pos = state["agent_pos"]
-        y_alignment = base_pos[:, :, 1] ** 2
+        seesaw_start_distance = torch.norm(base_pos[:, :, :2] - self.seesaw_start, p=2, dim=-1) / 3.0
 
-        return y_alignment.float() * 2.0
+        return seesaw_start_distance
     
-    def _progress_to_seesaw_start(self, state, action):
+    def _distance_to_seesaw_end(self, state, action):
         base_pos = state["agent_pos"]
-        seesaw_start_distance = torch.norm(base_pos[:, :, :2] - self.seesaw_start, p=2, dim=-1)
+        seesaw_end_distance = torch.norm(base_pos[:, :, :2] - self.seesaw_end, p=2, dim=-1) / 6.0
 
-        if not hasattr(self, "last_seesaw_start_distance"):
-            self.last_seesaw_start_distance = copy(seesaw_start_distance)
-        seesaw_start_progress = seesaw_start_distance - self.last_seesaw_start_distance
-        seesaw_start_progress[self.env.reset_ids] = 0.0
+        return seesaw_end_distance
 
-        # Scale the seesaw_start_progress to match the action scale
-        seesaw_start_progress = seesaw_start_progress * 10.0
-        self.last_seesaw_start_distance = copy(seesaw_start_distance)
+    def _distance_to_seesaw_center(self, state, action):
+        base_pos = state["agent_pos"]
+        seesaw_center_distance = torch.norm(base_pos[:, :, :] - self.seesaw_center, p=2, dim=-1) / 5.0
 
-        return seesaw_start_progress
+        return seesaw_center_distance
     
-    def _progress_to_seesaw_end(self, state, action):
+    def _distance_to_target(self, state, action):
         base_pos = state["agent_pos"]
-        seesaw_end_distance = torch.norm(base_pos[:, :, :2] - self.seesaw_end, p=2, dim=-1)
+        target_distance = torch.norm(base_pos[:, :, :] - self.target_pos[:, :, :], p=2, dim=-1) / 8.0
 
-        if not hasattr(self, "last_seesaw_end_distance"):
-            self.last_seesaw_end_distance = copy(seesaw_end_distance)
-        seesaw_end_progress = seesaw_end_distance - self.last_seesaw_end_distance
-        seesaw_end_progress[self.env.reset_ids] = 0.0
-
-        # Scale the seesaw_end_progress to match the action scale
-        seesaw_end_progress = seesaw_end_progress * 10.0
-        self.last_seesaw_end_distance = copy(seesaw_end_distance)
-
-        return seesaw_end_progress
-
-    def _progress_to_seesaw_center(self, state, action):
-        base_pos = state["agent_pos"]
-        seesaw_center_distance = torch.norm(base_pos[:, :, :] - self.seesaw_center, p=2, dim=-1)
-
-        if not hasattr(self, "last_seesaw_center_distance"):
-            self.last_seesaw_center_distance = copy(seesaw_center_distance)
-        seesaw_center_progress = seesaw_center_distance - self.last_seesaw_center_distance
-        seesaw_center_progress[self.env.reset_ids] = 0.0
-
-        # Scale the seesaw_center_progress to match the action scale
-        seesaw_center_progress = seesaw_center_progress * 10.0
-        self.last_seesaw_center_distance = copy(seesaw_center_distance)
-
-        return seesaw_center_progress
-
-    def _progress_to_target(self, state, action):
-        base_pos = state["agent_pos"]
-        target_distance = torch.norm(base_pos[:, :, :] - self.target_pos[:, :, :], p=2, dim=-1)
-
-        if not hasattr(self, "last_target_distance"):
-            self.last_target_distance = copy(target_distance)
-        target_progress = target_distance - self.last_target_distance
-        target_progress[self.env.reset_ids] = 0.0
-
-        # Scale the target_progress to match the action scale
-        target_progress = target_progress * 10.0
-        self.last_target_distance = copy(target_distance)
-
-        return target_progress
-
+        return target_distance
+    
     def _agent_distance(self, state, action):
         base_pos = state["agent_pos"]
         agent_dis = torch.norm(base_pos[:, 0, :] - base_pos[:, 1, :], p=2, dim=-1)
@@ -193,8 +151,7 @@ class Go2SeesawWrapper(EmptyWrapper):
         return success.float()
     
     def _command_value(self, state, action):
-        command_norm = 0.5 * torch.abs(action[:,:, 0]) + 2.0 * torch.abs(action[:, :, 1]) + 2.0 * torch.abs(action[:, :, 2])
-        return command_norm
+        return torch.norm(action, p=2, dim=-1)
 
     def _check_reward_shape(self, reward):
         if reward.shape == (self.num_envs, self.num_agents):
@@ -231,5 +188,4 @@ class Go2SeesawWrapper(EmptyWrapper):
         }
 
         return eval_dict
-    
     

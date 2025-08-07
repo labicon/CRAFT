@@ -19,7 +19,6 @@ self._normalized_height(state, action): returns tensor (num_envs, num_agents) fo
 self._wall_collision(state, action): returns tensor (num_envs, num_agents) which returns 1 if robot collided with the wall or other structure and 0 otherwise
 self._fall(state, action): returns tensor (num_envs, num_agents) which returns 1 if robot fell from the seesaw and 0 otherwise
 self._success(state, action): returns tensor (num_envs, num_agents) which returns 1 if one of the agent reached platform and 0 otherwise
-self._command_value(state, action): returns tensor (num_envs, num_agents) for normalized command value
 self._check_reward_shape(reward): returns reshaped reward tensor to avoid index error
 
 Current task is:

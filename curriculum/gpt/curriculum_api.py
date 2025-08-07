@@ -184,7 +184,7 @@ class CurriculumAPI:
         advice_user = advice_user.replace("<<Failure_Reason>>", failure_reason)
 
         # Find tensorboard event file
-        pattern = os.path.join("./training-log", "MQE-Curriculum", "go2gate", 
+        pattern = os.path.join("./training-log", "MQE-Curriculum", "go2seesaw", 
                                f"{task['Name']}_sample_{sample_num}/", 
                                 "tensorboard",
                                "events.out.tfevents.*")

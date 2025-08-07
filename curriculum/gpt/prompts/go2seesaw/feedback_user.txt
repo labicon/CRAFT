@@ -4,10 +4,12 @@ Task Name: <<Task_Name>>
 Description: <<Task_Description>>
 Reason: <<Task_Reason>>
 
-The final goal for the two quadruped is pass the narrow gate while avoiding collision to each other,
-which means x coordinate of both robots should be larger than gate's x coordinate.
-When passing the gate, robot's y coordinate should be between gate left and right edge's y coordinates.
-While navigating the area, they should avoid the collision to each other. 
-If the distance between two robot is smaller than 0.5, it is defined as collision.
+The primary task in the environment is to coordination of two quadruped wherein one robot occupies the start position of the seesaw, maintaining its stability, 
+while the second robot ascends along the end of the seesaw and reach the target platform.
+The task is defind as success if one of the agent reaches target platform, which means x coordinate of the agent should be larger 7 and height should be larger than 1.3.
+The seesaw is narrow enough so that two robot cannot stand on parallel.
+Therefore, the agent that will climb up the seesaw should enter the seesaw first.
+Then, the following agent should be follow that robot and stand at seesaw start so that it can stabilize the seesaw while the other agents climbs up.
+Agent 0 is colored with blue and Agent 1 is colored with green.
 
 Previous tasks in curriculum are
