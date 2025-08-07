@@ -3,20 +3,19 @@
 The 'state' variable is a dictionary that contains:
 "target_pos": tensor (num_envs, num_agents, 3) for the target platform's xyz coordinates
 "agent_pos": tensor (num_envs, num_agents, 3) for the agent's xyz coordinates
-"seesaw_center": tensor (num_envs, num_agents, 3) for the seesaw center's xyz coordinates
-"seesaw_start": tensor (num_envs, num_agents, 2) for the xy coordinates of the seesaw's one end that agents should enter
-"seesaw_end": tensor (num_envs, num_agents, 2) for the xy coordinates of the seesaw's one end that is closer to the target platform
+"seesaw_start": tensor (num_envs, num_agents, 2) for the xy coordinates of the seesaw plank's starting point that agents should enter
+"seesaw_end": tensor (num_envs, num_agents, 2) for the xy coordinates of the seesaw plank's end point that is closer to the target platform
 
 The 'action' variable is a tensor (num_envs, num_agents, 3) for (x linear velocity command, y linear velocity command, yaw angular velocity command)
 Note that the coordinates in the state are in the global frame and the coordinates of the action are in the agent's local frame.
 
 You can use helper functions to calculate reward.
 self._progress_in_x(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they progressed in x direction compared to the previous step
-self._progress_to_seesaw_center(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they progressed to the center of the seesaw
-self._progress_to_seesaw_start(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they progressed to the start of the seesaw
-self._progress_to_seesaw_end(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they progressed to the end of the seesaw
+self._progress_to_seesaw_start(state, action): returns tensor (num_envs, num_agents) about how much distance they progressed to the start of the seesaw plank
+self._progress_to_seesaw_end(state, action): returns tensor (num_envs, num_agents) about how much distance they progressed to the end of the seesaw plank
 self._progress_to_target(state, action): returns tensor (num_envs, num_agents) for each environment and agent about how much distance they progressed to the target platform, which have to climb up through seesaw
 self._agent_distance(state, action): returns tensor (num_envs, num_agents) for each environment for the distance between agents 
+self._y_alignment(state, action): returns tensor (num_envs, num_agents) for normalized y direction alignment (close to y=0) reward for each agent
 self._normalized_height(state, action): returns tensor (num_envs, num_agents) for each environment and agent about each agent's normalized height
 self._wall_collision(state, action): returns tensor (num_envs, num_agents) which returns 1 if robot collided with the wall or other structure and 0 otherwise
 self._fall(state, action): returns tensor (num_envs, num_agents) which returns 1 if robot fell from the seesaw and 0 otherwise
@@ -67,8 +66,8 @@ def gpt_reward(self, state, action):
 
     # Reward for maintaining enough distance to each other - max 1.0
     agent_distance = self._agent_distance(state, action)
-    distance_reward = torch.square(agent_distance) * 1.0
-    # If distance is further than 1.0, give maximum reward
+    distance_reward = torch.clamp(torch.square(agent_distance), max=1.0)
+    # If the distance is greater than 1.0, it has enough distance to give maximum reward
     distance_reward[agent_distance > 1.0] = 1.0
     distance_reward = self._check_reward_shape(distance_reward)
     reward += distance_reward

@@ -87,9 +87,9 @@ class Go2SeesawCfg(Go2Cfg):
     class control(Go2Cfg.control):
         control_type = 'C'
 
-        # class default_command(Go2Cfg.control.default_command):
+        class default_command(Go2Cfg.control.default_command):
 
-        #     gait = "pacing"
+            gait = "pacing"
 
     class termination(Go2Cfg.termination):
         # additional factors that determines whether to terminates the episode

@@ -83,7 +83,7 @@ class Go2SeesawWrapper(EmptyWrapper):
         
         if not hasattr(self, "last_x_pos"):
             self.last_x_pos = copy(x_pos)
-        x_movement = x_pos - self.last_x_pos
+        x_movement = self.last_x_pos - x_pos
         x_movement[self.env.reset_ids] = 0.0
 
         # Scale up the x_movement to match the action scale
@@ -105,7 +105,7 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         if not hasattr(self, "last_seesaw_start_distance"):
             self.last_seesaw_start_distance = copy(seesaw_start_distance)
-        seesaw_start_progress = seesaw_start_distance - self.last_seesaw_start_distance
+        seesaw_start_progress = self.last_seesaw_start_distance - seesaw_start_distance
         seesaw_start_progress[self.env.reset_ids] = 0.0
 
         # Scale the seesaw_start_progress to match the action scale
@@ -120,7 +120,7 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         if not hasattr(self, "last_seesaw_end_distance"):
             self.last_seesaw_end_distance = copy(seesaw_end_distance)
-        seesaw_end_progress = seesaw_end_distance - self.last_seesaw_end_distance
+        seesaw_end_progress = self.last_seesaw_end_distance - seesaw_end_distance
         seesaw_end_progress[self.env.reset_ids] = 0.0
 
         # Scale the seesaw_end_progress to match the action scale
@@ -135,7 +135,7 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         if not hasattr(self, "last_seesaw_center_distance"):
             self.last_seesaw_center_distance = copy(seesaw_center_distance)
-        seesaw_center_progress = seesaw_center_distance - self.last_seesaw_center_distance
+        seesaw_center_progress = self.last_seesaw_center_distance - seesaw_center_distance
         seesaw_center_progress[self.env.reset_ids] = 0.0
 
         # Scale the seesaw_center_progress to match the action scale
@@ -150,7 +150,7 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         if not hasattr(self, "last_target_distance"):
             self.last_target_distance = copy(target_distance)
-        target_progress = target_distance - self.last_target_distance
+        target_progress = self.last_target_distance - target_distance
         target_progress[self.env.reset_ids] = 0.0
 
         # Scale the target_progress to match the action scale
@@ -231,5 +231,4 @@ class Go2SeesawWrapper(EmptyWrapper):
         }
 
         return eval_dict
-    
     

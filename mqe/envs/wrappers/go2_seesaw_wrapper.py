@@ -83,7 +83,7 @@ class Go2SeesawWrapper(EmptyWrapper):
         
         if not hasattr(self, "last_x_pos"):
             self.last_x_pos = copy(x_pos)
-        x_movement = x_pos - self.last_x_pos
+        x_movement = self.last_x_pos - x_pos
         x_movement[self.env.reset_ids] = 0.0
 
         # Scale up the x_movement to match the action scale
@@ -105,7 +105,7 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         if not hasattr(self, "last_seesaw_start_distance"):
             self.last_seesaw_start_distance = copy(seesaw_start_distance)
-        seesaw_start_progress = seesaw_start_distance - self.last_seesaw_start_distance
+        seesaw_start_progress = self.last_seesaw_start_distance - seesaw_start_distance
         seesaw_start_progress[self.env.reset_ids] = 0.0
 
         # Scale the seesaw_start_progress to match the action scale
@@ -120,7 +120,7 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         if not hasattr(self, "last_seesaw_end_distance"):
             self.last_seesaw_end_distance = copy(seesaw_end_distance)
-        seesaw_end_progress = seesaw_end_distance - self.last_seesaw_end_distance
+        seesaw_end_progress = self.last_seesaw_end_distance - seesaw_end_distance
         seesaw_end_progress[self.env.reset_ids] = 0.0
 
         # Scale the seesaw_end_progress to match the action scale
@@ -135,7 +135,7 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         if not hasattr(self, "last_seesaw_center_distance"):
             self.last_seesaw_center_distance = copy(seesaw_center_distance)
-        seesaw_center_progress = seesaw_center_distance - self.last_seesaw_center_distance
+        seesaw_center_progress = self.last_seesaw_center_distance - seesaw_center_distance
         seesaw_center_progress[self.env.reset_ids] = 0.0
 
         # Scale the seesaw_center_progress to match the action scale
@@ -150,7 +150,7 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         if not hasattr(self, "last_target_distance"):
             self.last_target_distance = copy(target_distance)
-        target_progress = target_distance - self.last_target_distance
+        target_progress = self.last_target_distance - target_distance
         target_progress[self.env.reset_ids] = 0.0
 
         # Scale the target_progress to match the action scale
@@ -237,55 +237,64 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         reward = torch.zeros((self.num_envs, self.num_agents), device=self.env.device)
         rew_dict = {}
-        max_reward = 17.0
+        max_reward = 16.0
 
-        # Reward for Agent 0 progressing to the start of the seesaw (max 3.0)
-        agent_0_entry_reward = 3.0 * self._progress_to_seesaw_start(state, action)
-        agent_0_entry_reward[:, 1] = 0.0  # Only reward Agent 0
-        agent_0_entry_reward = self._check_reward_shape(agent_0_entry_reward)
-        reward += agent_0_entry_reward
-        rew_dict["agent_0_entry"] = torch.mean(agent_0_entry_reward[:, 0])
+        # Reward Agent 0 for progressing towards the start of the seesaw - max 2.0
+        progress_to_seesaw_start = 2.0 * self._progress_to_seesaw_start(state, action)
+        progress_to_seesaw_start[:, 1] = 0.0  # Only reward Agent 0
+        progress_to_seesaw_start = self._check_reward_shape(progress_to_seesaw_start)
+        reward += progress_to_seesaw_start
+        rew_dict["progress_to_seesaw_start"] = torch.mean(progress_to_seesaw_start[:, 0])
 
-        # Reward for Agent 0 aligning along the seesaw's center while entering (max 1.0)
-        seesaw_center = state["seesaw_center"][..., :2]
-        agent_0_pos = state["agent_pos"][:, 0, :2]
-        deviation = torch.norm(agent_0_pos - seesaw_center, dim=-1, keepdim=True)
-        y_alignment_reward = (1.0 - deviation) * 1.0
-        y_alignment_reward[:, 1] = 0.0  # Only reward Agent 0
-        y_alignment_reward = self._check_reward_shape(y_alignment_reward)
-        reward += y_alignment_reward
-        rew_dict["agent_0_y_alignment"] = torch.mean(y_alignment_reward[:, 0])
+        # Reward for Agent 0 progressing towards the end of the seesaw - max 4.0
+        progress_to_seesaw_end = 4.0 * self._progress_to_seesaw_end(state, action)
+        progress_to_seesaw_end[:, 1] = 0.0  # Only reward Agent 0
+        progress_to_seesaw_end = self._check_reward_shape(progress_to_seesaw_end)
+        reward += progress_to_seesaw_end
+        rew_dict["progress_to_seesaw_end"] = torch.mean(progress_to_seesaw_end[:, 0])
 
-        # Reward for Agent 1 maintaining position close to seesaw start (max 3.0)
-        agent_1_positioning_reward = 3.0 * self._progress_to_seesaw_start(state, action)
-        agent_1_positioning_reward[:, 0] = 0.0  # Only reward Agent 1
-        agent_1_positioning_reward = self._check_reward_shape(agent_1_positioning_reward)
-        reward += agent_1_positioning_reward
-        rew_dict["agent_1_positioning"] = torch.mean(agent_1_positioning_reward[:, 1])
+        # Reward for Agent 0 getting higher - max 2.0
+        height_reward = 2.0 * self._normalized_height(state, action)
+        height_reward[:, 1] = 0.0  # Only reward Agent 0
+        height_reward = self._check_reward_shape(height_reward)
+        reward += height_reward
+        rew_dict['height_reward'] = torch.mean(height_reward[:, 0])
 
-        # Additional reward for Agent 0 progressing along x direction (max 1.0)
-        x_progress_reward = self._progress_in_x(state, action)
+        # Reward Agent 0 for progressing in x direction rather than side movement - max 2.0
+        x_progress_reward = 2.0 * self._progress_in_x(state, action)
         x_progress_reward[:, 1] = 0.0  # Only reward Agent 0
         x_progress_reward = self._check_reward_shape(x_progress_reward)
         reward += x_progress_reward
-        rew_dict["agent_0_x_progress"] = torch.mean(x_progress_reward[:, 0])
+        rew_dict["x_progress"] = torch.mean(x_progress_reward[:, 0])
 
-        # Minimal collision and falling penalties (each max -1.0)
-        wall_collision_penalty = -1.0 * self._wall_collision(state, action).float()
-        wall_collision_penalty = self._check_reward_shape(wall_collision_penalty)
-        reward += wall_collision_penalty
-        rew_dict["wall_collision"] = torch.mean(wall_collision_penalty)
+        # Reward for Agent 0 aligning y location to be on center of the seesaw - max 2.0
+        y_alignment_reward = 2.0 * self._y_alignment(state, action)
+        y_alignment_reward[:, 1] = 0.0  # Only reward Agent 0
+        y_alignment_reward = self._check_reward_shape(y_alignment_reward)
+        reward += y_alignment_reward
+        rew_dict['y_alignment'] = torch.mean(y_alignment_reward[:, 0])
 
-        fall_penalty = -1.0 * self._fall(state, action).float()
+        # Penalty for Agent 0 collision - max 0.0 penalty per collision
+        collision_penalty = -1.0 * self._wall_collision(state, action)
+        collision_penalty[:, 1] = 0.0  # Only affect Agent 0
+        collision_penalty = self._check_reward_shape(collision_penalty)
+        reward += collision_penalty
+        rew_dict['collision_penalty'] = torch.mean(collision_penalty[:, 0])
+
+        # Penalty for Agent 0 falling off - max 0.0 penalty per fall
+        fall_penalty = -1.0 * self._fall(state, action)
+        fall_penalty[:, 1] = 0.0  # Only affect Agent 0
         fall_penalty = self._check_reward_shape(fall_penalty)
         reward += fall_penalty
-        rew_dict["fall"] = torch.mean(fall_penalty)
+        rew_dict['fall_penalty'] = torch.mean(fall_penalty[:, 0])
 
-        # Reward for successful task completion, prioritizing task coherence (max 10.0)
-        success_reward = 10.0 * self._success(state, action).float()
+        # Reward for Agent 0 successfully reaching the platform - max 5.0
+        success = self._success(state, action)
+        success_reward = 5.0 * success.float()
+        success_reward[:, 1] = 0.0  # Only reward Agent 0
         success_reward = self._check_reward_shape(success_reward)
         reward += success_reward
-        rew_dict["success"] = torch.mean(success_reward)
+        rew_dict["success"] = torch.mean(success_reward[:, 0])
 
         # Normalize the reward
         reward = self._check_reward_shape(reward)
@@ -293,4 +302,3 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         return reward, rew_dict, max_reward
 
-    

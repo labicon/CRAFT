@@ -2,9 +2,8 @@
 
 Varaibles you can use for curriculum descriptions are
 - xyz position of the target that agent should climb up using seesaw
-- xy position of the seesaw end that is close to the target
-- xy position of the seesaw start that is opposite of the target
-- xy position of the seesaw center
+- xy position of the seesaw start where robot should enter through
+- xy position of the seesaw end where close to the target platform
 - xyz position of each agent
 
 These are the rules that you have to consider when writing a curriculum

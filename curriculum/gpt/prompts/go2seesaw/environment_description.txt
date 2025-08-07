@@ -6,10 +6,10 @@ A low-level controller for the robot is already available;
 therefore, the learning objective is limited to generating high-level velocity commands in the form of [linear_velocity_x, linear_velocity_y, yaw_angular_velocity] that will lead to successful coordination.
 
 The task is defind as success if one of the agent reaches target platform, which means x coordinate of the agent should be larger 7 and height should be larger than 1.3.
-Seesaw's length spans from x = 4 (start) to x = 7 (end)
-Seesaw's width is 1.5m, spanning from y = -0.75 to y = 0.75
-Seesaw's center is (5.5, 0.0, 1.0)
-The seesaw is narrow enough so that two robot cannot stand on parallel.
+Seesaw plank's length spans from x = 4 (start) to x = 7 (end)
+Seesaw plank's width is 1.5m, spanning from y = -0.75 to y = 0.75
+The seesaw is narrow so that two robot cannot stand on parallel.
 Therefore, the agent that will climb up the seesaw should enter the seesaw first.
 Then, the following agent should enter the seesaw after that robot and stand at seesaw start so that it can stabilize the seesaw while the other agents climbs up.
+Also, trying to maintain y~0 helps with robots not falling off from narrow seesaw
 Agent 0 is colored with blue and Agent 1 is colored with green.
