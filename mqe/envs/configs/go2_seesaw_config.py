@@ -10,7 +10,7 @@ class Go2SeesawCfg(Go2Cfg):
         num_agents = 2
         num_npcs = 1
         num_actions_npc = 1
-        episode_length_s = 10 # episode length in seconds
+        episode_length_s = 15 # episode length in seconds
 
     class asset(Go2Cfg.asset):
         terminate_after_contacts_on = []

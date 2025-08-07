@@ -6,7 +6,7 @@ import base64
 import numpy as np
 import cv2
 
-GPT_KEY_PATH = "/home/kang/MANavigation/curriculum/gpt/key.yaml"
+GPT_KEY_PATH = "./curriculum/gpt/key.yaml"
 
 
 def file_to_string(filename):

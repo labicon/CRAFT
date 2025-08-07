@@ -18,7 +18,7 @@ if __name__ == "__main__":
     logger_path = f"{args.logdir}/{current_datetime}/"
     os.makedirs(logger_path, exist_ok=True)
 
-    with open("/home/kang/multiagent-quadruped-environment/curriculum/configs/go2gate_config.yaml", "r") as f:
+    with open("./curriculum/configs/go2seesaw_config.yaml", "r") as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)
 
     env_path = cfg['env_path']
