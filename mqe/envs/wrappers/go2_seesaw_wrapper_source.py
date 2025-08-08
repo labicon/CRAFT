@@ -83,7 +83,7 @@ class Go2SeesawWrapper(EmptyWrapper):
         
         if not hasattr(self, "last_x_pos"):
             self.last_x_pos = copy(x_pos)
-        x_movement = self.last_x_pos - x_pos
+        x_movement = x_pos - self.last_x_pos
         x_movement[self.env.reset_ids] = 0.0
 
         # Scale up the x_movement to match the action scale
@@ -95,9 +95,10 @@ class Go2SeesawWrapper(EmptyWrapper):
     
     def _y_alignment(self, state, action):
         base_pos = state["agent_pos"]
-        y_alignment = base_pos[:, :, 1] ** 2
+        y_alignment = 1.0 - base_pos[:, :, 1] ** 2
+        y_alignment = torch.clip(y_alignment, min=0.0, max=1.0)
 
-        return y_alignment.float() * 2.0
+        return y_alignment.float()
     
     def _progress_to_seesaw_start(self, state, action):
         base_pos = state["agent_pos"]
@@ -111,6 +112,9 @@ class Go2SeesawWrapper(EmptyWrapper):
         # Scale the seesaw_start_progress to match the action scale
         seesaw_start_progress = seesaw_start_progress * 10.0
         self.last_seesaw_start_distance = copy(seesaw_start_distance)
+
+        # if agent is already at the start, return 1.0
+        seesaw_start_progress[seesaw_start_distance < 0.5] = 1.0
 
         return seesaw_start_progress
     
@@ -127,6 +131,9 @@ class Go2SeesawWrapper(EmptyWrapper):
         seesaw_end_progress = seesaw_end_progress * 10.0
         self.last_seesaw_end_distance = copy(seesaw_end_distance)
 
+        # if agent is already at the end, return 1.0
+        seesaw_end_progress[seesaw_end_distance < 0.5] = 1.0
+
         return seesaw_end_progress
 
     def _progress_to_seesaw_center(self, state, action):
@@ -141,6 +148,9 @@ class Go2SeesawWrapper(EmptyWrapper):
         # Scale the seesaw_center_progress to match the action scale
         seesaw_center_progress = seesaw_center_progress * 10.0
         self.last_seesaw_center_distance = copy(seesaw_center_distance)
+
+        # if agent is already at the center, return 1.0
+        seesaw_center_progress[seesaw_center_distance < 0.5] = 1.0
 
         return seesaw_center_progress
 
@@ -157,6 +167,9 @@ class Go2SeesawWrapper(EmptyWrapper):
         target_progress = target_progress * 10.0
         self.last_target_distance = copy(target_distance)
 
+        # if agent is already at the target, return 1.0
+        target_progress[target_distance < 0.5] = 1.0
+
         return target_progress
 
     def _agent_distance(self, state, action):
@@ -169,7 +182,7 @@ class Go2SeesawWrapper(EmptyWrapper):
     
     def _normalized_height(self, state, action):
         height = state["agent_pos"][:, :, 2]
-        normalized_height = height - 0.4
+        normalized_height = height - 0.3
         normalized_height = torch.clip(normalized_height, min=0.0, max=1.0)
 
         return normalized_height
@@ -231,4 +244,5 @@ class Go2SeesawWrapper(EmptyWrapper):
         }
 
         return eval_dict
+    
     
