@@ -40,7 +40,7 @@ def gpt_reward(self, state, action):
     # Reward for not colliding each other - max 5.0
     agent_distance = self._agent_distance(state, action)
     distance_threshold = 0.5
-    penalty_threshold = 1.5 # Distance that starts to penalize the close distance. You can change this value
+    penalty_threshold = 1.0 # Distance that starts to penalize the close distance. You can change this value
     # Give reward 5.0 if distance > penalty_threshold, 0.0 if distance < distance_threshold
     safe_distance_reward = torch.zeros_like(agent_distance)
     safe_distance_reward[agent_distance >= penalty_threshold] = 5.0

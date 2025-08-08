@@ -12,7 +12,7 @@ MAX_ATTEMPT = 5
 class Manual_Module:
     def __init__(self, env_path, logger_path, run_datetime, cfg, seed=0):
         self.env_path = env_path
-        self.prompt_path = "/home/kang/multiagent-quadruped-environment/curriculum/gpt/prompts" + "/manual_curriculum"
+        self.prompt_path = "./curriculum/gpt/prompts" + "/manual_curriculum"
         self.gpt_api = CurriculumAPI(self.prompt_path, logger_path, 
                                      line_num=cfg['line_num'])
         self.logger_path = logger_path
@@ -64,7 +64,7 @@ class Manual_Module:
         if curriculum_idx == 0:
             print(f"Training task {task['Name']} sample {sample_num} from scratch")
             process = subprocess.run(["python", 
-                                        "/home/kang/multiagent-quadruped-environment/openrl_ws/curriculum_train.py", 
+                                        "./curriculum/train.py", 
                                         "--run_date", self.experiment_time,
                                         "--curriculum_task", task['Name'], 
                                         "--sample_idx", str(sample_num),
@@ -76,7 +76,7 @@ class Manual_Module:
             load_sample_num = self.best_model_idx_list[curriculum_idx - 1]
             print(f"Training task {task['Name']} sample {sample_num} from previous task {previous_task['Name']} sample {load_sample_num}")
             process = subprocess.run(["python", 
-                                        "/home/kang/multiagent-quadruped-environment/openrl_ws/curriculum_train.py", 
+                                        "./curriculum/train.py", 
                                         "--run_date", self.experiment_time,
                                         "--curriculum_task", task['Name'], 
                                         "--sample_idx", str(sample_num),
@@ -108,7 +108,7 @@ class Manual_Module:
         print(f"Collecting evaluation data for task {task['Name']} sample {sample_num}")  
         # Save the trajectory analysis in the log path        
         process = subprocess.run(["python",
-                                    "/home/kang/multiagent-quadruped-environment/openrl_ws/curriculum_eval.py",
+                                    "./curriculum_eval.py",
                                     "--run_date", self.experiment_time,
                                     "--curriculum_task", task['Name'],
                                     "--sample_idx", str(sample_num),
