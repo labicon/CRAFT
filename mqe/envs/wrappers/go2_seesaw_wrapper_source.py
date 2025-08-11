@@ -245,4 +245,4 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         return eval_dict
     
-    
+

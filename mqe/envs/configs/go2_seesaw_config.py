@@ -98,6 +98,7 @@ class Go2SeesawCfg(Go2Cfg):
             "roll",
             "pitch",
             "z_low",
+            "distance",
         ]
 
     class domain_rand(Go2Cfg.domain_rand):
