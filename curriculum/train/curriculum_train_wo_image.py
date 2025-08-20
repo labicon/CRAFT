@@ -4,7 +4,7 @@ import pickle
 import shutil
 import subprocess
 
-from gpt.curriculum_api import CurriculumAPI
+from gpt.curriculum_api_wo_image import CurriculumAPI
 from gpt.utils import *
 
 MAX_ATTEMPT = 5
@@ -12,7 +12,7 @@ MAX_ATTEMPT = 5
 class Curriculum_Module:
     def __init__(self, env_path, logger_path, run_datetime, cfg, seed=0):
         self.env_path = env_path
-        self.prompt_path = "/home/kang/MANavigation/curriculum/gpt/prompts"
+        self.prompt_path = "./curriculum/gpt/prompts/go2seesaw"
         self.gpt_api = CurriculumAPI(self.prompt_path, logger_path, 
                                      line_num=cfg['line_num'])
         self.logger_path = logger_path
@@ -23,7 +23,6 @@ class Curriculum_Module:
         self.cfg = cfg
         self.seed = seed
         self.terminate_training = False
-        self.nan_reward = False
         self.experiment_time = run_datetime
         
     def generate_curriculum(self):
@@ -53,8 +52,6 @@ class Curriculum_Module:
                 trial_num = 0
                 while trial_num < MAX_ATTEMPT:
                     try:
-                        # Generate 2 samples first, then keep on redesigning based on two previous samples
-                        # print(f"length = {len(rew_rollout)}")
                         self.generate_reward_code(curriculum_idx, sample_num)                        
                         self.train_single(curriculum_idx, task, sample_num)
                     

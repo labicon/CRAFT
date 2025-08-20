@@ -58,6 +58,7 @@ class Go2SeesawWrapper(EmptyWrapper):
         
         global_state = {
             "agent_pos": base_info[:, :, :3],
+            "agent_yaw": base_info[:, :, 5],
             "target_pos": self.target_pos,
             "seesaw_center": self.seesaw_center,
             "seesaw_start": self.seesaw_start,
@@ -65,6 +66,9 @@ class Go2SeesawWrapper(EmptyWrapper):
         }
 
         reward, reward_dict, max_reward = self.gpt_reward(global_state, action)
+        
+        # Update distances
+        self._update_distances(global_state, action)
 
         for key, value in reward_dict.items():
             reward_key = f"Reward/{key}"
@@ -89,8 +93,6 @@ class Go2SeesawWrapper(EmptyWrapper):
         # Scale up the x_movement to match the action scale
         x_movement = x_movement * 10.0
 
-        self.last_x_pos = copy(x_pos)
-
         return x_movement
     
     def _y_alignment(self, state, action):
@@ -111,7 +113,6 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         # Scale the seesaw_start_progress to match the action scale
         seesaw_start_progress = seesaw_start_progress * 10.0
-        self.last_seesaw_start_distance = copy(seesaw_start_distance)
 
         # if agent is already at the start, return 1.0
         seesaw_start_progress[seesaw_start_distance < 0.5] = 1.0
@@ -129,7 +130,6 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         # Scale the seesaw_end_progress to match the action scale
         seesaw_end_progress = seesaw_end_progress * 10.0
-        self.last_seesaw_end_distance = copy(seesaw_end_distance)
 
         # if agent is already at the end, return 1.0
         seesaw_end_progress[seesaw_end_distance < 0.5] = 1.0
@@ -147,7 +147,6 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         # Scale the seesaw_center_progress to match the action scale
         seesaw_center_progress = seesaw_center_progress * 10.0
-        self.last_seesaw_center_distance = copy(seesaw_center_distance)
 
         # if agent is already at the center, return 1.0
         seesaw_center_progress[seesaw_center_distance < 0.5] = 1.0
@@ -165,12 +164,18 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         # Scale the target_progress to match the action scale
         target_progress = target_progress * 10.0
-        self.last_target_distance = copy(target_distance)
 
         # if agent is already at the target, return 1.0
         target_progress[target_distance < 0.5] = 1.0
 
         return target_progress
+    
+    def _update_distances(self, state, action):
+        self.last_x_pos = state["agent_pos"][:, :, 0].clone()
+        self.last_seesaw_start_distance = torch.norm(state["agent_pos"][:, :, :2] - self.seesaw_start, p=2, dim=-1)
+        self.last_seesaw_end_distance = torch.norm(state["agent_pos"][:, :, :2] - self.seesaw_end, p=2, dim=-1)
+        self.last_seesaw_center_distance = torch.norm(state["agent_pos"][:, :, :] - self.seesaw_center, p=2, dim=-1)
+        self.last_target_distance = torch.norm(state["agent_pos"][:, :, :] - self.target_pos[:, :, :], p=2, dim=-1)
 
     def _agent_distance(self, state, action):
         base_pos = state["agent_pos"]
@@ -208,6 +213,12 @@ class Go2SeesawWrapper(EmptyWrapper):
     def _command_value(self, state, action):
         command_norm = 0.5 * torch.abs(action[:,:, 0]) + 2.0 * torch.abs(action[:, :, 1]) + 2.0 * torch.abs(action[:, :, 2])
         return command_norm
+    
+    def _yaw_alignment(self, state, action):
+        yaw = state["agent_yaw"]
+        yaw_penalty = torch.ones_like(yaw) - torch.abs(yaw) / 3.14
+
+        return yaw_penalty
 
     def _check_reward_shape(self, reward):
         if reward.shape == (self.num_envs, self.num_agents):

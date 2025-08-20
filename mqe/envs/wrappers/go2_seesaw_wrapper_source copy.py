@@ -152,6 +152,13 @@ class Go2SeesawWrapper(EmptyWrapper):
     
     def _command_value(self, state, action):
         return torch.norm(action, p=2, dim=-1)
+    
+    def _yaw_penalty(self, state, action):
+        base_rpy = state["agent_pos"][:, :, 3:6]
+        yaw = base_rpy[:, :, 2]
+        yaw_penalty = torch.abs(yaw) / 3.14
+
+        return yaw_penalty
 
     def _check_reward_shape(self, reward):
         if reward.shape == (self.num_envs, self.num_agents):
