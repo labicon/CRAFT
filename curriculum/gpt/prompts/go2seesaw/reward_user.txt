@@ -74,7 +74,7 @@ def gpt_reward(self, state, action):
     rew_dict['distance_reward'] = torch.mean(distance_reward)
 
     # Reward for success - max 10.0
-    success = self._success_evaluation(state, action)
+    success = self._success(state, action)
     success_reward = 10.0 * success.float()
     success_reward = self._check_reward_shape(success_reward)
     rew_dict["success"] = torch.mean(success_reward)
