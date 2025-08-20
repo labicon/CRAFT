@@ -6,7 +6,7 @@ from tensorboard.backend.event_processing.event_accumulator import EventAccumula
 
 from gpt.utils import *
 
-GPT_MODEL = "gpt-4o" # gpt-4-1106-preview, gpt-4-0613, gpt-4-32k, gpt-3.5-turbo-1106 gpt-4-turbo-preview
+GPT_MODEL = "gpt-4o-2024-08-06" # gpt-4-1106-preview, gpt-4-0613, gpt-4-32k, gpt-3.5-turbo-1106 gpt-4-turbo-preview
 
 
 class CurriculumAPI:
@@ -248,17 +248,62 @@ class CurriculumAPI:
         
 # Function to extract details from each task section
 def extract_task_details(task_section, datetime):
-
     details = {}
     lines = task_section.split("\n")
-    for line in lines:
+    
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        
         if line.startswith("Task"):
             details["Task_num"] = line.split(" ")[1].strip()
         elif line.startswith("Name:"):
             details["Subtask"] = line.split(": ")[1].strip()
             details["Name"] = f'{details["Task_num"]}_{details["Subtask"]}({datetime})'
         elif line.startswith("Description:"):
-            details["Description"] = ": ".join(line.split(": ")[1:])
+            # Handle multi-line description
+            description_lines = []
+            if ":" in line:
+                # Get text after the colon on the same line
+                after_colon = ": ".join(line.split(": ")[1:]).strip()
+                if after_colon:
+                    description_lines.append(after_colon)
+            
+            # Continue reading subsequent lines until we hit "Reason:" or another section
+            i += 1
+            while i < len(lines):
+                next_line = lines[i].strip()
+                if next_line.startswith("Reason:") or next_line.startswith("Task") or next_line.startswith("Name:"):
+                    i -= 1  # Step back so the outer loop can process this line
+                    break
+                if next_line:  # Only add non-empty lines
+                    description_lines.append(next_line)
+                i += 1
+            
+            details["Description"] = "\n".join(description_lines).strip()
+            
         elif line.startswith("Reason:"):
-            details["Reason"] = ": ".join(line.split(": ")[1:])
+            # Handle multi-line reason
+            reason_lines = []
+            if ":" in line:
+                # Get text after the colon on the same line
+                after_colon = ": ".join(line.split(": ")[1:]).strip()
+                if after_colon:
+                    reason_lines.append(after_colon)
+            
+            # Continue reading subsequent lines until we hit the next section or end
+            i += 1
+            while i < len(lines):
+                next_line = lines[i].strip()
+                if next_line.startswith("Task") or next_line.startswith("Name:") or next_line.startswith("Description:"):
+                    i -= 1  # Step back so the outer loop can process this line
+                    break
+                if next_line:  # Only add non-empty lines
+                    reason_lines.append(next_line)
+                i += 1
+            
+            details["Reason"] = "\n".join(reason_lines).strip()
+        
+        i += 1
+    
     return details

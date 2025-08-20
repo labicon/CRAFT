@@ -9,6 +9,7 @@ from openrl.runners.common import PPOAgent
 
 import numpy as np
 import os
+import pickle
 
 def agentwise_success(obs, gate_pos=None):
     if gate_pos is None:
@@ -33,29 +34,8 @@ if __name__ == "__main__":
     args = get_args()
     env, _ = make_env(args, custom_cfg(args))
 
-    # args.config = "./openrl_ws/cfgs/ppo.yaml" # Somehow this does not work
-    args.lr = 7e-4
-    args.critic_lr = 7e-4
-    args.log_interval = 5
-    # args.use_recurrent_policy = True 
-    args.use_joint_action_loss = False
-    args.use_valuenorm = True
-    args.use_adv_normalize = True
-
     net = PPONet(env, device="cuda")  # Create neural network.
     agent = PPOAgent(net)  # Initialize the agent.
-
-    # if args.algo == "jrpo" or args.algo == "ppo":
-    #     from openrl.modules.common import PPONet
-    #     from openrl.runners.common import PPOAgent
-    #     net = PPONet(env, cfg=args, device=args.rl_device)
-    #     agent = PPOAgent(net)
-    # else:
-    #     from openrl.modules.common import MATNet
-    #     from openrl.runners.common import MATAgent
-    #     env = MATWrapper(env)
-    #     net = MATNet(env, cfg=args, device=args.rl_device)
-    #     agent = MATAgent(net, use_wandb=args.use_wandb)
 
     if getattr(args, "checkpoint") is not None:
         agent.load(args.checkpoint)
@@ -65,16 +45,20 @@ if __name__ == "__main__":
     eval_runs = 0
     success_runs = 0
     partial_success_runs = 0
-    while eval_runs < 100:
+    reward_per_run = []
+    while eval_runs < 2:
         obs = env.reset(seed=eval_runs)  # Initialize the environment to obtain initial observations and environmental information.
         gate_pos = env.gate_pos[0,0,:2]
+        total_reward = 0.0
         while True:
             action, _ = agent.act(obs)  # The agent predicts the next action based on environmental observations.
             # The environment takes one step according to the action, obtains the next observation, reward, whether it ends and environmental information.
             new_obs, r, done, info = env.step(action)
+            total_reward += np.sum(r)
             if done[0, 0]:
                 print(f"Run {eval_runs} completed.")
                 eval_runs += 1
+                reward_per_run.append(total_reward)
                 print("Observation:", obs)
                 if np.linalg.norm(obs[0, 0, 2:4] - obs[0, 1, 2:4]) < 0.51:
                     print("Terminated due to close proximity")
@@ -98,3 +82,16 @@ if __name__ == "__main__":
                 
     print(f"Total runs: {eval_runs}, Successful runs: {success_runs}, Success rate: {success_runs / eval_runs * 100:.2f}%")
     print(f"Partial success runs: {partial_success_runs}, Partial success rate: {partial_success_runs / eval_runs * 100:.2f}%")
+    print(f"Average reward per run: {np.mean(reward_per_run):.2f}, Std: {np.std(reward_per_run):.2f}")
+
+    # Save the evaluation results
+    eval_results = {
+        "total_runs": eval_runs,
+        "success_runs": success_runs,
+        "partial_success_runs": partial_success_runs,
+        "average_reward": np.mean(reward_per_run) if reward_per_run else 0.0,
+        "std_reward": np.std(reward_per_run) if reward_per_run else 0.0,
+    }
+    eval_results_path = os.path.join(args.checkpoint, "eval_results.pkl")
+    with open(eval_results_path, 'wb') as f:
+        pickle.dump(eval_results, f)
