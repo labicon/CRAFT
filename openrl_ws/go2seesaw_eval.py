@@ -9,8 +9,9 @@ from openrl.runners.common import PPOAgent
 
 import numpy as np
 import os
+import pickle
 
-def eval_success(obs):
+def eval_total_success(obs):
     agent_0_pos = obs[0, 0, 2:5]
     agent_1_pos = obs[0, 1, 2:5]
 
@@ -41,15 +42,6 @@ if __name__ == "__main__":
     args = get_args()
     env, _ = make_env(args, custom_cfg(args))
 
-    # args.config = "./openrl_ws/cfgs/ppo.yaml" # Somehow this does not work
-    args.lr = 7e-4
-    args.critic_lr = 7e-4
-    args.log_interval = 5
-    # args.use_recurrent_policy = True 
-    args.use_joint_action_loss = False
-    args.use_valuenorm = True
-    args.use_adv_normalize = True
-
     net = PPONet(env, device="cuda")  # Create neural network.
     agent = PPOAgent(net)  # Initialize the agent.
 
@@ -61,27 +53,31 @@ if __name__ == "__main__":
     eval_runs = 0
     success_runs = 0
     partial_success_runs = 0
+    reward_per_run = []
     while eval_runs < 100:
-        success = False
-        partial_success = False
         obs = env.reset(seed=eval_runs)  # Initialize the environment to obtain initial observations and environmental information.
+        success_run = False
+        partial_success_run = False
+        total_reward = 0.0
         while True:
             action, _ = agent.act(obs)  # The agent predicts the next action based on environmental observations.
             # The environment takes one step according to the action, obtains the next observation, reward, whether it ends and environmental information.
             new_obs, r, done, info = env.step(action)
-            success_step = eval_success(new_obs)
-            partial_success_step = eval_partial_success(new_obs)
-            success = success or success_step
-            partial_success = partial_success or partial_success_step
+            total_reward += np.sum(r)
+            total_success = eval_total_success(new_obs)
+            partial_success = eval_partial_success(new_obs)
+            success_run = success_run or total_success
+            partial_success_run = partial_success_run or partial_success
             if done[0, 0]:
                 print(f"Run {eval_runs} completed.")
                 eval_runs += 1
+                reward_per_run.append(total_reward)
                 if np.linalg.norm(obs[0, 0, 2:4] - obs[0, 1, 2:4]) < 0.51:
                     print("Terminated due to close proximity")
                 else:
                     print("Terminated due to other reasons")
 
-                if success:
+                if total_success:
                     print("Total success!")
                     success_runs += 1
                 elif partial_success:
@@ -98,3 +94,16 @@ if __name__ == "__main__":
                 
     print(f"Total runs: {eval_runs}, Successful runs: {success_runs}, Success rate: {success_runs / eval_runs * 100:.2f}%")
     print(f"Partial success runs: {partial_success_runs}, Partial success rate: {partial_success_runs / eval_runs * 100:.2f}%")
+    print(f"Average reward per run: {np.mean(reward_per_run):.2f}, Std: {np.std(reward_per_run):.2f}")
+
+    # Save the evaluation results
+    eval_results = {
+        "total_runs": eval_runs,
+        "success_runs": success_runs,
+        "partial_success_runs": partial_success_runs,
+        "average_reward": np.mean(reward_per_run) if reward_per_run else 0.0,
+        "std_reward": np.std(reward_per_run) if reward_per_run else 0.0,
+    }
+    eval_results_path = os.path.join(args.checkpoint, "eval_results.pkl")
+    with open(eval_results_path, 'wb') as f:
+        pickle.dump(eval_results, f)

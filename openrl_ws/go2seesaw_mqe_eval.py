@@ -43,8 +43,8 @@ def get_model_directories(base_dir):
     
 def run_eval(model_path):
     process = subprocess.run(["python",
-                            "./openrl_ws/go2gate_eval.py",
-                            "--task", "go2gate",
+                            "./openrl_ws/go2seesaw_eval.py",
+                            "--task", "go2seesaw",
                             "--algo", "ppo",
                             "--sim_device", "cuda:0",
                             "--rl_device", "cuda:0",
@@ -269,14 +269,12 @@ def main():
     print("Starting evaluation...")
 
     experiment_directories = [
-        "/home/kang/mqe-curriculum/logs/go2gate/08-02_01-23",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-02_12-13",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-02_19-44",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-03_05-36",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-04_06-19",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-04_17-21",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-05_03-29",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-05_16-55",
+        "/home/kang/mqe-curriculum/logs/go2seesaw/08-15_14-38",
+        "/home/kang/mqe-curriculum/logs/go2seesaw/08-16_08-41",
+        "/home/kang/mqe-curriculum/logs/go2seesaw/08-17_00-40",
+        "/home/kang/mqe-curriculum/logs/go2seesaw/08-17_10-44",
+        "/home/kang/mqe-curriculum/logs/go2seesaw/08-18_09-25",
+        "/home/kang/mqe-curriculum/logs/go2seesaw/08-19_02-44",
     ]
 
     total_success_summary = []
@@ -351,7 +349,7 @@ def main():
     std_reward_summary = np.array(std_reward_summary_padded)
     
     # Plot the summary curves
-    plot_multiple_results("/home/kang/mqe-curriculum/logs/go2gate", 
+    plot_multiple_results("/home/kang/mqe-curriculum/logs/go2seesaw", 
                           total_success_summary, 
                           partial_success_summary, 
                           average_reward_summary, 

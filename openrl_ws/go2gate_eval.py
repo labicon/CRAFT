@@ -46,7 +46,7 @@ if __name__ == "__main__":
     success_runs = 0
     partial_success_runs = 0
     reward_per_run = []
-    while eval_runs < 2:
+    while eval_runs < 100:
         obs = env.reset(seed=eval_runs)  # Initialize the environment to obtain initial observations and environmental information.
         gate_pos = env.gate_pos[0,0,:2]
         total_reward = 0.0
