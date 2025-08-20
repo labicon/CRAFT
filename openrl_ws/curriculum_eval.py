@@ -36,7 +36,7 @@ def eval(load_dir, seed=0):
         reward_buffer["agent_0"] += reward[0, 0]
         reward_buffer["agent_1"] += reward[0, 1]
         if done[0, 0]:
-            # traj_dict, rew_dict = analyze_go1gate_trajectory(obs_buffer, reward_buffer, target_pos)
+            # traj_dict, rew_dict = analyze_go2gate_trajectory(obs_buffer, reward_buffer, target_pos)
             traj_dict, rew_dict = analyze_go2seesaw_trajectory(obs_buffer, reward_buffer, env)
             print(f"Total reward for agent 0: {reward_buffer['agent_0']}, agent 1: {reward_buffer['agent_1']}")
             for key, value in traj_dict.items():
@@ -58,7 +58,7 @@ def eval(load_dir, seed=0):
 
             break
 
-def analyze_go1gate_trajectory(traj_buffer, rew_buffer, target_pos):
+def analyze_go2gate_trajectory(traj_buffer, rew_buffer, target_pos):
     stepsize = len(traj_buffer)
     max_samples = 20
     step = max(1, stepsize // max_samples)

@@ -3,8 +3,9 @@ import yaml
 from datetime import datetime
 import os
 
-from train.manual_curriculum import Manual_Module
+# from train.manual_curriculum import Manual_Module
 from train.curriculum_train_multiple_eval import Curriculum_Module
+# from train.curriculum_train_wo_image import Curriculum_Module
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Recieve task name, experiment name, and seed number")

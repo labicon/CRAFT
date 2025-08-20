@@ -116,6 +116,10 @@ class Go2GateCfg(Go2Cfg):
 
     class domain_rand(Go2Cfg.domain_rand):
         init_base_pos_range = None
+        # init_base_pos_range = {
+        #     "x": (0.0, 0.5),
+        #     "y": (-0.2, 0.2),
+        # }
  
     class rewards(Go2Cfg.rewards):
         class scales:
