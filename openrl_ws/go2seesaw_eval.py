@@ -77,10 +77,10 @@ if __name__ == "__main__":
                 else:
                     print("Terminated due to other reasons")
 
-                if total_success:
+                if success_run:
                     print("Total success!")
                     success_runs += 1
-                elif partial_success:
+                elif partial_success_run:
                     print("Partial success!")
                     partial_success_runs += 1
 
