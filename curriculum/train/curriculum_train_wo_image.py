@@ -119,28 +119,29 @@ class Curriculum_Module:
         if curriculum_idx == 0:
             print(f"Training task {task['Name']} sample {sample_num} from scratch")
             process = subprocess.run(["python", 
-                                        "/home/kang/MANavigation/skrl_ws/curriculum_train.py", 
+                                        "./openrl_ws/curriculum_train.py", 
                                         "--run_date", self.experiment_time,
                                         "--curriculum_task", task['Name'], 
                                         "--sample_idx", str(sample_num),
                                         "--training_iter", str(iter_per_task),
                                         ],
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        text=True)
-            print(process.stdout)
-            print(process.stderr)
+                                        # stdout=subprocess.PIPE,
+                                        # stderr=subprocess.PIPE,
+                                        # text=True
+                                        )
+            # print(process.stdout)
+            # print(process.stderr)
             # Save stdout and stderr to log file
-            with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/training_log.txt", "w") as file:
-                file.write(process.stdout)
-                file.write(process.stderr)
+            # with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/training_log.txt", "w") as file:
+            #     file.write(process.stdout)
+            #     file.write(process.stderr)
 
         else:
             previous_task = self.curriculum[curriculum_idx - 1]
             load_sample_num = self.best_model_idx_list[curriculum_idx - 1]
             print(f"Training task {task['Name']} sample {sample_num} from previous task {previous_task['Name']} sample {load_sample_num}")
             process = subprocess.run(["python", 
-                                        "/home/kang/MANavigation/skrl_ws/curriculum_train.py", 
+                                        "./openrl_ws/curriculum_train.py", 
                                         "--run_date", self.experiment_time,
                                         "--curriculum_task", task['Name'], 
                                         "--sample_idx", str(sample_num),
@@ -149,14 +150,15 @@ class Curriculum_Module:
                                         "--load_sample_idx", str(load_sample_num),
                                         "--training_iter", str(iter_per_task),
                                         ],
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        text=True)
-            print(process.stdout)
-            print(process.stderr)
-            with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/training_log.txt", "w") as file:
-                file.write(process.stdout)
-                file.write(process.stderr)
+                                        # stdout=subprocess.PIPE,
+                                        # stderr=subprocess.PIPE,
+                                        # text=True
+                                        )
+            # print(process.stdout)
+            # print(process.stderr)
+            # with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/training_log.txt", "w") as file:
+            #     file.write(process.stdout)
+            #     file.write(process.stderr)
 
 
     def generate_reward_code(self, curriculum_idx, sample_num):
@@ -202,18 +204,19 @@ class Curriculum_Module:
         print(f"Collecting evaluation data for task {task['Name']} sample {sample_num}")  
         # Save the trajectory analysis in the log path        
         process = subprocess.run(["python",
-                                    "/home/kang/MANavigation/skrl_ws/curriculum_eval.py",
+                                    "./openrl_ws/curriculum_eval.py",
                                     "--run_date", self.experiment_time,
                                     "--curriculum_task", task['Name'],
                                     "--sample_idx", str(sample_num),
                                     ],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
-                                    text=True)
+                                    # stdout=subprocess.PIPE,
+                                    # stderr=subprocess.PIPE,
+                                    # text=True
+                                    )
         # Save stdout and stderr to log file
-        with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/evaluation_log.txt", "w") as file:
-            file.write(process.stdout)
-            file.write(process.stderr)
+        # with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/evaluation_log.txt", "w") as file:
+        #     file.write(process.stdout)
+        #     file.write(process.stderr)
         # Load the trajectory and reward data
         save_path = os.path.join("runs", self.experiment_time, task['Name'], f"sample_{sample_num}")
         with open(os.path.join(save_path, "traj_dict.pkl"), 'rb') as f:
