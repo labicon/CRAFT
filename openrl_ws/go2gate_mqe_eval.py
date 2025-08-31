@@ -108,7 +108,10 @@ def plot_results(save_dir, total_success_rate_curve, partial_success_rate_curve,
     # plt.show()
     plt.close()
 
-def plot_multiple_results(save_dir, total_success_summary, partial_success_summary, average_reward_summary, std_reward_summary):  
+def plot_multiple_results(save_dir, total_success_summary, partial_success_summary, 
+                          average_reward_summary, std_reward_summary,
+                          average_minimum_distance_summary, std_minimum_distance_summary,
+                          average_x_traversed_summary, std_x_traversed_summary):  
     # Use palatino for plotting
     plt.rcParams.update({'font.family': 'Palatino'})
     
@@ -159,6 +162,40 @@ def plot_multiple_results(save_dir, total_success_summary, partial_success_summa
     plt.ylabel('Average Reward')
     plt.title('Average Reward Curve with Std Dev')
     plt.savefig(os.path.join(save_dir, 'average_reward_curve.png'))
+    # plt.show()
+    plt.close()
+
+    # Plot the minimum distance curve with using std as shadow
+    plt.figure(figsize=(12, 6))
+    average_minimum_distance_mean = np.mean(average_minimum_distance_summary, axis=0)
+    average_minimum_distance_std = np.std(average_minimum_distance_summary, axis=0)
+    plt.plot(average_minimum_distance_mean, label='Average Minimum Distance')
+    plt.fill_between(range(len(average_minimum_distance_mean)),
+                     average_minimum_distance_mean - average_minimum_distance_std,
+                     average_minimum_distance_mean + average_minimum_distance_std,
+                     color='gray', alpha=0.5, label='Std Dev')
+    plt.legend()
+    plt.xlabel('Training Steps')
+    plt.ylabel('Minimum Distance')
+    plt.title('Average Minimum Distance Curve with Std Dev')
+    plt.savefig(os.path.join(save_dir, 'average_minimum_distance_curve.png'))
+    # plt.show()
+    plt.close()
+
+    # Plot the x traversed curve with using std as shadow
+    plt.figure(figsize=(12, 6))
+    average_x_traversed_mean = np.mean(average_x_traversed_summary, axis=0)
+    average_x_traversed_std = np.std(average_x_traversed_summary, axis=0)
+    plt.plot(average_x_traversed_mean, label='Average X Traversed')
+    plt.fill_between(range(len(average_x_traversed_mean)),
+                     average_x_traversed_mean - average_x_traversed_std,
+                     average_x_traversed_mean + average_x_traversed_std,
+                     color='gray', alpha=0.5, label='Std Dev')
+    plt.legend()
+    plt.xlabel('Training Steps')
+    plt.ylabel('X Traversed')
+    plt.title('Average X Traversed Curve with Std Dev')
+    plt.savefig(os.path.join(save_dir, 'average_x_traversed_curve.png'))
     # plt.show()
     plt.close()
 
@@ -269,20 +306,24 @@ def main():
     print("Starting evaluation...")
 
     experiment_directories = [
-        "/home/kang/mqe-curriculum/logs/go2gate/08-02_01-23",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-02_12-13",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-02_19-44",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-03_05-36",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-04_06-19",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-04_17-21",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-05_03-29",
-        "/home/kang/mqe-curriculum/logs/go2gate/08-05_16-55",
+        "/home/kanghyun/mqe-curriculum/logs/go2gate/08-02_01-23",
+        "/home/kanghyun/mqe-curriculum/logs/go2gate/08-02_12-13",
+        "/home/kanghyun/mqe-curriculum/logs/go2gate/08-02_19-44",
+        "/home/kanghyun/mqe-curriculum/logs/go2gate/08-03_05-36",
+        # "/home/kanghyun/mqe-curriculum/logs/go2gate/08-04_06-19",
+        "/home/kanghyun/mqe-curriculum/logs/go2gate/08-04_17-21",
+        # "/home/kanghyun/mqe-curriculum/logs/go2gate/08-05_03-29",
+        "/home/kanghyun/mqe-curriculum/logs/go2gate/08-05_16-55",
     ]
 
     total_success_summary = []
     partial_success_summary = []
     average_reward_summary = []
     std_reward_summary = []
+    average_minimum_distance_summary = []
+    std_minimum_distance_summary = []
+    average_x_traversed_summary = []
+    std_x_traversed_summary = []
 
     for experiment in experiment_directories:
         base_directories = lookup_optimal_dir(experiment)
@@ -291,6 +332,10 @@ def main():
         partial_success_rate_curve = []
         average_reward_curve = []
         std_reward_curve = []
+        average_minimum_distance_curve = []
+        std_minimum_distance_curve = []
+        average_x_traversed_curve = []
+        std_x_traversed_curve = []
 
         for base_dir in base_directories:
             model_dirs = get_model_directories(base_dir)
@@ -308,6 +353,10 @@ def main():
                 partial_success_rate_curve.append(eval_results['partial_success_runs'] / eval_results['total_runs'] * 100 if eval_results['total_runs'] > 0 else 0)
                 average_reward_curve.append(eval_results['average_reward'])
                 std_reward_curve.append(eval_results['std_reward'])
+                average_minimum_distance_curve.append(eval_results['average_minimum_distance'])
+                std_minimum_distance_curve.append(eval_results['std_minimum_distance'])
+                average_x_traversed_curve.append(eval_results['average_x_traversed'])
+                std_x_traversed_curve.append(eval_results['std_x_traversed'])
 
         # Plot the results
         plot_results(experiment, total_success_rate_curve, partial_success_rate_curve, average_reward_curve, std_reward_curve)
@@ -315,11 +364,15 @@ def main():
         partial_success_summary.append(partial_success_rate_curve)
         average_reward_summary.append(average_reward_curve)
         std_reward_summary.append(std_reward_curve)
+        average_minimum_distance_summary.append(average_minimum_distance_curve)
+        std_minimum_distance_summary.append(std_minimum_distance_curve)
+        average_x_traversed_summary.append(average_x_traversed_curve)
+        std_x_traversed_summary.append(std_x_traversed_curve)
 
     # convert to numpy arrays for easier handling
     # Find the maximum length among all curves
     max_length = 0
-    for curve_list in [total_success_summary, partial_success_summary, average_reward_summary, std_reward_summary]:
+    for curve_list in [total_success_summary, partial_success_summary, average_reward_summary, std_reward_summary, average_minimum_distance_summary, std_minimum_distance_summary, average_x_traversed_summary, std_x_traversed_summary]:
         for curve in curve_list:
             max_length = max(max_length, len(curve))
     
@@ -349,13 +402,41 @@ def main():
         padded_curve = pad_curve_to_length(curve, max_length)
         std_reward_summary_padded.append(padded_curve)
     std_reward_summary = np.array(std_reward_summary_padded)
-    
+
+    average_minimum_distance_padded = []
+    for curve in average_minimum_distance_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        average_minimum_distance_padded.append(padded_curve)
+    average_minimum_distance_summary = np.array(average_minimum_distance_padded)
+
+    std_minimum_distance_padded = []
+    for curve in std_minimum_distance_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        std_minimum_distance_padded.append(padded_curve)
+    std_minimum_distance_summary = np.array(std_minimum_distance_padded)
+
+    average_x_traversed_padded = []
+    for curve in average_x_traversed_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        average_x_traversed_padded.append(padded_curve)
+    average_x_traversed_summary = np.array(average_x_traversed_padded)
+
+    std_x_traversed_padded = []
+    for curve in std_x_traversed_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        std_x_traversed_padded.append(padded_curve)
+    std_x_traversed_summary = np.array(std_x_traversed_padded)
+
     # Plot the summary curves
-    plot_multiple_results("/home/kang/mqe-curriculum/logs/go2gate", 
+    plot_multiple_results("./logs/go2gate", 
                           total_success_summary, 
                           partial_success_summary, 
                           average_reward_summary, 
-                          std_reward_summary)
+                          std_reward_summary,
+                          average_minimum_distance_summary,
+                          std_minimum_distance_summary,
+                          average_x_traversed_summary,
+                          std_x_traversed_summary)
 
 if __name__ == "__main__":
     main()

@@ -349,7 +349,7 @@ def main():
     std_reward_summary = np.array(std_reward_summary_padded)
     
     # Plot the summary curves
-    plot_multiple_results("/home/kang/mqe-curriculum/logs/go2seesaw", 
+    plot_multiple_results("./logs/go2seesaw", 
                           total_success_summary, 
                           partial_success_summary, 
                           average_reward_summary, 

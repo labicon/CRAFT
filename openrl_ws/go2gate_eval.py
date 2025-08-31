@@ -30,6 +30,20 @@ def total_success(obs, gate_pos=None):
     agent_0_success, agent_1_success = agentwise_success(obs, gate_pos)
     return agent_0_success and agent_1_success
 
+def distance_to_target(obs, target_pos=None):
+    if target_pos is None:
+        target_pos = np.array([5.0, 0.0])
+    agent_0_pos = obs[0, 0, 2:4]
+    agent_1_pos = obs[0, 1, 2:4]
+    agent_0_dist = np.linalg.norm(agent_0_pos - target_pos)
+    agent_1_dist = np.linalg.norm(agent_1_pos - target_pos)
+    return np.maximum(agent_0_dist, agent_1_dist)
+
+def x_traversed(obs):
+    agent_0_x = obs[0, 0, 2]
+    agent_1_x = obs[0, 1, 2]
+    return np.minimum(agent_0_x, agent_1_x)
+
 if __name__ == "__main__":
     args = get_args()
     env, _ = make_env(args, custom_cfg(args))
@@ -46,24 +60,40 @@ if __name__ == "__main__":
     success_runs = 0
     partial_success_runs = 0
     reward_per_run = []
+    minimum_distance_per_run = []
+    x_traversed_per_run = []
     while eval_runs < 100:
-        obs = env.reset(seed=eval_runs)  # Initialize the environment to obtain initial observations and environmental information.
+        obs = env.reset(seed=np.random.randint(0, 10000))  # Initialize the environment to obtain initial observations and environmental information.
+        episode_length = 0
         gate_pos = env.gate_pos[0,0,:2]
+        target_pos = env.target_pos[0,:2].cpu().numpy()
+        minimum_distance = distance_to_target(obs, target_pos)
+        x_traversed_distance = x_traversed(obs)
         total_reward = 0.0
         while True:
             action, _ = agent.act(obs)  # The agent predicts the next action based on environmental observations.
             # The environment takes one step according to the action, obtains the next observation, reward, whether it ends and environmental information.
             new_obs, r, done, info = env.step(action)
+            episode_length += 1
+            minimum_distance = min(minimum_distance, distance_to_target(new_obs, target_pos))
+            x_traversed_distance = max(x_traversed_distance, x_traversed(new_obs))
             total_reward += np.sum(r)
             if done[0, 0]:
                 print(f"Run {eval_runs} completed.")
+                
+                if episode_length <= 30:
+                    print("Terminated due to initialization issue")
+                    print("Do not include in the analysis")
+                    break
                 eval_runs += 1
-                reward_per_run.append(total_reward)
-                print("Observation:", obs)
                 if np.linalg.norm(obs[0, 0, 2:4] - obs[0, 1, 2:4]) < 0.51:
                     print("Terminated due to close proximity")
                 else:
                     print("Terminated due to other reasons")
+
+                reward_per_run.append(total_reward)
+                minimum_distance_per_run.append(minimum_distance)
+                x_traversed_per_run.append(x_traversed_distance)
 
                 if total_success(obs, gate_pos):
                     print("Total success!")
@@ -91,6 +121,10 @@ if __name__ == "__main__":
         "partial_success_runs": partial_success_runs,
         "average_reward": np.mean(reward_per_run) if reward_per_run else 0.0,
         "std_reward": np.std(reward_per_run) if reward_per_run else 0.0,
+        "average_minimum_distance": np.mean(minimum_distance_per_run) if minimum_distance_per_run else 0.0,
+        "std_minimum_distance": np.std(minimum_distance_per_run) if minimum_distance_per_run else 0.0,
+        "average_x_traversed": np.mean(x_traversed_per_run) if x_traversed_per_run else 0.0,
+        "std_x_traversed": np.std(x_traversed_per_run) if x_traversed_per_run else 0.0,
     }
     eval_results_path = os.path.join(args.checkpoint, "eval_results.pkl")
     with open(eval_results_path, 'wb') as f:
