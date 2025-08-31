@@ -218,7 +218,7 @@ class Curriculum_Module:
         #     file.write(process.stdout)
         #     file.write(process.stderr)
         # Load the trajectory and reward data
-        save_path = os.path.join("runs", self.experiment_time, task['Name'], f"sample_{sample_num}")
+        save_path = os.path.join("logs", self.experiment_time, task['Name'], f"sample_{sample_num}")
         with open(os.path.join(save_path, "traj_dict.pkl"), 'rb') as f:
             traj = pickle.load(f)
         with open(os.path.join(save_path, "rew_dict.pkl"), 'rb') as f:
