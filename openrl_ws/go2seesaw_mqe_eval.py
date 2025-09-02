@@ -64,11 +64,19 @@ def run_eval(model_path):
               f"Successful runs: {eval_results['success_runs']}, "
               f"Partial success runs: {eval_results['partial_success_runs']}, "
               f"Average reward: {eval_results['average_reward']:.2f}, "
-              f"Std reward: {eval_results['std_reward']:.2f}")
-        
+              f"Std reward: {eval_results['std_reward']:.2f}, "
+              f"Average maximum height: {eval_results['average_maximum_height']:.2f}, "
+              f"Std maximum height: {eval_results['std_maximum_height']:.2f}, "
+              f"Average target distance: {eval_results['average_target_distance']:.2f}, "
+              f"Std target distance: {eval_results['std_target_distance']:.2f}")
+
     return eval_results
 
-def plot_results(save_dir, total_success_rate_curve, partial_success_rate_curve, average_reward_curve, std_reward_curve):  
+def plot_results(save_dir, 
+                 total_success_rate_curve, partial_success_rate_curve, 
+                 average_reward_curve, std_reward_curve,
+                 average_maximum_height_curve, std_maximum_height_curve,
+                 average_target_distance_curve, std_target_distance_curve):  
     # Use palatino for plotting
     plt.rcParams.update({'font.family': 'Palatino'})
     
@@ -108,7 +116,39 @@ def plot_results(save_dir, total_success_rate_curve, partial_success_rate_curve,
     # plt.show()
     plt.close()
 
-def plot_multiple_results(save_dir, total_success_summary, partial_success_summary, average_reward_summary, std_reward_summary):  
+    plt.figure(figsize=(12, 6))
+    plt.plot(average_maximum_height_curve, label='Average Maximum Height')
+    plt.fill_between(range(len(average_maximum_height_curve)),
+                     np.array(average_maximum_height_curve) - np.array(std_maximum_height_curve),
+                     np.array(average_maximum_height_curve) + np.array(std_maximum_height_curve),
+                     color='gray', alpha=0.5, label='Std Dev')
+    plt.legend()
+    plt.xlabel('Training Steps')
+    plt.ylabel('Average Maximum Height')
+    plt.title('Average Maximum Height Curve with Std Dev')
+    plt.savefig(os.path.join(save_dir, 'average_maximum_height_curve.png'))
+    # plt.show()
+    plt.close()
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(average_target_distance_curve, label='Average Target Distance')
+    plt.fill_between(range(len(average_target_distance_curve)),
+                     np.array(average_target_distance_curve) - np.array(std_target_distance_curve),
+                     np.array(average_target_distance_curve) + np.array(std_target_distance_curve),
+                     color='gray', alpha=0.5, label='Std Dev')
+    plt.legend()
+    plt.xlabel('Training Steps')
+    plt.ylabel('Average Target Distance')
+    plt.title('Average Target Distance Curve with Std Dev')
+    plt.savefig(os.path.join(save_dir, 'average_target_distance_curve.png'))
+    # plt.show()
+    plt.close()
+
+def plot_multiple_results(save_dir, 
+                          total_success_summary, partial_success_summary, 
+                          average_reward_summary, std_reward_summary,
+                          average_maximum_height_summary, std_maximum_height_summary,
+                          average_target_distance_summary, std_target_distance_summary):  
     # Use palatino for plotting
     plt.rcParams.update({'font.family': 'Palatino'})
     
@@ -159,6 +199,38 @@ def plot_multiple_results(save_dir, total_success_summary, partial_success_summa
     plt.ylabel('Average Reward')
     plt.title('Average Reward Curve with Std Dev')
     plt.savefig(os.path.join(save_dir, 'average_reward_curve.png'))
+    # plt.show()
+    plt.close()
+
+    plt.figure(figsize=(12, 6))
+    average_maximum_height_mean = np.mean(average_maximum_height_summary, axis=0)
+    average_maximum_height_std = np.std(average_maximum_height_summary, axis=0)
+    plt.plot(average_maximum_height_mean, label='Average Maximum Height')
+    plt.fill_between(range(len(average_maximum_height_mean)),
+                     average_maximum_height_mean - average_maximum_height_std,
+                     average_maximum_height_mean + average_maximum_height_std,
+                     color='gray', alpha=0.5, label='Std Dev')
+    plt.legend()
+    plt.xlabel('Training Steps')
+    plt.ylabel('Average Maximum Height')
+    plt.title('Average Maximum Height Curve with Std Dev')
+    plt.savefig(os.path.join(save_dir, 'average_maximum_height_curve.png'))
+    # plt.show()
+    plt.close()
+
+    plt.figure(figsize=(12, 6))
+    average_target_distance_mean = np.mean(average_target_distance_summary, axis=0)
+    average_target_distance_std = np.std(average_target_distance_summary, axis=0)
+    plt.plot(average_target_distance_mean, label='Average Target Distance')
+    plt.fill_between(range(len(average_target_distance_mean)),
+                     average_target_distance_mean - average_target_distance_std,
+                     average_target_distance_mean + average_target_distance_std,
+                     color='gray', alpha=0.5, label='Std Dev')
+    plt.legend()
+    plt.xlabel('Training Steps')
+    plt.ylabel('Average Target Distance')
+    plt.title('Average Target Distance Curve with Std Dev')
+    plt.savefig(os.path.join(save_dir, 'average_target_distance_curve.png'))
     # plt.show()
     plt.close()
 
@@ -269,18 +341,22 @@ def main():
     print("Starting evaluation...")
 
     experiment_directories = [
-        "/home/kang/mqe-curriculum/logs/go2seesaw/08-15_14-38",
-        "/home/kang/mqe-curriculum/logs/go2seesaw/08-16_08-41",
-        "/home/kang/mqe-curriculum/logs/go2seesaw/08-17_00-40",
-        "/home/kang/mqe-curriculum/logs/go2seesaw/08-17_10-44",
-        "/home/kang/mqe-curriculum/logs/go2seesaw/08-18_09-25",
-        "/home/kang/mqe-curriculum/logs/go2seesaw/08-19_02-44",
+        "./logs/go2seesaw/08-15_14-38",
+        "./logs/go2seesaw/08-16_08-41",
+        "./logs/go2seesaw/08-17_00-40",
+        "./logs/go2seesaw/08-17_10-44",
+        "./logs/go2seesaw/08-18_09-25",
+        "./logs/go2seesaw/08-19_02-44",
     ]
 
     total_success_summary = []
     partial_success_summary = []
     average_reward_summary = []
     std_reward_summary = []
+    average_maximum_height_summary = []
+    std_maximum_height_summary = []
+    average_target_distance_summary = []
+    std_target_distance_summary = []
 
     for experiment in experiment_directories:
         base_directories = lookup_optimal_dir(experiment)
@@ -289,6 +365,10 @@ def main():
         partial_success_rate_curve = []
         average_reward_curve = []
         std_reward_curve = []
+        average_maximum_height_curve = []
+        std_maximum_height_curve = []
+        average_target_distance_curve = []
+        std_target_distance_curve = []
 
         for base_dir in base_directories:
             model_dirs = get_model_directories(base_dir)
@@ -306,13 +386,25 @@ def main():
                 partial_success_rate_curve.append(eval_results['partial_success_runs'] / eval_results['total_runs'] * 100 if eval_results['total_runs'] > 0 else 0)
                 average_reward_curve.append(eval_results['average_reward'])
                 std_reward_curve.append(eval_results['std_reward'])
+                average_maximum_height_curve.append(eval_results['average_maximum_height'])
+                std_maximum_height_curve.append(eval_results['std_maximum_height'])
+                average_target_distance_curve.append(eval_results['average_target_distance'])
+                std_target_distance_curve.append(eval_results['std_target_distance'])
 
         # Plot the results
-        plot_results(experiment, total_success_rate_curve, partial_success_rate_curve, average_reward_curve, std_reward_curve)
+        plot_results(experiment, 
+                     total_success_rate_curve, partial_success_rate_curve, 
+                     average_reward_curve, std_reward_curve,
+                     average_maximum_height_curve, std_maximum_height_curve,
+                     average_target_distance_curve, std_target_distance_curve)
         total_success_summary.append(total_success_rate_curve)
         partial_success_summary.append(partial_success_rate_curve)
         average_reward_summary.append(average_reward_curve)
         std_reward_summary.append(std_reward_curve)
+        average_maximum_height_summary.append(average_maximum_height_curve)
+        std_maximum_height_summary.append(std_maximum_height_curve)
+        average_target_distance_summary.append(average_target_distance_curve)
+        std_target_distance_summary.append(std_target_distance_curve)
 
     # convert to numpy arrays for easier handling
     # Find the maximum length among all curves
@@ -347,13 +439,41 @@ def main():
         padded_curve = pad_curve_to_length(curve, max_length)
         std_reward_summary_padded.append(padded_curve)
     std_reward_summary = np.array(std_reward_summary_padded)
-    
+
+    average_maximum_height_summary_padded = []
+    for curve in average_maximum_height_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        average_maximum_height_summary_padded.append(padded_curve)
+    average_maximum_height_summary = np.array(average_maximum_height_summary_padded)
+
+    std_maximum_height_summary_padded = []
+    for curve in std_maximum_height_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        std_maximum_height_summary_padded.append(padded_curve)
+    std_maximum_height_summary = np.array(std_maximum_height_summary_padded)
+
+    average_target_distance_summary_padded = []
+    for curve in average_target_distance_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        average_target_distance_summary_padded.append(padded_curve)
+    average_target_distance_summary = np.array(average_target_distance_summary_padded)
+
+    std_target_distance_summary_padded = []
+    for curve in std_target_distance_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        std_target_distance_summary_padded.append(padded_curve)
+    std_target_distance_summary = np.array(std_target_distance_summary_padded)
+
     # Plot the summary curves
     plot_multiple_results("./logs/go2seesaw", 
                           total_success_summary, 
                           partial_success_summary, 
                           average_reward_summary, 
-                          std_reward_summary)
+                          std_reward_summary,
+                          average_maximum_height_summary,
+                          std_maximum_height_summary,
+                          average_target_distance_summary,
+                          std_target_distance_summary)
 
 if __name__ == "__main__":
     main()

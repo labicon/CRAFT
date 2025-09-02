@@ -38,6 +38,22 @@ def eval_partial_success(obs):
 
     return success
 
+def maximum_height(obs):
+    agent_0_height = obs[0, 0, 5]
+    agent_1_height = obs[0, 1, 5]
+
+    return max(agent_0_height, agent_1_height)
+
+def target_distance(obs):
+    target_pos = np.array([8.0, 0.0, 1.5])
+    agent_0_pos = obs[0, 0, 2:5]
+    agent_1_pos = obs[0, 1, 2:5]
+
+    dist_0 = np.linalg.norm(agent_0_pos - target_pos)
+    dist_1 = np.linalg.norm(agent_1_pos - target_pos)
+
+    return min(dist_0, dist_1)
+
 if __name__ == "__main__":
     args = get_args()
     env, _ = make_env(args, custom_cfg(args))
@@ -54,11 +70,15 @@ if __name__ == "__main__":
     success_runs = 0
     partial_success_runs = 0
     reward_per_run = []
+    maximum_height_per_run = []
+    target_distance_per_run = []
     while eval_runs < 100:
         obs = env.reset(seed=eval_runs)  # Initialize the environment to obtain initial observations and environmental information.
         success_run = False
         partial_success_run = False
         total_reward = 0.0
+        maximum_height_run = maximum_height(obs)
+        target_distance_run = target_distance(obs)
         while True:
             action, _ = agent.act(obs)  # The agent predicts the next action based on environmental observations.
             # The environment takes one step according to the action, obtains the next observation, reward, whether it ends and environmental information.
@@ -66,12 +86,16 @@ if __name__ == "__main__":
             total_reward += np.sum(r)
             total_success = eval_total_success(new_obs)
             partial_success = eval_partial_success(new_obs)
+            maximum_height_run = max(maximum_height_run, maximum_height(new_obs))
+            target_distance_run = min(target_distance_run, target_distance(new_obs))
             success_run = success_run or total_success
             partial_success_run = partial_success_run or partial_success
             if done[0, 0]:
                 print(f"Run {eval_runs} completed.")
                 eval_runs += 1
                 reward_per_run.append(total_reward)
+                maximum_height_per_run.append(maximum_height_run)
+                target_distance_per_run.append(target_distance_run)
                 if np.linalg.norm(obs[0, 0, 2:4] - obs[0, 1, 2:4]) < 0.51:
                     print("Terminated due to close proximity")
                 else:
@@ -103,6 +127,10 @@ if __name__ == "__main__":
         "partial_success_runs": partial_success_runs,
         "average_reward": np.mean(reward_per_run) if reward_per_run else 0.0,
         "std_reward": np.std(reward_per_run) if reward_per_run else 0.0,
+        "average_maximum_height": np.mean(maximum_height_per_run) if maximum_height_per_run else 0.0,
+        "std_maximum_height": np.std(maximum_height_per_run) if maximum_height_per_run else 0.0,
+        "average_target_distance": np.mean(target_distance_per_run) if target_distance_per_run else 0.0,
+        "std_target_distance": np.std(target_distance_per_run) if target_distance_per_run else 0.0,
     }
     eval_results_path = os.path.join(args.checkpoint, "eval_results.pkl")
     with open(eval_results_path, 'wb') as f:
