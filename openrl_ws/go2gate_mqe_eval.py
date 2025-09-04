@@ -300,7 +300,7 @@ def pad_curve_to_length(curve, target_length):
     padded_curve = curve + [final_value] * (target_length - len(curve))
     return padded_curve
 
-def main():
+def curriculum_evaluation():
     # Check if wrapper file is configured correctly
     input("Have you configured the wrapper file to output mqe reward? Press any key to continue...")
     print("Starting evaluation...")
@@ -438,5 +438,139 @@ def main():
                           average_x_traversed_summary,
                           std_x_traversed_summary)
 
+
+def scratch_evaluation():
+    # Check if wrapper file is configured correctly
+    input("Have you configured the wrapper file to output mqe reward? Press any key to continue...")
+    print("Starting evaluation...")
+
+    experiment_directories = [
+    "checkpoints/go2gate_example_reward_1",
+    "checkpoints/go2gate_example_reward_2",
+    "checkpoints/go2gate_example_reward_3",
+    "checkpoints/go2gate_example_reward_4",
+    "checkpoints/go2gate_example_reward_5"
+    ]
+
+    total_success_summary = []
+    partial_success_summary = []
+    average_reward_summary = []
+    std_reward_summary = []
+    average_minimum_distance_summary = []
+    std_minimum_distance_summary = []
+    average_x_traversed_summary = []
+    std_x_traversed_summary = []
+
+    for experiment in experiment_directories:
+        total_success_rate_curve = []
+        partial_success_rate_curve = []
+        average_reward_curve = []
+        std_reward_curve = []
+        average_minimum_distance_curve = []
+        std_minimum_distance_curve = []
+        average_x_traversed_curve = []
+        std_x_traversed_curve = []
+
+        model_dirs = get_model_directories(experiment)
+        if not model_dirs:
+            print(f"No model directories found in {experiment}")
+            break
+
+        print(f"Found {len(model_dirs)} model directories in {experiment}")
+        
+        for model_path in model_dirs:
+            print(f"Evaluating model: {model_path}")
+            eval_results = run_eval(model_path)
+            
+            total_success_rate_curve.append(eval_results['success_runs'] / eval_results['total_runs'] * 100 if eval_results['total_runs'] > 0 else 0)
+            partial_success_rate_curve.append(eval_results['partial_success_runs'] / eval_results['total_runs'] * 100 if eval_results['total_runs'] > 0 else 0)
+            average_reward_curve.append(eval_results['average_reward'])
+            std_reward_curve.append(eval_results['std_reward'])
+            average_minimum_distance_curve.append(eval_results['average_minimum_distance'])
+            std_minimum_distance_curve.append(eval_results['std_minimum_distance'])
+            average_x_traversed_curve.append(eval_results['average_x_traversed'])
+            std_x_traversed_curve.append(eval_results['std_x_traversed'])
+
+        # Plot the results
+        plot_results(experiment, total_success_rate_curve, partial_success_rate_curve, average_reward_curve, std_reward_curve)
+        total_success_summary.append(total_success_rate_curve)
+        partial_success_summary.append(partial_success_rate_curve)
+        average_reward_summary.append(average_reward_curve)
+        std_reward_summary.append(std_reward_curve)
+        average_minimum_distance_summary.append(average_minimum_distance_curve)
+        std_minimum_distance_summary.append(std_minimum_distance_curve)
+        average_x_traversed_summary.append(average_x_traversed_curve)
+        std_x_traversed_summary.append(std_x_traversed_curve)
+
+    # convert to numpy arrays for easier handling
+    # Find the maximum length among all curves
+    max_length = 0
+    for curve_list in [total_success_summary, partial_success_summary, average_reward_summary, std_reward_summary, average_minimum_distance_summary, std_minimum_distance_summary, average_x_traversed_summary, std_x_traversed_summary]:
+        for curve in curve_list:
+            max_length = max(max_length, len(curve))
+    
+    print(f"Maximum curve length: {max_length}")
+    
+    # Pad and convert to numpy arrays
+    total_success_summary_padded = []
+    for curve in total_success_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        total_success_summary_padded.append(padded_curve)
+    total_success_summary = np.array(total_success_summary_padded)
+    
+    partial_success_summary_padded = []
+    for curve in partial_success_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        partial_success_summary_padded.append(padded_curve)
+    partial_success_summary = np.array(partial_success_summary_padded)
+    
+    average_reward_summary_padded = []
+    for curve in average_reward_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        average_reward_summary_padded.append(padded_curve)
+    average_reward_summary = np.array(average_reward_summary_padded)
+    
+    std_reward_summary_padded = []
+    for curve in std_reward_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        std_reward_summary_padded.append(padded_curve)
+    std_reward_summary = np.array(std_reward_summary_padded)
+
+    average_minimum_distance_padded = []
+    for curve in average_minimum_distance_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        average_minimum_distance_padded.append(padded_curve)
+    average_minimum_distance_summary = np.array(average_minimum_distance_padded)
+
+    std_minimum_distance_padded = []
+    for curve in std_minimum_distance_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        std_minimum_distance_padded.append(padded_curve)
+    std_minimum_distance_summary = np.array(std_minimum_distance_padded)
+
+    average_x_traversed_padded = []
+    for curve in average_x_traversed_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        average_x_traversed_padded.append(padded_curve)
+    average_x_traversed_summary = np.array(average_x_traversed_padded)
+
+    std_x_traversed_padded = []
+    for curve in std_x_traversed_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        std_x_traversed_padded.append(padded_curve)
+    std_x_traversed_summary = np.array(std_x_traversed_padded)
+
+    # Plot the summary curves
+    plot_multiple_results("./checkpoints", 
+                          total_success_summary, 
+                          partial_success_summary, 
+                          average_reward_summary, 
+                          std_reward_summary,
+                          average_minimum_distance_summary,
+                          std_minimum_distance_summary,
+                          average_x_traversed_summary,
+                          std_x_traversed_summary)
+
+
 if __name__ == "__main__":
-    main()
+    scratch_evaluation()
