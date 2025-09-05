@@ -39,8 +39,8 @@ def eval_partial_success(obs):
     return success
 
 def maximum_height(obs):
-    agent_0_height = obs[0, 0, 5]
-    agent_1_height = obs[0, 1, 5]
+    agent_0_height = obs[0, 0, 4]
+    agent_1_height = obs[0, 1, 4]
 
     return max(agent_0_height, agent_1_height)
 
@@ -73,7 +73,8 @@ if __name__ == "__main__":
     maximum_height_per_run = []
     target_distance_per_run = []
     while eval_runs < 100:
-        obs = env.reset(seed=eval_runs)  # Initialize the environment to obtain initial observations and environmental information.
+        obs = env.reset(seed=np.random.randint(0, 10000))  # Initialize the environment to obtain initial observations and environmental information.
+        episode_length = 0
         success_run = False
         partial_success_run = False
         total_reward = 0.0
@@ -83,6 +84,7 @@ if __name__ == "__main__":
             action, _ = agent.act(obs)  # The agent predicts the next action based on environmental observations.
             # The environment takes one step according to the action, obtains the next observation, reward, whether it ends and environmental information.
             new_obs, r, done, info = env.step(action)
+            episode_length += 1
             total_reward += np.sum(r)
             total_success = eval_total_success(new_obs)
             partial_success = eval_partial_success(new_obs)
@@ -92,14 +94,19 @@ if __name__ == "__main__":
             partial_success_run = partial_success_run or partial_success
             if done[0, 0]:
                 print(f"Run {eval_runs} completed.")
+                if episode_length <= 30:
+                    print("Terminated due to initialization issue")
+                    print("Do not include in the analysis")
+                    break
                 eval_runs += 1
-                reward_per_run.append(total_reward)
-                maximum_height_per_run.append(maximum_height_run)
-                target_distance_per_run.append(target_distance_run)
                 if np.linalg.norm(obs[0, 0, 2:4] - obs[0, 1, 2:4]) < 0.51:
                     print("Terminated due to close proximity")
                 else:
                     print("Terminated due to other reasons")
+
+                reward_per_run.append(total_reward)
+                maximum_height_per_run.append(maximum_height_run)
+                target_distance_per_run.append(target_distance_run)
 
                 if success_run:
                     print("Total success!")

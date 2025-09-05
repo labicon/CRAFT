@@ -335,15 +335,15 @@ def pad_curve_to_length(curve, target_length):
     padded_curve = curve + [final_value] * (target_length - len(curve))
     return padded_curve
 
-def main():
+def curriculum_evaluation():
     # Check if wrapper file is configured correctly
     input("Have you configured the wrapper file to output mqe reward? Press any key to continue...")
     print("Starting evaluation...")
 
     experiment_directories = [
-        "./logs/go2seesaw/08-15_14-38",
-        "./logs/go2seesaw/08-16_08-41",
-        "./logs/go2seesaw/08-17_00-40",
+        # "./logs/go2seesaw/08-15_14-38",
+        # "./logs/go2seesaw/08-16_08-41",
+        # "./logs/go2seesaw/08-17_00-40",
         "./logs/go2seesaw/08-17_10-44",
         "./logs/go2seesaw/08-18_09-25",
         "./logs/go2seesaw/08-19_02-44",
@@ -475,5 +475,144 @@ def main():
                           average_target_distance_summary,
                           std_target_distance_summary)
 
+
+def scratch_evaluation():
+    # Check if wrapper file is configured correctly
+    input("Have you configured the wrapper file to output mqe reward? Press any key to continue...")
+    print("Starting evaluation...")
+
+    experiment_directories = [
+        "checkpoints/go2seesaw/go2seesaw_mqe_reward_0",
+        "checkpoints/go2seesaw/go2seesaw_mqe_reward_1",
+        "checkpoints/go2seesaw/go2seesaw_mqe_reward_2",
+        "checkpoints/go2seesaw/go2seesaw_mqe_reward_3",
+        "checkpoints/go2seesaw/go2seesaw_mqe_reward_4",
+        "checkpoints/go2seesaw/go2seesaw_mqe_reward_5",
+    ]
+
+    total_success_summary = []
+    partial_success_summary = []
+    average_reward_summary = []
+    std_reward_summary = []
+    average_maximum_height_summary = []
+    std_maximum_height_summary = []
+    average_target_distance_summary = []
+    std_target_distance_summary = []
+
+    for experiment in experiment_directories:
+
+        total_success_rate_curve = []
+        partial_success_rate_curve = []
+        average_reward_curve = []
+        std_reward_curve = []
+        average_maximum_height_curve = []
+        std_maximum_height_curve = []
+        average_target_distance_curve = []
+        std_target_distance_curve = []
+
+        model_dirs = get_model_directories(experiment)
+        if not model_dirs:
+            print(f"No model directories found in {experiment}")
+            break
+
+        print(f"Found {len(model_dirs)} model directories in {experiment}")
+        
+        for model_path in model_dirs:
+            print(f"Evaluating model: {model_path}")
+            eval_results = run_eval(model_path)
+            
+            total_success_rate_curve.append(eval_results['success_runs'] / eval_results['total_runs'] * 100 if eval_results['total_runs'] > 0 else 0)
+            partial_success_rate_curve.append(eval_results['partial_success_runs'] / eval_results['total_runs'] * 100 if eval_results['total_runs'] > 0 else 0)
+            average_reward_curve.append(eval_results['average_reward'])
+            std_reward_curve.append(eval_results['std_reward'])
+            average_maximum_height_curve.append(eval_results['average_maximum_height'])
+            std_maximum_height_curve.append(eval_results['std_maximum_height'])
+            average_target_distance_curve.append(eval_results['average_target_distance'])
+            std_target_distance_curve.append(eval_results['std_target_distance'])
+
+        # Plot the results
+        plot_results(experiment, 
+                     total_success_rate_curve, partial_success_rate_curve, 
+                     average_reward_curve, std_reward_curve,
+                     average_maximum_height_curve, std_maximum_height_curve,
+                     average_target_distance_curve, std_target_distance_curve)
+        total_success_summary.append(total_success_rate_curve)
+        partial_success_summary.append(partial_success_rate_curve)
+        average_reward_summary.append(average_reward_curve)
+        std_reward_summary.append(std_reward_curve)
+        average_maximum_height_summary.append(average_maximum_height_curve)
+        std_maximum_height_summary.append(std_maximum_height_curve)
+        average_target_distance_summary.append(average_target_distance_curve)
+        std_target_distance_summary.append(std_target_distance_curve)
+
+    # convert to numpy arrays for easier handling
+    # Find the maximum length among all curves
+    max_length = 0
+    for curve_list in [total_success_summary, partial_success_summary, average_reward_summary, std_reward_summary]:
+        for curve in curve_list:
+            max_length = max(max_length, len(curve))
+    
+    print(f"Maximum curve length: {max_length}")
+    
+    # Pad and convert to numpy arrays
+    total_success_summary_padded = []
+    for curve in total_success_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        total_success_summary_padded.append(padded_curve)
+    total_success_summary = np.array(total_success_summary_padded)
+    
+    partial_success_summary_padded = []
+    for curve in partial_success_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        partial_success_summary_padded.append(padded_curve)
+    partial_success_summary = np.array(partial_success_summary_padded)
+    
+    average_reward_summary_padded = []
+    for curve in average_reward_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        average_reward_summary_padded.append(padded_curve)
+    average_reward_summary = np.array(average_reward_summary_padded)
+    
+    std_reward_summary_padded = []
+    for curve in std_reward_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        std_reward_summary_padded.append(padded_curve)
+    std_reward_summary = np.array(std_reward_summary_padded)
+
+    average_maximum_height_summary_padded = []
+    for curve in average_maximum_height_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        average_maximum_height_summary_padded.append(padded_curve)
+    average_maximum_height_summary = np.array(average_maximum_height_summary_padded)
+
+    std_maximum_height_summary_padded = []
+    for curve in std_maximum_height_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        std_maximum_height_summary_padded.append(padded_curve)
+    std_maximum_height_summary = np.array(std_maximum_height_summary_padded)
+
+    average_target_distance_summary_padded = []
+    for curve in average_target_distance_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        average_target_distance_summary_padded.append(padded_curve)
+    average_target_distance_summary = np.array(average_target_distance_summary_padded)
+
+    std_target_distance_summary_padded = []
+    for curve in std_target_distance_summary:
+        padded_curve = pad_curve_to_length(curve, max_length)
+        std_target_distance_summary_padded.append(padded_curve)
+    std_target_distance_summary = np.array(std_target_distance_summary_padded)
+
+    # Plot the summary curves
+    plot_multiple_results("./checkpoints", 
+                          total_success_summary, 
+                          partial_success_summary, 
+                          average_reward_summary, 
+                          std_reward_summary,
+                          average_maximum_height_summary,
+                          std_maximum_height_summary,
+                          average_target_distance_summary,
+                          std_target_distance_summary)
+
 if __name__ == "__main__":
-    main()
+    scratch_evaluation()
