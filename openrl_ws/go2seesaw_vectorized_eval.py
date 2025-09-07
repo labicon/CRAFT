@@ -11,38 +11,48 @@ import numpy as np
 import os
 import pickle
 
-def agentwise_success(obs, gate_pos=None):
-    if gate_pos is None:
-        gate_pos = obs[:, 0, -2:]
-    agent_0_pos = obs[:, 0, 2:4]
-    agent_1_pos = obs[:, 1, 2:4]
+def eval_total_success(obs):
+    agent_0_pos = obs[:, 0, 2:5]
+    agent_1_pos = obs[:, 1, 2:5]
 
-    agent_0_success = agent_0_pos[:, 0] > gate_pos[:, 0] + 0.25
-    agent_1_success = agent_1_pos[:, 0] > gate_pos[:, 0] + 0.25
+    platform_x = 7.7
+    platform_z = 1.3
 
-    return agent_0_success, agent_1_success
+    agent_0_success = np.logical_and(agent_0_pos[:, 0] > platform_x, agent_0_pos[:, 2] > platform_z)
+    agent_1_success = np.logical_and(agent_1_pos[:, 0] > platform_x, agent_1_pos[:, 2] > platform_z)
 
-def partial_success(obs, gate_pos=None):
-    agent_0_success, agent_1_success = agentwise_success(obs, gate_pos)
-    return np.logical_or(agent_0_success, agent_1_success)
+    success = np.logical_or(agent_0_success, agent_1_success)
 
-def total_success(obs, gate_pos=None):
-    agent_0_success, agent_1_success = agentwise_success(obs, gate_pos)
-    return np.logical_and(agent_0_success, agent_1_success)
+    return success
 
-def distance_to_target(obs, target_pos=None):
-    if target_pos is None:
-        target_pos = np.array([5.0, 0.0])
-    agent_0_pos = obs[:, 0, 2:4]
-    agent_1_pos = obs[:, 1, 2:4]
-    agent_0_dist = np.linalg.norm(agent_0_pos - target_pos, axis=-1)
-    agent_1_dist = np.linalg.norm(agent_1_pos - target_pos, axis=-1)
-    return np.maximum(agent_0_dist, agent_1_dist)
+def eval_partial_success(obs):
+    agent_0_pos = obs[:, 0, 2:5]
+    agent_1_pos = obs[:, 1, 2:5]
 
-def x_traversed(obs):
-    agent_0_x = obs[:, 0, 2]
-    agent_1_x = obs[:, 1, 2]
-    return np.minimum(agent_0_x, agent_1_x)
+    platform_z = 0.6
+
+    agent_0_success = (agent_0_pos[:, 2] > platform_z)
+    agent_1_success = (agent_1_pos[:, 2] > platform_z)
+
+    success = np.logical_or(agent_0_success, agent_1_success)
+
+    return success
+
+def maximum_height(obs):
+    agent_0_height = obs[:, 0, 4]
+    agent_1_height = obs[:, 1, 4]
+
+    return np.maximum(agent_0_height, agent_1_height)
+
+def target_distance(obs):
+    target_pos = np.array([8.0, 0.0, 1.5])
+    agent_0_pos = obs[:, 0, 2:5]
+    agent_1_pos = obs[:, 1, 2:5]
+
+    dist_0 = np.linalg.norm(agent_0_pos - target_pos, axis=-1)
+    dist_1 = np.linalg.norm(agent_1_pos - target_pos, axis=-1)
+
+    return np.minimum(dist_0, dist_1)
 
 if __name__ == "__main__":
     args = get_args()
@@ -60,23 +70,27 @@ if __name__ == "__main__":
     success_runs = 0
     partial_success_runs = 0
     reward_per_run = []
-    minimum_distance_per_run = []
-    x_traversed_per_run = []
+    maximum_height_per_run = []
+    target_distance_per_run = []
 
     obs = env.reset()  # Initialize the environment to obtain initial observations and environmental information.
     episode_length = np.zeros(env.num_envs, dtype=np.int32)
+    success_run = np.zeros(env.num_envs, dtype=bool)
+    partial_success_run = np.zeros(env.num_envs, dtype=bool)
     total_reward = np.zeros(env.num_envs, dtype=np.float32)
-    gate_pos = env.gate_pos[:,0,:2].cpu().numpy()
-    target_pos = env.target_pos[0,:2].cpu().numpy()
-    minimum_distance = distance_to_target(obs, target_pos)
-    x_traversed_distance = x_traversed(obs)
+    maximum_height_run = maximum_height(obs)
+    target_distance_run = target_distance(obs)
+
     while finished_runs < 100:
         action, _ = agent.act(obs)  # The agent predicts the next action based on environmental observations.
         # The environment takes one step according to the action, obtains the next observation, reward, whether it ends and environmental information.
         new_obs, r, done, info = env.step(action)
         episode_length += 1
-        minimum_distance = np.minimum(minimum_distance, distance_to_target(obs, target_pos))
-        x_traversed_distance = np.maximum(x_traversed_distance, x_traversed(obs))
+
+        success_run = success_run | eval_total_success(obs)
+        partial_success_run = partial_success_run | eval_partial_success(obs)
+        maximum_height_run = np.maximum(maximum_height_run, maximum_height(obs))
+        target_distance_run = np.minimum(target_distance_run, target_distance(obs))
         total_reward += np.sum(np.squeeze(r), axis=-1)
 
         done = done[:, 0]
@@ -87,20 +101,22 @@ if __name__ == "__main__":
 
         finished_runs += np.sum(done & ~initialization_issue)
         reward_per_run.extend(total_reward[done & ~initialization_issue].tolist())
-        minimum_distance_per_run.extend(minimum_distance[done & ~initialization_issue].tolist())
-        x_traversed_per_run.extend(x_traversed_distance[done & ~initialization_issue].tolist())
+        maximum_height_per_run.extend(maximum_height_run[done & ~initialization_issue].tolist())
+        target_distance_per_run.extend(target_distance_run[done & ~initialization_issue].tolist())
 
         print("Finished runs:", finished_runs)
-        print("Successful runs:", np.sum(total_success(obs[done & ~initialization_issue], gate_pos[done & ~initialization_issue])))
-        print("Partial successful runs:", np.sum(partial_success(obs[done & ~initialization_issue], gate_pos[done & ~initialization_issue])))
-        success_runs += np.sum(total_success(obs[done & ~initialization_issue], gate_pos[done & ~initialization_issue]))
-        partial_success_runs += np.sum(partial_success(obs[done & ~initialization_issue], gate_pos[done & ~initialization_issue]))
-
+        print("Successful runs:", np.sum(success_run[done & ~initialization_issue]))
+        print("Partial successful runs:", np.sum(partial_success_run[done & ~initialization_issue]))
+        success_runs += np.sum(success_run[done & ~initialization_issue])
+        partial_success_runs += np.sum(partial_success_run[done & ~initialization_issue])
+        
         # Reset values
         episode_length[done] = 0
         total_reward[done] = 0.0
-        minimum_distance[done] = np.inf
-        x_traversed_distance[done] = 0.0
+        success_run[done] = False
+        partial_success_run[done] = False
+        maximum_height_run[done] = 0.0
+        target_distance_run[done] = np.inf
 
         obs = new_obs  # Update the observation for the next step
 
@@ -115,10 +131,10 @@ if __name__ == "__main__":
         "partial_success_runs": partial_success_runs,
         "average_reward": np.mean(reward_per_run) if reward_per_run else 0.0,
         "std_reward": np.std(reward_per_run) if reward_per_run else 0.0,
-        "average_minimum_distance": np.mean(minimum_distance_per_run) if minimum_distance_per_run else 0.0,
-        "std_minimum_distance": np.std(minimum_distance_per_run) if minimum_distance_per_run else 0.0,
-        "average_x_traversed": np.mean(x_traversed_per_run) if x_traversed_per_run else 0.0,
-        "std_x_traversed": np.std(x_traversed_per_run) if x_traversed_per_run else 0.0,
+        "average_maximum_height": np.mean(maximum_height_per_run) if maximum_height_per_run else 0.0,
+        "std_maximum_height": np.std(maximum_height_per_run) if maximum_height_per_run else 0.0,
+        "average_target_distance": np.mean(target_distance_per_run) if target_distance_per_run else 0.0,
+        "std_target_distance": np.std(target_distance_per_run) if target_distance_per_run else 0.0,
     }
     eval_results_path = os.path.join(args.checkpoint, "eval_results.pkl")
     with open(eval_results_path, 'wb') as f:

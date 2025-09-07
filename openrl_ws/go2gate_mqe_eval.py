@@ -43,12 +43,12 @@ def get_model_directories(base_dir):
     
 def run_eval(model_path):
     process = subprocess.run(["python",
-                            "./openrl_ws/go2gate_eval.py",
+                            "./openrl_ws/go2gate_vectorized_eval.py",
                             "--task", "go2gate",
                             "--algo", "ppo",
                             "--sim_device", "cuda:0",
                             "--rl_device", "cuda:0",
-                            "--num_envs", "1",
+                            "--num_envs", "50",
                             "--checkpoint", str(model_path),
                             "--headless"
                             ],
@@ -300,21 +300,10 @@ def pad_curve_to_length(curve, target_length):
     padded_curve = curve + [final_value] * (target_length - len(curve))
     return padded_curve
 
-def curriculum_evaluation():
+def curriculum_evaluation(experiment_directories):
     # Check if wrapper file is configured correctly
     input("Have you configured the wrapper file to output mqe reward? Press any key to continue...")
     print("Starting evaluation...")
-
-    experiment_directories = [
-        "/home/kanghyun/mqe-curriculum/logs/go2gate/08-02_01-23",
-        "/home/kanghyun/mqe-curriculum/logs/go2gate/08-02_12-13",
-        "/home/kanghyun/mqe-curriculum/logs/go2gate/08-02_19-44",
-        "/home/kanghyun/mqe-curriculum/logs/go2gate/08-03_05-36",
-        # "/home/kanghyun/mqe-curriculum/logs/go2gate/08-04_06-19",
-        "/home/kanghyun/mqe-curriculum/logs/go2gate/08-04_17-21",
-        # "/home/kanghyun/mqe-curriculum/logs/go2gate/08-05_03-29",
-        "/home/kanghyun/mqe-curriculum/logs/go2gate/08-05_16-55",
-    ]
 
     total_success_summary = []
     partial_success_summary = []
@@ -439,18 +428,10 @@ def curriculum_evaluation():
                           std_x_traversed_summary)
 
 
-def scratch_evaluation():
+def scratch_evaluation(experiment_directories):
     # Check if wrapper file is configured correctly
     input("Have you configured the wrapper file to output mqe reward? Press any key to continue...")
     print("Starting evaluation...")
-
-    experiment_directories = [
-    "checkpoints/go2gate_example_reward_1",
-    "checkpoints/go2gate_example_reward_2",
-    "checkpoints/go2gate_example_reward_3",
-    "checkpoints/go2gate_example_reward_4",
-    "checkpoints/go2gate_example_reward_5"
-    ]
 
     total_success_summary = []
     partial_success_summary = []
@@ -573,4 +554,27 @@ def scratch_evaluation():
 
 
 if __name__ == "__main__":
-    scratch_evaluation()
+    # experiment_directories = [
+    #     "logs/go2gate/08-15_00-32_no_refine_1",
+    #     "logs/go2gate/08-16_05-14_no_refine_2",
+    #     "logs/go2gate/08-16_17-09_no_refine_3",
+    #     "logs/go2gate/08-17_04-20_no_refine_4",
+    #     "logs/go2gate/08-17_15-09_no_refine_5",
+    #     "logs/go2gate/08-18_02-09_no_refine_6",
+    #     "logs/go2gate/08-03_05-36",
+    #     "logs/go2gate/08-04_06-19",
+    #     "logs/go2gate/08-04_17-21",
+    #     "logs/go2gate/08-05_03-29",
+    #     "logs/go2gate/08-05_16-55",
+    # ]
+    # curriculum_evaluation(experiment_directories)
+
+    scratch_directories = [
+        "checkpoints/go2gate_08-03_05-36_scratch",
+        "checkpoints/go2gate_08-04_17-21_scratch",
+        "checkpoints/go2gate_08-05_16-55_scratch",
+        "checkpoints/go2gate_example_reward_3",
+        "checkpoints/go2gate_example_reward_4",
+        "checkpoints/go2gate_example_reward_5"
+    ]
+    scratch_evaluation(scratch_directories)
