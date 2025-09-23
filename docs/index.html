@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <!-- Meta tags for social media banners, these should be filled in appropriatly as they are your "business card" -->
+  <!-- Replace the content tag with appropriate information -->
+  <meta name="description" content="CurricuLLM: Automatic Task Curricula Design for Learning Complex Robot Skills using Large Language Models">
+  <meta property="og:title" content="CurricuLLM"/>
+  <meta property="og:description" content="Automatic Task Curricula Design for Learning Complex Robot Skills using Large Language Models"/>
+  <meta property="og:url" content="https://iconlab.negarmehr.com/CurricuLLM/"/>
+  <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X630-->
+  <!-- <meta property="og:image" content="static/image/your_banner_image.png" />
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/> -->
+
+
+  <meta name="twitter:title" content="CurricuLLM">
+  <meta name="twitter:description" content="Automatic Task Curricula Design for Learning Complex Robot Skills using Large Language Models">
+  <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X600-->
+  <!-- <meta name="twitter:image" content="static/images/your_twitter_banner_image.png">
+  <meta name="twitter:card" content="summary_large_image"> -->
+  <!-- Keywords for your paper to be indexed by-->
+  <meta name="keywords" content="Curriculum learning, Robot learning, Large language models, Reinforcement learning, Task planning, Task curriculum">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+  <title>CurricuLLM</title>
+  <link rel="icon" type="image/x-icon" href="static/images/iconlab.ico">
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+  rel="stylesheet">
+
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://documentcloud.adobe.com/view-sdk/main.js"></script>
+  <script defer src="static/js/fontawesome.all.min.js"></script>
+  <script src="static/js/bulma-carousel.min.js"></script>
+  <script src="static/js/bulma-slider.min.js"></script>
+  <script src="static/js/index.js"></script>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({ tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]} });
+	  MathJax.Hub.Config({ TeX: { equationNumbers: {autoNumber: "AMS"} } });
+  </script>
+  <script type="text/javascript" async
+    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+  </script>
+</head>
+<body>
+
+  <div style="position: absolute;  left: 0;  top: 0;">
+    <a href="https://https://www.berkeley.edu/" target="_blank">
+    <img src="static/images/UC-Berkeley-Seal.png" alt="UC Berkeley" width="160"/>
+    </a>
+  </div>
+    
+  <div style="position: absolute;  right: 0;  top: 0;">
+    <a href="https://iconlab.negarmehr.com/" target="_blank">
+    <img src="static/images/ICON_Lab.png" alt="ICON Lab" width="160"/>
+    </a>
+  </div>
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            <h1 class="title is-1 publication-title">CurricuLLM <br>Automatic Task Curricula Design for<br>Learning Complex Robot Skills<br>using Large Language Models</h1>
+            <div class="is-size-5 publication-authors">
+              <!-- Paper authors -->
+              <span class="author-block">
+                <a href="https://kh-ryu.github.io/" target="_blank">Kanghyun Ryu</a>,
+              </span>
+              <span class="author-block">
+                <a href="https://qiayuanl.github.io/" target="_blank">Qiayuan Liao</a>,
+              </span>
+              <span class="author-block">
+                <a href="https://zyliatzju.github.io" target="_blank">Zhongyu Li</a>,
+              </span>
+              <span class="author-block">
+                <a href="https://delgosha.web.illinois.edu/" target="_blank">Payam Delgosha</a>,
+              </span>
+              <span class="author-block">
+                <a href="https://hybrid-robotics.berkeley.edu/koushil/" target="_blank">Koushil Sreenath</a>,
+              </span>
+              <span class="author-block">
+                <a href="https://negarmehr.com/" target="_blank">Negar Mehr</a>
+              </span>
+            </div>
+
+            <div class="is-size-5 publication-authors">
+              <span class="author-block"><a href="https://iconlab.negarmehr.com/" target="_blank">ICON Lab</a> at UC Berkeley<br>
+              2025 International Conference on Robotics and Automation (ICRA)</span>
+              <!-- <span class="eql-cntrb"><small><br><sup>*</sup>Indicates Equal Contribution</small></span> -->
+            </div>
+
+                  <div class="column has-text-centered">
+                    <div class="publication-links">
+                         <!-- Arxiv PDF link -->
+                      <span class="link-block">
+                        <a href="https://arxiv.org/abs/2409.18382" target="_blank"
+                        class="external-link button is-normal is-rounded is-dark">
+                        <span class="icon">
+                          <i class="fas fa-file-pdf"></i>
+                        </span>
+                        <span>Paper</span>
+                      </a>
+                    </span>
+
+                    <!-- Supplementary PDF link -->
+                    <!-- <span class="link-block">
+                      <a href="static/pdfs/supplementary_material.pdf" target="_blank"
+                      class="external-link button is-normal is-rounded is-dark">
+                      <span class="icon">
+                        <i class="fas fa-file-pdf"></i>
+                      </span>
+                      <span>Supplementary</span>
+                    </a>
+                  </span> -->
+
+                  <!-- Github link -->
+                  <span class="link-block">
+                    <a href="https://github.com/labicon/CurricuLLM" target="_blank"
+                    class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                      <i class="fab fa-github"></i>
+                    </span>
+                    <span>Code</span>
+                  </a>
+                </span>
+
+                <!-- ArXiv abstract Link -->
+                <span class="link-block">
+                  <a href="https://arxiv.org/abs/2409.18382" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Teaser video-->
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <video poster="" id="tree" autoplay controls muted loop height="110%">
+        <!-- Your video here -->
+        <source src="static/videos/Summary.mp4"
+        type="video/mp4">
+      </video>
+      <h2 class="subtitle has-text-centered">
+        Curriculum learning of a walking policy for a Berkeley Humanoid using CurricuLLM. <br>
+        CurricuLLM can learn a real-world policy without human intervention for curriculum design or reward functions.
+      </h2>
+    </div>
+  </div>
+</section>
+<!-- End teaser video -->
+
+<!-- Paper abstract -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Curriculum learning can achieve complex policies by progressively increasing the task difficulty during training. 
+            However, designing effective curricula for a specific task often requires extensive domain knowledge and human intervention, 
+            which limits its applicability across various domains. Our core idea is that large language models (LLMs) present significant potential for efficiently breaking down tasks 
+            and decomposing skills across various robotics environments. Additionally, the demonstrated success of LLMs in translating natural language
+            into executable code for RL agents strengthens their role in generating task curricula. In this work, we propose <strong>CurricuLLM</strong>,
+            which leverages the high-level planning and programming capabilities of LLMs for curriculum design, thereby enhancing the
+            efficient learning of complex tasks. CurricuLLM consists of: <em>(Step 1)</em> Generating sequence of subtasks in natural language form, <em>(Step 2)</em> 
+            Translating natural language description of subtasks in executable task code, including the reward code and goal distribution code, and 
+            <em>(Step 3)</em> Evaluating trained policies based on trajectory rollout
+            and subtask description. We evaluate CurricuLLM in various robotics simulation environments, ranging from manipulation,
+            navigation, and locomotion, to show that CurricuLLM can aid learning complex robot control tasks. In addition, we validate
+            humanoid locomotion policy learned through CurricuLLM in real-world.
+         </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- End paper abstract -->
+
+<section class="section hero is-small">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <img src="static/images/Curriculum Generation.png" alt="Step 1: Curriculum generation" style="height:280px !important; display:block !important; margin:auto !important;"/>
+	<div class="content has-text-justified">
+          <p>
+          <strong>Step 1: Curriculum generation</strong> - Curriculum generation LLM receives the natural language form of a curriculum prompt as well as the environment description to
+          generate a sequence of subtasks. Our prompt includes instruction for the curriculum designer, rules for how to describe the subtasks, and
+          other tips on describing the curriculum. Environment description consists of the robot and its state variable description, the target task,
+          and the initial state description.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section hero is-small">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <img src="static/images/Feedback Loop.png" alt="Step 2 & 3: Task code generation and evaluation" style="height:400px !important; display:block !important; margin:auto !important;"/>
+	<div class="content has-text-justified">
+          <p>
+          <strong>Step 2 & 3: Task code generation and evaluation framework in each subtask</strong> - Task code generation LLM takes the environment and target
+          task description, current and past task information, and the reward function used for previous subtask. Then, $K$ task code candidates for current
+          subtask is sampled and used for fine-tuning policies from previous subtask. Then, evaluation LLM receives the trajectory
+          rollout informations from trained policy and find a policy that best aligns with current subtask description.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Video carousel -->
+<section class="hero is-small">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">CurricuLLM can learn various robot tasks</h2>
+
+      <div class="columns is-centered">
+        <div class="column is-8">
+        <div class="content has-text-justified">
+            <p>
+              CurricuLLM can be applied to various robot tasks. 
+              CurricuLLM can break down the complex task to a sequence of subtasks that are easier to learn.
+              Moreover, as the curriculum progresses, the reward function becomes more informative and aligned with the target task.
+              We provide the example curriculum and reward function generated from CurricuLLM for Fetch Push environment.
+            </p>
+            <blockquote>
+              <p>
+<strong>Task 1</strong><br>
+Name: Reach the Block <br>
+Description: The robot manipulator must use its end effector to reach and position itself <strong>directly above the block</strong> without making contact. <br>
+<br>
+<strong>Task 2</strong> <br>
+Name: Maintain Contact With the Block<br>
+Description: Slowly decrease the z-coordinate of the end_effector_position to <strong>make gentle contact with the block</strong><br>
+<br>
+<strong>Task 3</strong> <br>
+Name: Push to a Short Distance<br>
+Description: After making contact, the robot manipulator must <strong>push the block</strong> to a predefined point that is a <strong>short distance away</strong> from the starting point. <br>
+<br>
+<strong>Task 4</strong><br>
+Name: Original Task<br>
+Description: The manipulator needs to <strong>push the block to a goal position</strong> on the table.<br>
+              </p>
+            </blockquote>
+          </div>
+        </div>
+      </div>
+
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item is-active">
+          <div class="columns is-vcentered">
+            <!-- Video column -->
+            <div class="column is-half">
+              <video poster="" id="video1" autoplay controls muted loop width="360" height="360">
+                <source src="static/videos/push-reach block.mp4" type="video/mp4">
+              </video>
+            </div>
+            <!-- Image column -->
+            <div class="column is-half">
+              <figure class="image" width="400">
+                <img src="static/images/task 1 code.png" alt="Image fot task 1">
+              </figure>
+            </div>
+          </div>
+          <h2 class="subtitle has-text-centered">
+            Task 1: Reach above the block. 
+        </div>
+
+        <div class="item">
+          <div class="columns is-vcentered">
+            <!-- Video column -->
+            <div class="column is-half">
+              <video poster="" id="video2" autoplay controls muted loop width="360" height="360">
+                <source src="static/videos/push-maintain contact.mp4" type="video/mp4">
+              </video>
+            </div>
+            <!-- Image column -->
+            <div class="column is-half">
+              <figure class="image" width="400">
+                <img src="static/images/task 2 code.png" alt="Image for task 2">
+              </figure>
+            </div>
+          </div>
+          <h2 class="subtitle has-text-centered">
+            Task 2: Make gentle contact. 
+        </div>
+
+        <div class="item">
+          <div class="columns is-vcentered">
+            <!-- Video column -->
+            <div class="column is-half">
+              <video poster="" id="video3" autoplay controls muted loop width="360" height="360">
+                <source src="static/videos/push-push a short distance.mp4" type="video/mp4">
+              </video>
+            </div>
+            <!-- Image column -->
+            <div class="column is-half">
+              <figure class="image" width="400">
+                <img src="static/images/task 3 code.png" alt="Image for task 3">
+              </figure>
+            </div>
+          </div>
+          <h2 class="subtitle has-text-centered">
+            Task 3: Push for a short distance. 
+        </div>
+
+        <div class="item">
+          <div class="columns is-vcentered">
+            <!-- Video column -->
+            <div class="column is-half">
+              <video poster="" id="video4" autoplay controls muted loop width="360" height="360">
+                <source src="static/videos/push-final.mp4" type="video/mp4">
+              </video>
+            </div>
+            <!-- Image column -->
+            <div class="column is-half">
+              <figure class="image" width="400">
+                <img src="static/images/task 4 code.png" alt="Image for task 4">
+              </figure>
+            </div>
+          </div>
+          <h2 class="subtitle has-text-centered">
+            Task 4: Push block to a goal position. 
+        </div>
+
+      </div>
+
+    <img src="static/images/combined result.png" alt="Result summary" style="height:300px !important; display:block !important; margin:auto !important;"/>  
+    <h2 class="subtitle has-text-centered">
+      CurricuLLM can be applied to diverse robot tasks, outperforming the vanilla RL trainings.
+    </h2>
+   </div>
+  </div>
+</section>
+<!-- End video carousel -->
+
+<!-- Image carousel -->
+<!-- <section class="hero is-light">
+  <div class="hero-body">
+    <div class="container">
+     <h2 class="title is-3">CurricuLLM's reward code motivates exploration to the target task</h2>
+<div class="content has-text-justified">
+<p>
+  The reward code designed from CurricuLLM encompasses diverse behaviors that motivates learning the target task. 
+  However, directly querying a reward code for the target task leads to sparse, uninformative reward function.
+</p>
+</div>
+
+      <div id="results-carousel" class="carousel results-carousel">
+      <div class="item">
+        <img src="static/images/CurricuLLM reward code example.pdf" alt="MY ALT TEXT" style="height:400px !important; display:block !important; margin:auto !important;"/>
+        <h2 class="subtitle has-text-centered">
+          Reward code from CurricuLLM can capture diverse behaviors required for the target task.
+        </h2>
+      </div>
+      <div class="item">
+        <img src="static/images/LLM-Scratch reward.pdf" alt="MY ALT TEXT" style="height:200px !important; display:block !important; margin:auto !important;"/>
+        <h2 class="subtitle has-text-centered">
+         Zero-shot querying for the target task reward code leads to sparse, uninformative reward code.
+       </h2>
+     </div>
+  </div>
+</div>
+</div>
+</section> -->
+<!-- End image carousel -->
+
+<!-- Video carousel -->
+<section class="hero is-small">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Humanoid policy trained with CurricuLLM deployed in real-world</h2>
+
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item is-active">
+            <!-- Video column -->
+            <div class="column is-half">
+              <video poster="" id="video1" autoplay controls muted loop width="640" height="360">
+                <source src="static/videos/Side_view.mp4" type="video/mp4">
+              </video>
+            </div>
+        </div>
+
+        <div class="item">
+            <!-- Video column -->
+            <div class="column is-half">
+              <video poster="" id="video2" autoplay controls muted loop width="640" height="360">
+                <source src="static/videos/going_back.mp4" type="video/mp4">
+              </video>
+            </div>
+        </div>
+
+        <div class="item">
+            <!-- Video column -->
+            <div class="column is-half">
+              <video poster="" id="video3" autoplay controls muted loop width="640" height="360">
+                <source src="static/videos/backward_long.mp4" type="video/mp4">
+              </video>
+            </div>
+        </div>
+      </div>
+
+   </div>
+  </div>
+</section>
+
+<!-- Youtube video -->
+<!-- <section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container"> -->
+      <!-- Paper video. -->
+      <!-- <h2 class="title is-3">Video Presentation</h2>
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          
+          <div class="publication-video"> -->
+            <!-- Youtube embed code here -->
+            <!-- <iframe src="https://www.youtube.com/embed/JkaxUblCGz0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section> -->
+<!-- End youtube video -->
+
+
+
+<!-- Paper poster -->
+<section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title">Poster</h2>
+
+      <iframe  src="static/pdfs/CurricuLLM_poster.pdf" width="100%" height="550">
+          </iframe>
+        
+      </div>
+    </div>
+  </section>
+<!--End paper poster -->
+
+
+<!--BibTex citation -->
+  <section class="section" id="BibTeX">
+    <div class="container is-max-desktop content">
+      <h2 class="title">BibTeX</h2>
+      <pre><code>@inproceedings{ryu2025curricullm,
+  title={CurricuLLM: Automatic task curricula design for learning complex robot skills using large language models}, 
+  author={Ryu, Kanghyun and Liao, Qiayuan and Li, Zhongyu and Sreenath, Koushil and Mehr, Negar},
+  booktitle={2025 IEEE International Conference on Robotics and Automation (ICRA)},
+  year={2025},
+  organization={IEEE},
+  arxiv={2409.18382},
+}</code></pre>
+    </div>
+</section>
+<!--End BibTex citation -->
+
+<!--References -->
+<section class="section hero is-small is-light">
+  <div class="container is-max-desktop content">
+    <h2 class="title">References</h2>
+    <dl>
+	<dt><strong>[Eureka]</strong></dt>
+	<dd>
+	  <div class="reference" id="Eureka">
+	    Yecheng Jason Ma, William Liang, Guanzhi Wang, De-An Huang, Osbert Bastani, Dinesh Jayaraman, Yuke Zhu, Linxi “Jim” Fan, Anima Anandkumar,
+	    <a href="https://arxiv.org/pdf/2310.12931" target="_blank" rel="noopener noreferrer">Eureka: Human-level reward design via coding large language models</a>,
+	    International Conference on Learning Representations (ICLR), 2024.
+	  </div>
+	</dd>
+      <dt><strong>[HER]</strong></dt>
+	<dd>
+	  <div class="reference" id="HER">
+	    Marcin Andrychowicz, Filip Wolski, Alex Ray, Jonas Schneider, Rachel Fong, Peter Welinder, Bob McGrew, Josh Tobin, Pieter Abbeel, and Wojciech Zaremba,
+	    <a href="https://proceedings.neurips.cc/paper_files/paper/2017/file/453fadbd8a1a3af50a9df4df899537b5-Paper.pdf" target="_blank" rel="noopener noreferrer">Hindsight Experience Replay</a>,
+	    Advances in Neural Information Processing Systems (Neurips), 2017.
+	  </div>
+	</dd>
+	<dt><strong>[Eurekaverse]</strong></dt>
+	<dd>
+	  <div class="reference" id="POLICE">
+	    William Liang, Sam Wang, Hung-Ju Wang, Osbert Bastani, Dinesh Jayaraman, Yecheng Jason Ma,
+	    <a href="https://arxiv.org/abs/2411.01775" target="_blank" rel="noopener noreferrer"> Eurekaverse: Environment Curriculum Generation via Large Language Models</a>,
+	    Conference on Robot Learning (CoRL), 2024.
+	  </div>
+	</dd>
+	<dt><strong>[Berkeley Humanoid]</strong></dt>
+	<dd>
+	  <div class="reference" id="Berkeley Humanoid">
+	    Qiayuan Liao, Bike Zhang, Xuanyu Huang, Xiaoyu Huang, Zhongyu Li, and Koushil Sreenath,
+	    <a href="https://arxiv.org/pdf/2407.21781" target="_blank" rel="noopener noreferrer">Berkeley Humanoid: A Research Platform for Learning-based Control</a>,
+	    Arxiv, 2024.
+	  </div>
+	</dd>
+	
+    </dl>  
+  </div>
+</section>
+
+
+  <footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+
+          <p>
+            This work is supported by the National Science Foundation, under grants ECCS-2438314 CAREER Award, CNS-2423130, and CCF-2423131.
+          </p>
+
+          <p>
+            This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
+            You are free to borrow the source code of this website, we just ask that you link back to this page in the footer. <br> This website is licensed under a <a rel="license"  href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Statcounter tracking code -->
+  
+<!-- You can add a tracker to track page visits by creating an account at statcounter.com -->
+
+    <!-- End of Statcounter Code -->
+
+  </body>
+  </html>
