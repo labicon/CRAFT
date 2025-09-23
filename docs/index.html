@@ -4,27 +4,27 @@
   <meta charset="utf-8">
   <!-- Meta tags for social media banners, these should be filled in appropriatly as they are your "business card" -->
   <!-- Replace the content tag with appropriate information -->
-  <meta name="description" content="CurricuLLM: Automatic Task Curricula Design for Learning Complex Robot Skills using Large Language Models">
-  <meta property="og:title" content="CurricuLLM"/>
-  <meta property="og:description" content="Automatic Task Curricula Design for Learning Complex Robot Skills using Large Language Models"/>
-  <meta property="og:url" content="https://iconlab.negarmehr.com/CurricuLLM/"/>
+  <meta name="description" content="CRAFT: Coaching Reinforcement Learning Autonomously using Foundation Models for Multi-Robot Coordination Tasks">
+  <meta property="og:title" content="CRAFT"/>
+  <meta property="og:description" content="Coaching Reinforcement Learning Autonomously using Foundation Models for Multi-Robot Coordination Tasks"/>
+  <meta property="og:url" content="https://iconlab.negarmehr.com/CRAFT/"/>
   <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X630-->
   <!-- <meta property="og:image" content="static/image/your_banner_image.png" />
   <meta property="og:image:width" content="1200"/>
   <meta property="og:image:height" content="630"/> -->
 
 
-  <meta name="twitter:title" content="CurricuLLM">
-  <meta name="twitter:description" content="Automatic Task Curricula Design for Learning Complex Robot Skills using Large Language Models">
+  <meta name="twitter:title" content="CRAFT">
+  <meta name="twitter:description" content="Coaching Reinforcement Learning Autonomously using Foundation Models for Multi-Robot Coordination Tasks">
   <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X600-->
   <!-- <meta name="twitter:image" content="static/images/your_twitter_banner_image.png">
   <meta name="twitter:card" content="summary_large_image"> -->
   <!-- Keywords for your paper to be indexed by-->
-  <meta name="keywords" content="Curriculum learning, Robot learning, Large language models, Reinforcement learning, Task planning, Task curriculum">
+  <meta name="keywords" content="Curriculum learning, Multi-Agent Reinforcement Learning, Foundation models, Multi-Robot Systems">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
 
-  <title>CurricuLLM</title>
+  <title>CRAFT</title>
   <link rel="icon" type="image/x-icon" href="static/images/iconlab.ico">
   <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
   rel="stylesheet">
@@ -74,19 +74,13 @@
             <div class="is-size-5 publication-authors">
               <!-- Paper authors -->
               <span class="author-block">
-                <a href="https://kh-ryu.github.io/" target="_blank">Kanghyun Ryu</a>,
+                <a href="https://sites.google.com/yonsei.ac.kr/seoyeon-choi-home/" target="_blank">Seoyeon Choi<sup>*</sup></a>,
               </span>
               <span class="author-block">
-                <a href="https://qiayuanl.github.io/" target="_blank">Qiayuan Liao</a>,
+                <a href="https://kh-ryu.github.io/" target="_blank">Kanghyun Ryu<sup>*</sup></a>,
               </span>
               <span class="author-block">
-                <a href="https://zyliatzju.github.io" target="_blank">Zhongyu Li</a>,
-              </span>
-              <span class="author-block">
-                <a href="https://delgosha.web.illinois.edu/" target="_blank">Payam Delgosha</a>,
-              </span>
-              <span class="author-block">
-                <a href="https://hybrid-robotics.berkeley.edu/koushil/" target="_blank">Koushil Sreenath</a>,
+                <a href="https://www.linkedin.com/in/jonghoon-ock-23518b201/?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app" target="_blank">JongHoon Ock</a>,
               </span>
               <span class="author-block">
                 <a href="https://negarmehr.com/" target="_blank">Negar Mehr</a>
@@ -95,15 +89,15 @@
 
             <div class="is-size-5 publication-authors">
               <span class="author-block"><a href="https://iconlab.negarmehr.com/" target="_blank">ICON Lab</a> at UC Berkeley<br>
-              2025 International Conference on Robotics and Automation (ICRA)</span>
-              <!-- <span class="eql-cntrb"><small><br><sup>*</sup>Indicates Equal Contribution</small></span> -->
+              Preprint</span>
+              <span class="eql-cntrb"><small><br><sup>*</sup>Indicates Equal Contribution</small></span>
             </div>
 
                   <div class="column has-text-centered">
                     <div class="publication-links">
                          <!-- Arxiv PDF link -->
                       <span class="link-block">
-                        <a href="https://arxiv.org/abs/2409.18382" target="_blank"
+                        <a href="https://arxiv.org/abs/2509.14380" target="_blank"
                         class="external-link button is-normal is-rounded is-dark">
                         <span class="icon">
                           <i class="fas fa-file-pdf"></i>
@@ -125,18 +119,18 @@
 
                   <!-- Github link -->
                   <span class="link-block">
-                    <a href="https://github.com/labicon/CurricuLLM" target="_blank"
+                    <a href="https://github.com/labicon/CRAFT" target="_blank"
                     class="external-link button is-normal is-rounded is-dark">
                     <span class="icon">
                       <i class="fab fa-github"></i>
                     </span>
-                    <span>Code</span>
+                    <span>Code (Coming soon)</span>
                   </a>
                 </span>
 
                 <!-- ArXiv abstract Link -->
                 <span class="link-block">
-                  <a href="https://arxiv.org/abs/2409.18382" target="_blank"
+                  <a href="https://arxiv.org/abs/2509.14380" target="_blank"
                   class="external-link button is-normal is-rounded is-dark">
                   <span class="icon">
                     <i class="ai ai-arxiv"></i>
@@ -179,18 +173,15 @@
         <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
           <p>
-            Curriculum learning can achieve complex policies by progressively increasing the task difficulty during training. 
-            However, designing effective curricula for a specific task often requires extensive domain knowledge and human intervention, 
-            which limits its applicability across various domains. Our core idea is that large language models (LLMs) present significant potential for efficiently breaking down tasks 
-            and decomposing skills across various robotics environments. Additionally, the demonstrated success of LLMs in translating natural language
-            into executable code for RL agents strengthens their role in generating task curricula. In this work, we propose <strong>CurricuLLM</strong>,
-            which leverages the high-level planning and programming capabilities of LLMs for curriculum design, thereby enhancing the
-            efficient learning of complex tasks. CurricuLLM consists of: <em>(Step 1)</em> Generating sequence of subtasks in natural language form, <em>(Step 2)</em> 
-            Translating natural language description of subtasks in executable task code, including the reward code and goal distribution code, and 
-            <em>(Step 3)</em> Evaluating trained policies based on trajectory rollout
-            and subtask description. We evaluate CurricuLLM in various robotics simulation environments, ranging from manipulation,
-            navigation, and locomotion, to show that CurricuLLM can aid learning complex robot control tasks. In addition, we validate
-            humanoid locomotion policy learned through CurricuLLM in real-world.
+            Multi-Agent Reinforcement Learning (MARL) provides a powerful framework for learning coordination in multi-agent systems. 
+            However, applying MARL to robotics still remains challenging due to high-dimensional continuous joint action spaces, complex reward design, 
+            and non-stationary transitions inherent to decentralized settings. On the other hand, humans learn complex coordination through staged curricula, 
+            where long-horizon behaviors are progressively built upon simpler skills. Motivated by this, we propose CRAFT: Coaching Reinforcement learning Autonomously 
+            using Foundation models for multi-robot coordination Tasks, a framework that leverages the reasoning capabilities of foundation models to act as a "coach" for multi-robot coordination. 
+            CRAFT automatically decomposes long-horizon coordination tasks into sequences of subtasks using the planning capability of Large Language Models (LLMs). In what follows, 
+            CRAFT trains each subtask using reward functions generated by LLM, and refines them through a Vision Language Model (VLM)-guided reward-refinement loop. 
+            We evaluate CRAFT on multi-quadruped navigation and bimanual manipulation tasks, demonstrating its capability to learn complex coordination behaviors. 
+            In addition, we validate the multi-quadruped navigation policy in real hardware experiments. 
          </p>
         </div>
       </div>
@@ -455,7 +446,7 @@ Description: The manipulator needs to <strong>push the block to a goal position<
 
 
 <!-- Paper poster -->
-<section class="hero is-small is-light">
+<!-- <section class="hero is-small is-light">
   <div class="hero-body">
     <div class="container">
       <h2 class="title">Poster</h2>
@@ -465,7 +456,7 @@ Description: The manipulator needs to <strong>push the block to a goal position<
         
       </div>
     </div>
-  </section>
+  </section> -->
 <!--End paper poster -->
 
 
@@ -473,13 +464,11 @@ Description: The manipulator needs to <strong>push the block to a goal position<
   <section class="section" id="BibTeX">
     <div class="container is-max-desktop content">
       <h2 class="title">BibTeX</h2>
-      <pre><code>@inproceedings{ryu2025curricullm,
-  title={CurricuLLM: Automatic task curricula design for learning complex robot skills using large language models}, 
-  author={Ryu, Kanghyun and Liao, Qiayuan and Li, Zhongyu and Sreenath, Koushil and Mehr, Negar},
-  booktitle={2025 IEEE International Conference on Robotics and Automation (ICRA)},
-  year={2025},
-  organization={IEEE},
-  arxiv={2409.18382},
+      <pre><code>@article{choi2025craft,
+  title={CRAFT: Coaching Reinforcement Learning Autonomously using Foundation Models for Multi-Robot Coordination Tasks},
+  author={Choi, Seoyeon and Ryu, Kanghyun and Ock, Jonghoon and Mehr, Negar},
+  journal={arXiv preprint arXiv:2509.14380},
+  year={2025}
 }</code></pre>
     </div>
 </section>
@@ -490,7 +479,15 @@ Description: The manipulator needs to <strong>push the block to a goal position<
   <div class="container is-max-desktop content">
     <h2 class="title">References</h2>
     <dl>
-	<dt><strong>[Eureka]</strong></dt>
+  <dt><strong>[CurricuLLM]</strong></dt>
+	<dd>
+	  <div class="reference" id="CurricuLLM">
+	    Kanghyun Ryu, Qiayuan Liao, Zhongyu Li, Payam Delgosha, Koushil Sreenath, Negar Mehr,
+	    <a href="https://ieeexplore.ieee.org/abstract/document/11128783" target="_blank" rel="noopener noreferrer">CurricuLLM: Automatic Task Curricula Design for Learning Complex Robot Skills Using Large Language Models</a>,
+	    International Conference on Robotics and Automation (ICRA), 2025.
+	  </div>
+	</dd>
+  <dt><strong>[Eureka]</strong></dt>
 	<dd>
 	  <div class="reference" id="Eureka">
 	    Yecheng Jason Ma, William Liang, Guanzhi Wang, De-An Huang, Osbert Bastani, Dinesh Jayaraman, Yuke Zhu, Linxi “Jim” Fan, Anima Anandkumar,
@@ -498,28 +495,12 @@ Description: The manipulator needs to <strong>push the block to a goal position<
 	    International Conference on Learning Representations (ICLR), 2024.
 	  </div>
 	</dd>
-      <dt><strong>[HER]</strong></dt>
+	<dt><strong>[MAPPO]</strong></dt>
 	<dd>
-	  <div class="reference" id="HER">
-	    Marcin Andrychowicz, Filip Wolski, Alex Ray, Jonas Schneider, Rachel Fong, Peter Welinder, Bob McGrew, Josh Tobin, Pieter Abbeel, and Wojciech Zaremba,
-	    <a href="https://proceedings.neurips.cc/paper_files/paper/2017/file/453fadbd8a1a3af50a9df4df899537b5-Paper.pdf" target="_blank" rel="noopener noreferrer">Hindsight Experience Replay</a>,
-	    Advances in Neural Information Processing Systems (Neurips), 2017.
-	  </div>
-	</dd>
-	<dt><strong>[Eurekaverse]</strong></dt>
-	<dd>
-	  <div class="reference" id="POLICE">
-	    William Liang, Sam Wang, Hung-Ju Wang, Osbert Bastani, Dinesh Jayaraman, Yecheng Jason Ma,
-	    <a href="https://arxiv.org/abs/2411.01775" target="_blank" rel="noopener noreferrer"> Eurekaverse: Environment Curriculum Generation via Large Language Models</a>,
-	    Conference on Robot Learning (CoRL), 2024.
-	  </div>
-	</dd>
-	<dt><strong>[Berkeley Humanoid]</strong></dt>
-	<dd>
-	  <div class="reference" id="Berkeley Humanoid">
-	    Qiayuan Liao, Bike Zhang, Xuanyu Huang, Xiaoyu Huang, Zhongyu Li, and Koushil Sreenath,
-	    <a href="https://arxiv.org/pdf/2407.21781" target="_blank" rel="noopener noreferrer">Berkeley Humanoid: A Research Platform for Learning-based Control</a>,
-	    Arxiv, 2024.
+	  <div class="reference" id="MAPPO">
+	    Chao Yu, Akash Velu, Eugene Vinitsky, Jiaxuan Gao, Yu Wang, Alexandre Bayen, Yi Wu
+	    <a href="https://proceedings.neurips.cc/paper_files/paper/2022/file/9c1535a02f0ce079433344e14d910597-Paper-Datasets_and_Benchmarks.pdf" target="_blank" rel="noopener noreferrer"> The Surprising Effectiveness of PPO in Cooperative Multi-Agent Games</a>,
+	    Advances in neural information processing systems (NeurIPS), 2022.
 	  </div>
 	</dd>
 	
