@@ -70,7 +70,7 @@
       <div class="container is-max-desktop">
         <div class="columns is-centered">
           <div class="column has-text-centered">
-            <h1 class="title is-1 publication-title">CurricuLLM <br>Automatic Task Curricula Design for<br>Learning Complex Robot Skills<br>using Large Language Models</h1>
+            <h1 class="title is-1 publication-title">CRAFT: <br>Coaching Reinforcement Learning Autonomously<br>using Foundation Models<br>for Multi-Robot Coordination Tasks</h1>
             <div class="is-size-5 publication-authors">
               <!-- Paper authors -->
               <span class="author-block">
@@ -210,11 +210,11 @@
       <div class="column is-four-fifths">
         <div class="content has-text-left">
           <p>
-            <strong>Overview of CRAFT.</strong> CRAFT consist of five key stages:
-            (1) Curriculum generation module -- A curriculum LLM decomposes the long-horizon coordination task into a sequence of subtasks described in natural language.
-            (2) Reward function generation module -- A reward generation LLM generates a reward function in executable python code, providing dense rewards that clearly specify the desired behavior for each subtask.
-            (3) Policy evaluation module -- An evaluation VLM evaluates the success or failure of the policy based on the visual and quantitative rollouts of the policy.
-            (4) Reward refinement module -- If the policy fails to achieve the desired behavior, an advice VLM provides advice on how to change the reward based on the rollout information and learning curve. Then, an LLM takes the advice and refines the reward function.
+            <strong>Overview of CRAFT.</strong> CRAFT consist of five key stages: <br>
+            (1) Curriculum generation module -- A curriculum LLM decomposes the long-horizon coordination task into a sequence of subtasks described in natural language. <br>
+            (2) Reward function generation module -- A reward generation LLM generates a reward function in executable python code, providing dense rewards that clearly specify the desired behavior for each subtask. <br>
+            (3) Policy evaluation module -- An evaluation VLM evaluates the success or failure of the policy based on the visual and quantitative rollouts of the policy. <br>
+            (4) Reward refinement module -- If the policy fails to achieve the desired behavior, an advice VLM provides advice on how to change the reward based on the rollout information and learning curve. Then, an LLM takes the advice and refines the reward function. <br> 
             (5) Sequential training of subtasks -- Throughout the training, we initialize each subtask with the policy learned from the previous one while motivating exploration to learn the new subtask.
           </p>
         </div>
@@ -275,30 +275,9 @@
         <div class="column is-8">
         <div class="content has-text-justified">
             <p>
-              CurricuLLM can be applied to various robot tasks. 
-              CurricuLLM can break down the complex task to a sequence of subtasks that are easier to learn.
-              Moreover, as the curriculum progresses, the reward function becomes more informative and aligned with the target task.
-              We provide the example curriculum and reward function generated from CurricuLLM for Fetch Push environment.
+              CRAFT can learn collaborative multi-robot tasks that requires complex, long-horizon coordination. 
+              We validate CRAFT in bimanual manipulation and multi-quadruped navigation tasks, demonstrating its capability to learn complex coordination behaviors.
             </p>
-            <blockquote>
-              <p>
-<strong>Task 1</strong><br>
-Name: Reach the Block <br>
-Description: The robot manipulator must use its end effector to reach and position itself <strong>directly above the block</strong> without making contact. <br>
-<br>
-<strong>Task 2</strong> <br>
-Name: Maintain Contact With the Block<br>
-Description: Slowly decrease the z-coordinate of the end_effector_position to <strong>make gentle contact with the block</strong><br>
-<br>
-<strong>Task 3</strong> <br>
-Name: Push to a Short Distance<br>
-Description: After making contact, the robot manipulator must <strong>push the block</strong> to a predefined point that is a <strong>short distance away</strong> from the starting point. <br>
-<br>
-<strong>Task 4</strong><br>
-Name: Original Task<br>
-Description: The manipulator needs to <strong>push the block to a goal position</strong> on the table.<br>
-              </p>
-            </blockquote>
           </div>
         </div>
       </div>
@@ -306,86 +285,80 @@ Description: The manipulator needs to <strong>push the block to a goal position<
       <div id="results-carousel" class="carousel results-carousel">
         <div class="item is-active">
           <div class="columns is-vcentered">
-            <!-- Video column -->
-            <div class="column is-half">
-              <video poster="" id="video1" autoplay controls muted loop width="360" height="360">
-                <source src="static/videos/push-reach block.mp4" type="video/mp4">
-              </video>
+            <!-- First GIF column -->
+            <div class="column is-one-third">
+              <figure class="image">
+                <img src="static/images/lift_reach.gif" alt="Two-arm Lift Task 1">
+              </figure>
             </div>
-            <!-- Image column -->
-            <div class="column is-half">
-              <figure class="image" width="400">
-                <img src="static/images/task 1 code.png" alt="Image fot task 1">
+            <!-- Second GIF column -->
+            <div class="column is-one-third">
+              <figure class="image">
+                <img src="static/images/lift_grasp.gif" alt="Two-arm Lift Task 2">
+              </figure>
+            </div>
+            <!-- Third GIF column -->
+            <div class="column is-one-third">
+              <figure class="image">
+                <img src="static/images/lift_success.gif" alt="Two-arm Lift Task 3">
               </figure>
             </div>
           </div>
           <h2 class="subtitle has-text-centered">
-            Task 1: Reach above the block. 
+            Goal: Lift and balance the pot
         </div>
 
         <div class="item">
           <div class="columns is-vcentered">
-            <!-- Video column -->
-            <div class="column is-half">
-              <video poster="" id="video2" autoplay controls muted loop width="360" height="360">
-                <source src="static/videos/push-maintain contact.mp4" type="video/mp4">
-              </video>
+            <!-- First GIF column -->
+            <div class="column is-one-third">
+              <figure class="image">
+                <img src="static/images/seesaw_task1.gif" alt="Go2Seesaw Task 1">
+              </figure>
             </div>
-            <!-- Image column -->
-            <div class="column is-half">
-              <figure class="image" width="400">
-                <img src="static/images/task 2 code.png" alt="Image for task 2">
+            <!-- Second GIF column -->
+            <div class="column is-one-third">
+              <figure class="image">
+                <img src="static/images/seesaw_task2.gif" alt="Go2Seesaw Task 2">
+              </figure>
+            </div>
+            <!-- Third GIF column -->
+            <div class="column is-one-third">
+              <figure class="image">
+                <img src="static/images/seesaw_success.gif" alt="Go2Seesaw Task 3">
               </figure>
             </div>
           </div>
           <h2 class="subtitle has-text-centered">
-            Task 2: Make gentle contact. 
+            Goal: Climb up the seesaw and reach target platform
         </div>
 
         <div class="item">
           <div class="columns is-vcentered">
-            <!-- Video column -->
-            <div class="column is-half">
-              <video poster="" id="video3" autoplay controls muted loop width="360" height="360">
-                <source src="static/videos/push-push a short distance.mp4" type="video/mp4">
-              </video>
+            <!-- First GIF column -->
+            <div class="column is-one-third">
+              <figure class="image">
+                <img src="static/images/Go2gate_approach_gate.gif" alt="Go2Gate Task 1">
+              </figure>
             </div>
-            <!-- Image column -->
-            <div class="column is-half">
-              <figure class="image" width="400">
-                <img src="static/images/task 3 code.png" alt="Image for task 3">
+            <!-- Second GIF column -->
+            <div class="column is-one-third">
+              <figure class="image">
+                <img src="static/images/Go2gate_one_agent_passing.gif" alt="Go2Gate Task 2">
+              </figure>
+            </div>
+            <!-- Third GIF column -->
+            <div class="column is-one-third">
+              <figure class="image">
+                <img src="static/images/go2gate_success.gif" alt="Go2Gate Task 3">
               </figure>
             </div>
           </div>
           <h2 class="subtitle has-text-centered">
-            Task 3: Push for a short distance. 
-        </div>
-
-        <div class="item">
-          <div class="columns is-vcentered">
-            <!-- Video column -->
-            <div class="column is-half">
-              <video poster="" id="video4" autoplay controls muted loop width="360" height="360">
-                <source src="static/videos/push-final.mp4" type="video/mp4">
-              </video>
-            </div>
-            <!-- Image column -->
-            <div class="column is-half">
-              <figure class="image" width="400">
-                <img src="static/images/task 4 code.png" alt="Image for task 4">
-              </figure>
-            </div>
-          </div>
-          <h2 class="subtitle has-text-centered">
-            Task 4: Push block to a goal position. 
+            Goal: Sequentially pass the gate without collision
         </div>
 
       </div>
-
-    <img src="static/images/combined result.png" alt="Result summary" style="height:300px !important; display:block !important; margin:auto !important;"/>  
-    <h2 class="subtitle has-text-centered">
-      CurricuLLM can be applied to diverse robot tasks, outperforming the vanilla RL trainings.
-    </h2>
    </div>
   </div>
 </section>
@@ -421,45 +394,6 @@ Description: The manipulator needs to <strong>push the block to a goal position<
 </div>
 </section> -->
 <!-- End image carousel -->
-
-<!-- Video carousel -->
-<section class="hero is-small">
-  <div class="hero-body">
-    <div class="container">
-      <h2 class="title is-3">Humanoid policy trained with CurricuLLM deployed in real-world</h2>
-
-      <div id="results-carousel" class="carousel results-carousel">
-        <div class="item is-active">
-            <!-- Video column -->
-            <div class="column is-half">
-              <video poster="" id="video1" autoplay controls muted loop width="640" height="360">
-                <source src="static/videos/Side_view.mp4" type="video/mp4">
-              </video>
-            </div>
-        </div>
-
-        <div class="item">
-            <!-- Video column -->
-            <div class="column is-half">
-              <video poster="" id="video2" autoplay controls muted loop width="640" height="360">
-                <source src="static/videos/going_back.mp4" type="video/mp4">
-              </video>
-            </div>
-        </div>
-
-        <div class="item">
-            <!-- Video column -->
-            <div class="column is-half">
-              <video poster="" id="video3" autoplay controls muted loop width="640" height="360">
-                <source src="static/videos/backward_long.mp4" type="video/mp4">
-              </video>
-            </div>
-        </div>
-      </div>
-
-   </div>
-  </div>
-</section>
 
 <!-- Youtube video -->
 <!-- <section class="hero is-small is-light">
@@ -553,9 +487,9 @@ Description: The manipulator needs to <strong>push the block to a goal position<
       <div class="column is-8">
         <div class="content">
 
-          <p>
+          <!-- <p>
             This work is supported by the National Science Foundation, under grants ECCS-2438314 CAREER Award, CNS-2423130, and CCF-2423131.
-          </p>
+          </p> -->
 
           <p>
             This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
