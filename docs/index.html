@@ -200,14 +200,25 @@
         <source src="static/videos/method.mp4"
         type="video/mp4">
       </video>
-      <h2 class="subtitle has-text-centered">
-        Overview of CRAFT. CRAFT consist of five key stages: <br>
-        (1) Curriculum generation module -- A curriculum LLM decomposes the long-horizon coordination task into a sequence of subtasks described in natural language. <br>
-        (2) Reward function generation module -- A reward generation LLM generates a reward function in executable python code, providing dense rewards that clearly specify the desired behavior for each subtask. <br>
-        (3) Policy evaluation module -- An evaluation VLM evaluates the success or failure of the policy based on the visual and quantitative rollouts of the policy. <br>
-        (4) Reward refinement module -- If the policy fails to achieve the desired behavior, an advice VLM provides advice on how to change the reward based on the rollout information and learning curve. Then, an LLM takes the advice and refines the reward function. <br>
-        (5) Sequential training of subtasks -- Throughout the training, we initialize each subtask with the policy learned from the previous one while motivating exploration to learn the new subtask.
-      </h2>
+    </div>
+  </div>
+</section>
+
+<section class="section hero is-small">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <div class="content has-text-left">
+          <p>
+            <strong>Overview of CRAFT.</strong> CRAFT consist of five key stages:
+            (1) Curriculum generation module -- A curriculum LLM decomposes the long-horizon coordination task into a sequence of subtasks described in natural language.
+            (2) Reward function generation module -- A reward generation LLM generates a reward function in executable python code, providing dense rewards that clearly specify the desired behavior for each subtask.
+            (3) Policy evaluation module -- An evaluation VLM evaluates the success or failure of the policy based on the visual and quantitative rollouts of the policy.
+            (4) Reward refinement module -- If the policy fails to achieve the desired behavior, an advice VLM provides advice on how to change the reward based on the rollout information and learning curve. Then, an LLM takes the advice and refines the reward function.
+            (5) Sequential training of subtasks -- Throughout the training, we initialize each subtask with the policy learned from the previous one while motivating exploration to learn the new subtask.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -242,11 +253,11 @@
 	<div class="content has-text-justified">
           <p>
           <strong>Example of reward refinement of subtask <code>Coordinate Preliminary Lift</code></strong> - Through the first reward-refinement loop, 
-          $R^1_{k=3}$ was produced and the evaluation VLM marked the policy as a failure since the pot never reached the required elevation of <code>0.05 m</code>. 
+          $R^1_{k=3}$ was produced and the evaluation VLM marked the policy as a failure since the pot never reached the required elevation of 0.05 m. 
           The reward component learning curves were then passed to the advice VLM, which identified that <code>lift_reward</code> was too weak compared to <code>balance_reward</code>. 
           It recommended removing the square on elevation, increasing the lift weight, and decreasing the balance weight. 
           The revised reward $R^2_{k=3}$ reflects these changes: the square on elevation was removed, the lift weight increased from 80 to 200, and the balance weight decreased from 2 to 1. 
-          With this reward, the policy successfully achieved the <code>0.05 m</code> elevation and satisfied the subtask.
+          With this reward, the policy successfully achieved the 0.05 m elevation and satisfied the subtask.
           </p>
         </div>
       </div>
