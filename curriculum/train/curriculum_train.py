@@ -5,7 +5,6 @@ import shutil
 import subprocess
 import glob
 import base64
-from io import BytesIO
 
 from gpt.curriculum_api import CurriculumAPI
 from gpt.utils import *
@@ -13,9 +12,9 @@ from gpt.utils import *
 MAX_ATTEMPT = 10
 
 class Curriculum_Module:
-    def __init__(self, env_path, logger_path, run_datetime, cfg, seed=0):
+    def __init__(self, task, env_path, logger_path, run_datetime, cfg, seed=0):
         self.env_path = env_path
-        self.prompt_path = "/home/kang/multiagent-quadruped-environment/curriculum/gpt/prompts/go1gate"
+        self.prompt_path = f"./curriculum/gpt/prompts/{task}"
         self.gpt_api = CurriculumAPI(self.prompt_path, logger_path, 
                                      line_num=cfg['line_num'])
         self.logger_path = logger_path
@@ -27,21 +26,6 @@ class Curriculum_Module:
         self.seed = seed
         self.terminate_training = False
         self.experiment_time = run_datetime
-
-    def open_curriculum(self):
-        # Open curriculum pkl file - not tested
-        file_path = "logs/robosuite_two-arm-lift/06-14_04-19/curriculum.pkl"
-        with open(file_path, 'rb') as file:
-            self.curriculum = pickle.load(file)
-            self.curriculum_length = len(self.curriculum)
-
-            print(os.path.basename(os.path.normpath(self.logger_path)))
-            datetime = os.path.basename(os.path.normpath(self.logger_path))
-            for task_detail in self.curriculum:
-                task_detail['Name'] = f'{task_detail["Task_num"]}_{task_detail["Subtask"]}({datetime})'
-            
-            print(f"Curriculum loaded from {file_path}")
-            print(self.curriculum) 
         
     def generate_curriculum(self):
         # Generate curriculum and return list of dictionaries with task details
@@ -56,19 +40,6 @@ class Curriculum_Module:
 
     def train(self):
         self.generate_curriculum()
-        # self.open_curriculum()
-
-        # curriculum_idx = 3
-        # # stack best_reward_code
-        # for i in range(curriculum_idx):
-        #     subtask = self.curriculum[i]
-        #     with open(os.path.join(self.logger_path, subtask['Name'], "best_reward_code.txt"), "r") as file:
-        #         reward_code = file.read()
-        #         self.best_reward_code[subtask['Name']] = reward_code
-        #         print(f"Loaded best reward code for {subtask['Name']}")
-        #         print(reward_code)
-        # # stack best_model_idx_list
-        # self.best_model_idx_list = [1, 2, 2]
 
         curriculum_idx = 0
         while curriculum_idx < self.curriculum_length:
@@ -91,7 +62,7 @@ class Curriculum_Module:
                         else:
                             self.refine_reward_code(curriculum_idx, sample_num, advices)
                         self.train_single(curriculum_idx, task, sample_num)
-                    
+
                     except Exception as e:
                         print(f"Error in training task {task['Name']} sample {sample_num}")
                         print(e)
@@ -108,37 +79,56 @@ class Curriculum_Module:
                         trial_num += 1
                         continue # if generating reward code fails, skip evaluation and pass to the next iteration
 
-                    try:
-                        rew, traj, snapshots = self.collect_evaluation_data(task, sample_num)
-                        rew_rollout.append(rew)
-                        traj_rollout.append(traj)
-                        snapshot_rollout.append(snapshots)
+                    N_ROLLOUTS = 5 # Collect 5 rollouts to evaluate the task
+                    task_success = False
+                    evaluation_decision = -1
+                    for rollout in range(N_ROLLOUTS):
+                        try:
+                            rew, traj, snapshots = self.collect_evaluation_data(task, sample_num, rollout)
+                            rew_rollout.append(rew)
+                            traj_rollout.append(traj)
+                            snapshot_rollout.append(snapshots)
 
-                        break # if training and rollout is successful, break the loop
+                            # Check if succeeded in current task
+                            decision = self.evaluate_subtask(curriculum_idx, sample_num, snapshot_rollout[-1], traj_rollout[-1])
+                            if decision is not None and decision != -1:
+                                task_success = task_success or decision['decision']
+                                evaluation_decision = decision
+                                if task_success is True:
+                                    break # Task is successfully trained, break the loop
+                                elif rollout == N_ROLLOUTS - 1:
+                                    print(f"Task {task['Name']} sample {sample_num} failed in every {N_ROLLOUTS} rollouts.")
+                                    break
+                                else:
+                                    # If the rollout failed, remove the last entries
+                                    rew_rollout.pop()
+                                    traj_rollout.pop()
+                                    snapshot_rollout.pop()
 
-                    except Exception as e:
-                        print(f"Error in rollout of task {task['Name']} sample {sample_num}")
-                        print(e)
-                        traceback.print_exc()
-                        
-                        # Save error message in log path and discard current reward code & directory
-                        with open(self.logger_path + f"{task['Name']}/sample_{sample_num}_evaluation_error_{trial_num}.txt", "w") as file:
-                            file.write(str(e))
-                        self.current_reward_code_list.pop()
-                        if os.path.exists(self.logger_path + f"{task['Name']}/sample_{sample_num}"):
-                            shutil.rmtree(self.logger_path + f"{task['Name']}/sample_{sample_num}")
-                        print("Discarded current reward code & directory. Retrying...")
-                        
-                        trial_num += 1
+                        except Exception as e:
+                            print(f"Error in rollout of task {task['Name']} sample {sample_num}")
+                            print(e)
+                            traceback.print_exc()
+                            
+                            # Save error message in log path and discard current reward code & directory
+                            with open(self.logger_path + f"{task['Name']}/sample_{sample_num}_evaluation_error_{trial_num}.txt", "w") as file:
+                                file.write(str(e))
+                            self.current_reward_code_list.pop()
+                            if os.path.exists(self.logger_path + f"{task['Name']}/sample_{sample_num}"):
+                                shutil.rmtree(self.logger_path + f"{task['Name']}/sample_{sample_num}")
+                            print("Discarded current reward code & directory. Retrying...")
+                            
+                            break # If evaluation fails, break the loop and retry training
 
-                # Check if succeeded in current task
-                evaluation_decision = self.evaluate_subtask(curriculum_idx, sample_num, snapshot_rollout[-1], traj_rollout[-1])
+                    if task_success or rollout == N_ROLLOUTS - 1:
+                        break # If task is successfully trained, break the loop
+
                 if evaluation_decision == -1:
                     print(f"Failed to evaluate task {task['Name']} sample {sample_num}. Terminating.")
                     self.terminate_training = True
                     break
 
-                elif evaluation_decision['decision']: # Success
+                elif task_success: # Success
                     print(f"Successfully trained task {task['Name']} sample {sample_num}.")
         
                     # Update best reward 
@@ -183,29 +173,20 @@ class Curriculum_Module:
         if curriculum_idx == 0:
             print(f"Training task {task['Name']} sample {sample_num} from scratch")
             process = subprocess.run(["python", 
-                                        "/home/kang/multiagent-quadruped-environment/openrl_ws/curriculum_train.py",
+                                        "./openrl_ws/curriculum_train.py",
                                         "--run_date", self.experiment_time,
                                         "--curriculum_task", task['Name'], 
                                         "--sample_idx", str(sample_num),
                                         "--training_iter", str(iter_per_task),
                                         ],
-                                        # stdout=subprocess.PIPE,
-                                        # stderr=subprocess.PIPE,
-                                        # text=True
                                         )
-            # print(process.stdout)
-            # print(process.stderr)
-            # Save stdout and stderr to log file
-            # with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/training_log.txt", "w") as file:
-            #     file.write(process.stdout)
-            #     file.write(process.stderr)
 
         else:
             previous_task = self.curriculum[curriculum_idx - 1]
             load_sample_num = self.best_model_idx_list[curriculum_idx - 1]
             print(f"Training task {task['Name']} sample {sample_num} from previous task {previous_task['Name']} sample {load_sample_num}")
             process = subprocess.run(["python", 
-                                        "/home/kang/multiagent-quadruped-environment/openrl_ws/curriculum_train.py", 
+                                        "./openrl_ws/curriculum_train.py", 
                                         "--run_date", self.experiment_time,
                                         "--curriculum_task", task['Name'], 
                                         "--sample_idx", str(sample_num),
@@ -214,15 +195,7 @@ class Curriculum_Module:
                                         "--load_sample_idx", str(load_sample_num),
                                         "--training_iter", str(iter_per_task),
                                         ],
-                                                # stdout=subprocess.PIPE,
-                                                # stderr=subprocess.PIPE,
-                                                # text=True
                                         )
-            # print(process.stdout)
-            # print(process.stderr)
-            # with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/training_log.txt", "w") as file:
-            #     file.write(process.stdout)
-            #     file.write(process.stderr)
 
 
     def generate_reward_code(self, curriculum_idx, sample_num, failure_reasons):
@@ -264,23 +237,18 @@ class Curriculum_Module:
                                         version_number=sample_num)
         self.current_reward_code_list.append(reward_code)
 
-    def collect_evaluation_data(self, task, sample_num):    
-        print(f"Collecting evaluation data for task {task['Name']} sample {sample_num}")  
+    def collect_evaluation_data(self, task, sample_num, rollout):    
+        print(f"Collecting evaluation data for task {task['Name']} sample {sample_num}") 
         # Save the trajectory analysis in the log path        
         process = subprocess.run(["python",
-                                    "/home/kang/multiagent-quadruped-environment/openrl_ws/curriculum_eval.py",
+                                    "./openrl_ws/curriculum_eval.py",
                                     "--run_date", self.experiment_time,
                                     "--curriculum_task", task['Name'],
                                     "--sample_idx", str(sample_num),
+                                    "--seed", str(rollout),
                                     ],
-                                    # stdout=subprocess.PIPE,
-                                    # stderr=subprocess.PIPE,
-                                    # text=True
                                     )
-        # # Save stdout and stderr to log file
-        # with open(self.logger_path + f"{task['Name']}/sample_{sample_num}/evaluation_log.txt", "w") as file:
-        #     file.write(process.stdout)
-        #     file.write(process.stderr)
+        
         # Load the trajectory and reward data
         save_path = os.path.join("logs", self.experiment_time, task['Name'], f"sample_{sample_num}", "model")
         with open(os.path.join(save_path, "traj_dict.pkl"), 'rb') as f:

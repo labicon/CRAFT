@@ -11,6 +11,9 @@ results/
 checkpoints/
 figure/
 
+# API keys
+*/key.yaml
+
 # Compiled Java class files
 *.class
 

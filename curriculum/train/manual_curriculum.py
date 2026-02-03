@@ -10,9 +10,9 @@ from gpt.utils import *
 MAX_ATTEMPT = 5
 
 class Manual_Module:
-    def __init__(self, env_path, logger_path, run_datetime, cfg, seed=0):
+    def __init__(self, task, env_path, logger_path, run_datetime, cfg, seed=0):
         self.env_path = env_path
-        self.prompt_path = "./curriculum/gpt/prompts" + "/manual_curriculum"
+        self.prompt_path = f"./curriculum/gpt/prompts/{task}/manual_curriculum"
         self.gpt_api = CurriculumAPI(self.prompt_path, logger_path, 
                                      line_num=cfg['line_num'])
         self.logger_path = logger_path

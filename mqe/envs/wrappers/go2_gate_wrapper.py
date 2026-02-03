@@ -74,9 +74,7 @@ class Go2GateWrapper(EmptyWrapper):
 
         self.reward_buffer["step count"] += 1
 
-        # reward, reward_dict, max_reward = self.env_reward(obs_buf, action)
         reward, reward_dict, max_reward = self.gpt_reward(global_state, action)
-
         for key, value in reward_dict.items():
             reward_key = f"Reward/{key}"
             self.reward_buffer[reward_key] = value
@@ -212,138 +210,37 @@ class Go2GateWrapper(EmptyWrapper):
         return eval_dict
     
 
-    def env_reward(self, obs_buf, action):
-        reward = torch.zeros([self.env.num_envs, self.env.num_agents], device=self.env.device)
-        reward_dict = {}
-
-        base_pos = obs_buf.base_pos
-
-        # approach reward
-        if self.target_reward_scale != 0:
-            distance_to_taget = torch.norm(base_pos[:, :2] - self.target_pos, p=2, dim=1)
-
-            if not hasattr(self, "last_distance_to_taget"):
-                self.last_distance_to_taget = copy(distance_to_taget)
-            
-            target_reward = (self.last_distance_to_taget - distance_to_taget).reshape(self.num_envs, -1)
-            target_reward[self.env.reset_ids] = 0
-
-            target_reward *= self.target_reward_scale
-            reward += target_reward
-
-            self.last_distance_to_taget = copy(distance_to_taget)
-
-            reward_dict["target reward_agent 0"] = torch.mean(target_reward, dim=0)[0]
-            reward_dict["target reward_agent 1"] = torch.mean(target_reward, dim=0)[1]
-
-        # contact punishment
-        if self.contact_punishment_scale != 0:
-            collide_reward = self.contact_punishment_scale * self.env.collide_buf
-            reward += collide_reward.unsqueeze(1).repeat(1, self.num_agents)
-            reward_dict["contact punishment_agent 0"] = torch.mean(collide_reward.unsqueeze(1).repeat(1, self.num_agents).type(torch.float), dim=0)[0]
-            reward_dict["contact punishment_agent 1"] = torch.mean(collide_reward.unsqueeze(1).repeat(1, self.num_agents).type(torch.float), dim=0)[1]
-
-        # success reward
-        if self.success_reward_scale != 0:
-            success_reward = torch.zeros([self.env.num_envs * self.env.num_agents], device="cuda")
-            success_reward[base_pos[:, 0] > self.gate_distance + 0.25] = self.success_reward_scale
-            reward += success_reward.reshape([self.env.num_envs, self.env.num_agents])
-            reward_dict["success reward_agent 0"] = torch.mean(success_reward.reshape([self.env.num_envs, self.env.num_agents]).type(torch.float), dim=0)[0]
-            reward_dict["success reward_agent 1"] = torch.mean(success_reward.reshape([self.env.num_envs, self.env.num_agents]).type(torch.float), dim=0)[1]
-
-        # approach frame punishment
-        if self.approach_frame_punishment_scale != 0:
-            dis_to_left_frame = ((base_pos[:, :2] - self.frame_left) ** 2).sum(dim=1).reshape(self.num_envs, -1)
-            dis_to_right_frame = ((base_pos[:, :2] - self.frame_right) ** 2).sum(dim=1).reshape(self.num_envs, -1)
-
-            approach_left = self.approach_frame_punishment_scale / dis_to_left_frame[dis_to_left_frame < 0.04]
-            approach_right = self.approach_frame_punishment_scale / dis_to_right_frame[dis_to_left_frame < 0.04]
-            reward[dis_to_left_frame < 0.04] += approach_left
-            reward[dis_to_right_frame < 0.04] += approach_right
-            if approach_left.numel() == 0 and approach_right.numel() == 0:
-                reward_dict["approach frame punishment"] = torch.zeros(self.num_agents, device=self.env.device)[0]
-            else:
-                reward_dict["approach frame punishment"] = torch.mean(approach_left + approach_right, dim=0)
-
-        # agent distance punishment
-        if self.agent_distance_punishment_scale != 0:
-            agent_dis = (base_pos[:, :2] - torch.flip(base_pos[:, :2].reshape(self.num_envs, self.num_agents, 2), dims=[1,]).reshape(-1, 2)) ** 2
-            agent_dis = agent_dis.sum(dim=1).reshape(self.num_envs, -1)
-            agent_distance_punishment = self.agent_distance_punishment_scale  / agent_dis[agent_dis < 0.4]
-            reward[agent_dis < 0.4] += agent_distance_punishment
-            if agent_distance_punishment.numel() == 0:
-                reward_dict["agent distance punishment"] = torch.zeros(self.num_agents, device=self.env.device)[0]
-            else:
-                reward_dict["agent distance punishment"] = torch.mean(agent_distance_punishment, dim=0)
-
-        # command lin_vel.y punishment
-        if self.lin_vel_y_punishment_scale != 0:
-            v_y_punishment = self.lin_vel_y_punishment_scale * action[:, :, 1] ** 2
-            reward += v_y_punishment
-            reward_dict["command lin_vel.y punishment_agent 0"] = torch.mean(v_y_punishment, dim=0)[0]
-            reward_dict["command lin_vel.y punishment_agent 1"] = torch.mean(v_y_punishment, dim=0)[1]
-
-        # command value punishment
-        if self.command_value_punishment_scale != 0:
-            command_value_punishment = self.command_value_punishment_scale * torch.clip(action ** 2 - 1, 0, 1).sum(dim=2)
-            reward += command_value_punishment
-            reward_dict["command value punishment_agent 0"] = torch.mean(command_value_punishment, dim=0)[0]
-            reward_dict["command value punishment_agent 1"] = torch.mean(command_value_punishment, dim=0)[1]
-
-        # lin_vel.x reward
-        if self.lin_vel_x_reward_scale != 0:
-            v_x_reward = self.lin_vel_x_reward_scale * obs_buf.lin_vel[:, 0].reshape(self.num_envs, self.num_agents)
-            reward += v_x_reward
-            reward_dict["lin_vel.x reward_agent 0"] = torch.mean(v_x_reward, dim=0)[0]
-            reward_dict["lin_vel.x reward_agent 1"] = torch.mean(v_x_reward, dim=0)[1]
-
-        return reward, reward_dict, 0.0
-    
-
     def gpt_reward(self, state, action):
+
         reward = torch.zeros((self.num_envs, self.num_agents), device=self.env.device)
         rew_dict = {}
-        max_reward = 13.0
+        max_reward = 11.0
 
-        # Reward for getting closer to the gate - max 1.0
-        progress_reward = 0.8 * self._progress_to_gate(state, action)
+        # Focus primarily on Agent 0 passing the gate
+        progress_reward = 2.0 * self._progress_to_gate(state, action)[:, 0:1]
         progress_reward = self._check_reward_shape(progress_reward)
         rew_dict["agent_0_progress"] = torch.mean(progress_reward[:, 0])
-        rew_dict["agent_1_progress"] = torch.mean(progress_reward[:, 1])
-        
-        # Reward for keeping a safe distance - max 2.0
-        agent_distance = self._agent_distance(state, action)
-        distance_threshold = 0.5
-        penalty_threshold = 1.0
-        safe_distance_reward = torch.zeros_like(agent_distance)
-        safe_distance_reward[agent_distance >= penalty_threshold] = 2.0
-        safe_distance_reward[agent_distance <= distance_threshold] = 0.0
-        mask = (agent_distance > distance_threshold) & (agent_distance < penalty_threshold)
-        safe_distance_reward[mask] = 2.0 * ((agent_distance[mask] - distance_threshold) / (penalty_threshold - distance_threshold)) ** 2
-        safe_distance_reward = self._check_reward_shape(safe_distance_reward)
-        rew_dict["safe_distance"] = torch.mean(safe_distance_reward)
 
-        # Reward for using small command value - max 1.0
-        command_values = self._command_value(state, action)
+        # Reward for small command value for Agent 0 - max 1.0
+        command_values = self._command_value(state, action)[:, 0:1]
         small_command_reward = 1.0 * torch.exp(-2.0 * command_values)
         small_command_reward = self._check_reward_shape(small_command_reward)
-        rew_dict["small_command"] = torch.mean(small_command_reward)
+        rew_dict["small_command"] = torch.mean(small_command_reward[:, 0])
 
-        # Reward for success - max 10.0
-        success = self._success_evaluation(state, action)
-        success_reward = 10.0 * success.float()  # Increased emphasis on success
+        # Reward for success for Agent 0 - max 5.0
+        success = self._success_evaluation(state, action)[:, 0:1]
+        success_reward = 5.0 * success.float()
         success_reward = self._check_reward_shape(success_reward)
         rew_dict["agent_0_success"] = torch.mean(success_reward[:, 0])
-        rew_dict["agent_1_success"] = torch.mean(success_reward[:, 1])
 
-        # If both agents have succeeded in passing the gate, give maximum reward; otherwise, aggregate the other rewards
-        both_agents_success = torch.all(success > 0, dim=1, keepdim=True).float()
-        both_agents_success = self._check_reward_shape(both_agents_success)
-        other_rewards = progress_reward + safe_distance_reward + small_command_reward + success_reward
-        reward = torch.where(both_agents_success > 0, max_reward, other_rewards)
+        # Total reward is the sum of progress, small command reward, and success reward
+        other_rewards = progress_reward + small_command_reward + success_reward
+        reward[:, 0:1] = other_rewards
+        reward[:, 1:2] = 0.0  # Ignore reward for Agent 1
 
         # Normalize the reward
         reward = self._check_reward_shape(reward)
         reward *= 1 / max_reward
 
         return reward, rew_dict, max_reward
+
