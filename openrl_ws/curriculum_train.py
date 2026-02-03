@@ -12,7 +12,6 @@ import sys
 def train(save_dir, exp_name, training_iter=1000000):
     from openrl.utils.callbacks.checkpoint_callback import CheckpointCallback
     args = get_args()  
-    args.task = "go2seesaw"
     args.train_timesteps = training_iter
     args.num_envs = 500
     args.headless = True
@@ -58,7 +57,6 @@ def train(save_dir, exp_name, training_iter=1000000):
 def load_train(save_dir, exp_name, load_dir, training_iter=1000000):  
     from openrl.utils.callbacks.checkpoint_callback import CheckpointCallback
     args = get_args()
-    args.task = "go2seesaw"
     args.num_envs = 500
     args.headless = True
     args.train_timesteps = training_iter

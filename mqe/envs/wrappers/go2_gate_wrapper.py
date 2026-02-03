@@ -214,31 +214,50 @@ class Go2GateWrapper(EmptyWrapper):
 
         reward = torch.zeros((self.num_envs, self.num_agents), device=self.env.device)
         rew_dict = {}
-        max_reward = 11.0
+        max_reward = 12.0
 
-        # Focus primarily on Agent 0 passing the gate
-        progress_reward = 2.0 * self._progress_to_gate(state, action)[:, 0:1]
+        # Reward for maintaining safe distance - max 3.0
+        agent_distance = self._agent_distance(state, action)
+        distance_threshold = 0.5
+        penalty_threshold = 1.0
+        safe_distance_reward = torch.zeros_like(agent_distance)
+        safe_distance_reward[agent_distance >= penalty_threshold] = 3.0
+        safe_distance_reward[agent_distance <= distance_threshold] = 0.0
+        mask = (agent_distance > distance_threshold) & (agent_distance < penalty_threshold)
+        safe_distance_reward[mask] = 3.0 * ((agent_distance[mask] - distance_threshold) / (penalty_threshold - distance_threshold)) ** 2
+        safe_distance_reward = self._check_reward_shape(safe_distance_reward)
+        rew_dict["safe_distance"] = torch.mean(safe_distance_reward)
+
+        # Reward for synchronizing velocity commands - max 3.0
+        command_lin_vel_x = self._command_lin_vel_x(state, action)
+        command_lin_vel_y = self._command_lin_vel_y(state, action)
+        velocity_synchronization_reward = 3.0 - torch.abs(command_lin_vel_x[:, 0] - command_lin_vel_x[:, 1]) - torch.abs(command_lin_vel_y[:, 0] - command_lin_vel_y[:, 1])
+        velocity_synchronization_reward = self._check_reward_shape(velocity_synchronization_reward)
+        rew_dict["velocity_synchronization"] = torch.mean(velocity_synchronization_reward)
+
+        # Reward for getting closer to the gate - max 2.0
+        progress_reward = 2.0 * self._progress_to_gate(state, action)
         progress_reward = self._check_reward_shape(progress_reward)
         rew_dict["agent_0_progress"] = torch.mean(progress_reward[:, 0])
+        rew_dict["agent_1_progress"] = torch.mean(progress_reward[:, 1])
 
-        # Reward for small command value for Agent 0 - max 1.0
-        command_values = self._command_value(state, action)[:, 0:1]
-        small_command_reward = 1.0 * torch.exp(-2.0 * command_values)
-        small_command_reward = self._check_reward_shape(small_command_reward)
-        rew_dict["small_command"] = torch.mean(small_command_reward[:, 0])
+        # Penalty for using large command value - max 2.0
+        command_values = self._command_value(state, action)
+        command_penalty = 2.0 * (1 - torch.exp(-2.0 * command_values))
+        command_penalty = self._check_reward_shape(command_penalty)
+        rew_dict["large_command_penalty"] = torch.mean(command_penalty)
 
-        # Reward for success for Agent 0 - max 5.0
-        success = self._success_evaluation(state, action)[:, 0:1]
-        success_reward = 5.0 * success.float()
+        # Success reward for passing the gate together - max 5.0
+        success = self._success_evaluation(state, action)
+        both_agents_success = torch.all(success > 0, dim=1, keepdim=True).float()
+        success_reward = 5.0 * both_agents_success
         success_reward = self._check_reward_shape(success_reward)
-        rew_dict["agent_0_success"] = torch.mean(success_reward[:, 0])
+        rew_dict["both_success"] = torch.mean(success_reward)
 
-        # Total reward is the sum of progress, small command reward, and success reward
-        other_rewards = progress_reward + small_command_reward + success_reward
-        reward[:, 0:1] = other_rewards
-        reward[:, 1:2] = 0.0  # Ignore reward for Agent 1
+        # Total reward calculation
+        reward = safe_distance_reward + velocity_synchronization_reward + progress_reward - command_penalty + success_reward
 
-        # Normalize the reward
+        # normalize the reward
         reward = self._check_reward_shape(reward)
         reward *= 1 / max_reward
 
