@@ -11,6 +11,10 @@ CRAFT is a a framework that leverages the reasoning capabilities of foundation m
 * Reward refinement: If the policy fails to achieve the desired behavior, an advice VLM provides advice on how to change the reward.
 * Sequential training of subtasks: we initialize each subtask with the policy learned from the previous one while motivating exploration to learn the new subtask.
 
+## Installation ##
+As our code for bimanual manipulation and quadruped navigation environments are in separate branches, please follow the instructions below based on your environment of interest.
+For our quadruped navigation environment, see branch `quadruped_navigation`
+
 ## Introduction ##
 
 Learning coordinated behaviors remains a significant challenge in multi-robot systems. Multi-Agent Reinforcement Learning (MARL) offers a promising
@@ -25,10 +29,6 @@ Coaching naturally integrates all these skills: a good coach breaks down the tas
 provides actionable feedback to guide improvement. Similarily, CRAFT produces curricula for long-horizon coordination tasks, designs semantically rich reward functions, and
 evaluates task–policy alignment using visual information.
 
-
-## Installation ##
-
-For our quadruped navigation environment, see branch `quadruped_navigation'
 
 ## Acknowledgement ##
 
