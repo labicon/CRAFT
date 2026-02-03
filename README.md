@@ -19,7 +19,17 @@ cd isaacgym/python
 pip install -e .
 ```
 
-### 3. Install MQE
+### 3. Clone and install MQE
+
+First, to clone this repository, you will need git-lfs installed. Follow instructions from [here](https://git-lfs.com/). This is required to pretrained low-level locomotion policies for quadruped robots.
+
+Then, clone this repository and navigate into it:
+
+```bash
+git clone --branch quadruped_navigation https://github.com/labicon/CRAFT.git
+cd CRAFT
+```
+
 This repository assumes you have the MQE dependencies installed. You can install MQE in editable mode.
 
 ```bash
@@ -27,6 +37,7 @@ This repository assumes you have the MQE dependencies installed. You can install
 # This curriculum assumes it runs alongside MQE structure.
 cd mqe
 pip install -e .
+cd ..
 ```
 
 ### 4. Install Dependencies
