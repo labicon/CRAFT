@@ -15,7 +15,7 @@ def eval(load_dir, seed=0):
     from openrl_ws.test import save_video, save_images
     args = get_args()
     args.task = "go2seesaw"
-    args.headless = False
+    args.headless = True
     args.record_video = True
     args.seed = seed
     env, _ = make_env(args, custom_cfg(args), single_agent=False)

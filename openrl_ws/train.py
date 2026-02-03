@@ -17,10 +17,7 @@ def train(args):
     start_time = datetime.now()
     start_time_str = start_time.strftime("%m-%d_%H-%M")
 
-    if args.algo == "sppo" or args.algo == "dppo":
-        single_agent = True
-    else:
-        single_agent = False
+    single_agent = False
     
     env, env_cfg = make_env(args, custom_cfg(args), single_agent)
     
@@ -33,8 +30,8 @@ def train(args):
     args.use_valuenorm = True
     args.use_adv_normalize = True
     args.entropy_coef = 0.0001
-    
-    dir_name = "./checkpoints/" + args.task + start_time_str
+
+    dir_name = "./checkpoints/" + args.task + "_" + start_time_str
     callback = CheckpointCallback(
         save_freq=5000,
         save_path=dir_name)

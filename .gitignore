@@ -9,6 +9,7 @@ dist/
 log/
 results/
 checkpoints/
+figure/
 
 # Compiled Java class files
 *.class
@@ -51,6 +52,7 @@ Thumbs.db
 *.wmv
 *.gif
 *.png
+*.pdf
 
 # VS Code
 .vscode

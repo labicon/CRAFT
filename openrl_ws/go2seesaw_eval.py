@@ -58,7 +58,7 @@ if __name__ == "__main__":
     args = get_args()
     env, _ = make_env(args, custom_cfg(args))
 
-    net = PPONet(env, device="cuda")  # Create neural network.
+    net = PPONet(env, device="cuda:1")  # Create neural network.
     agent = PPOAgent(net)  # Initialize the agent.
 
     if getattr(args, "checkpoint") is not None:

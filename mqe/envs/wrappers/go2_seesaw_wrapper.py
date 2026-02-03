@@ -65,10 +65,10 @@ class Go2SeesawWrapper(EmptyWrapper):
             "seesaw_end": self.seesaw_end,
         }
 
-        reward, reward_dict, max_reward_ = self.env_reward(base_pos)
+        reward, reward_dict, max_reward_ = self.gpt_reward(global_state, action)
 
-        # # Update distances
-        # self._update_distances(global_state, action)
+        # Update distances
+        self._update_distances(global_state, action)
 
         for key, value in reward_dict.items():
             reward_key = f"Reward/{key}"
@@ -319,3 +319,59 @@ class Go2SeesawWrapper(EmptyWrapper):
         }
 
         return eval_dict
+    
+
+    def gpt_reward(self, state, action):
+        # Initialize reward to zeros
+        reward = torch.zeros((self.num_envs, self.num_agents), device=self.env.device)
+        rew_dict = {}
+        max_reward = 150.0  # Adjusted max reward for proper scaling
+
+        # Reward agent 0 for progressing towards the target platform - retain significant weight
+        agent_0_progress_reward = 30.0 * self._progress_to_target(state, action)
+        agent_0_progress_reward[:, 1] = 0.0  # Only reward agent 0
+        agent_0_progress_reward = self._check_reward_shape(agent_0_progress_reward)
+        reward += agent_0_progress_reward
+        rew_dict["agent_0_progress"] = torch.mean(agent_0_progress_reward[:, 0])
+
+        # Reward for height progression for Agent 0, aiming to reach above 1.3m - retain significant weight
+        height_reward = 15.0 * self._normalized_height(state, action)
+        height_reward[:, 1] = 0.0  # Only agent 0 should get height reward
+        height_reward = self._check_reward_shape(height_reward)
+        reward += height_reward
+        rew_dict['height_reward'] = torch.mean(height_reward[:, 0])
+
+        # Provide a survival bonus for both agents remaining upright and collision-free
+        survival_bonus = 1.0 * (1.0 - self._fall(state, action).float()) * (1.0 - self._wall_collision(state, action).float())
+        survival_bonus = self._check_reward_shape(survival_bonus)
+        reward += survival_bonus
+        rew_dict['survival_bonus'] = torch.mean(survival_bonus)
+
+        # Reward Agent 1 for maintaining balance on the seesaw using y_alignment
+        agent_1_balance_reward = 10.0 * self._y_alignment(state, action)
+        agent_1_balance_reward[:, 0] = 0.0  # Only reward agent 1 for balance
+        agent_1_balance_reward = self._check_reward_shape(agent_1_balance_reward)
+        reward += agent_1_balance_reward
+        rew_dict['agent_1_balance'] = torch.mean(agent_1_balance_reward[:, 1])
+
+        # Add pivot position reward for Agent 1
+        x1 = state["agent_pos"][:, 1, 0]
+        x_seesaw_base = state["seesaw_start"][:, 0, 0]
+        L = torch.abs(state["seesaw_end"][:, 0, 0] - x_seesaw_base)
+        r1_pivot = 15.0 * (1.0 - torch.clamp(torch.abs(x1 - x_seesaw_base) / L, max=1.0))
+        r1_pivot = self._check_reward_shape(r1_pivot.unsqueeze(1))
+        reward += r1_pivot
+        rew_dict['r1_pivot'] = torch.mean(r1_pivot[:, 1])
+
+        # Reward for success when Agent 0 reaches the platform - increase weight significantly
+        success = self._success(state, action)
+        success_reward = 50.0 * success.float()
+        success_reward = self._check_reward_shape(success_reward)
+        reward += success_reward
+        rew_dict["success"] = torch.mean(success_reward)
+
+        # Normalize the reward
+        reward = self._check_reward_shape(reward)
+        reward /= max_reward
+
+        return reward, rew_dict, max_reward

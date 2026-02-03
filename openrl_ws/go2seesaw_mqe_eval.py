@@ -42,17 +42,17 @@ def get_model_directories(base_dir):
         return []
     
 def run_eval(model_path):
-    process = subprocess.run(["python",
-                            "./openrl_ws/go2seesaw_vectorized_eval.py",
-                            "--task", "go2seesaw",
-                            "--algo", "ppo",
-                            "--sim_device", "cuda:0",
-                            "--rl_device", "cuda:0",
-                            "--num_envs", "50",
-                            "--checkpoint", str(model_path),
-                            "--headless"
-                            ],
-                            )
+    # process = subprocess.run(["python",
+    #                         "./openrl_ws/go2seesaw_vectorized_eval.py",
+    #                         "--task", "go2seesaw",
+    #                         "--algo", "ppo",
+    #                         "--sim_device", "cuda:0",
+    #                         "--rl_device", "cuda:0",
+    #                         "--num_envs", "50",
+    #                         "--checkpoint", str(model_path),
+    #                         "--headless"
+    #                         ],
+    #                         )
     
     # Load the evaluation results
     eval_results_path = os.path.join(model_path, "eval_results.pkl")
@@ -598,15 +598,15 @@ def scratch_evaluation(experiment_directories):
 
 if __name__ == "__main__":
     experiment_directories = [
-        # # "./logs/go2seesaw/08-15_14-38",
-        # # "./logs/go2seesaw/08-16_08-41",
-        # # "./logs/go2seesaw/08-17_00-40",
-        # # "./logs/go2seesaw/08-17_10-44",
-        # # "./logs/go2seesaw/08-18_09-25",
-        # # "./logs/go2seesaw/08-19_02-44",
+        # "./logs/go2seesaw/08-15_14-38",
+        # "./logs/go2seesaw/08-16_08-41",
+        # "./logs/go2seesaw/08-17_00-40",
+        "./logs/go2seesaw/08-17_10-44",
+        "./logs/go2seesaw/08-18_09-25",
+        # "./logs/go2seesaw/08-19_02-44",
         # "logs/go2seesaw/09-02_21-09",
-        "logs/go2seesaw/09-03_09-20",
-        "logs/go2seesaw/09-03_17-49",
+        # "logs/go2seesaw/09-03_09-20",
+        # "logs/go2seesaw/09-03_17-49",
         # "logs/go2seesaw/09-01_03-39_no_refine",
         # "logs/go2seesaw/09-01_21-45_no_refine",
         # "logs/go2seesaw/09-02_17-02_no_refine",
@@ -615,16 +615,19 @@ if __name__ == "__main__":
     ]
     curriculum_evaluation(experiment_directories)
 
-    # experiment_directories = [
-    #     "checkpoints/go2seesaw_example_reward_0",
-    #     "checkpoints/go2seesaw_example_reward_1",
-    #     "checkpoints/go2seesaw_example_reward_2",
-    #     "checkpoints/go2seesaw_example_reward_3",
-    #     "checkpoints/go2seesaw_example_reward_4",
-    #     "checkpoints/go2seesaw_mqe_reward_0",
-    #     "checkpoints/go2seesaw_mqe_reward_1",
-    #     "checkpoints/go2seesaw_mqe_reward_2",
-    #     "checkpoints/go2seesaw_mqe_reward_3",
-    #     "checkpoints/go2seesaw_mqe_reward_4",
-    # ]
-    # scratch_evaluation(experiment_directories)
+    experiment_directories = [
+        # "checkpoints/go2seesaw_08-17_10-44_scratch",
+        # "checkpoints/go2seesaw_08-18_09-25_scratch",
+        # "checkpoints/go2seesaw_08-19_02-44_scratch",
+        # "checkpoints/go2seesaw_example_reward_0",
+        # "checkpoints/go2seesaw_example_reward_1",
+        # "checkpoints/go2seesaw_example_reward_2",
+        # "checkpoints/go2seesaw_example_reward_3",
+        # "checkpoints/go2seesaw_example_reward_4",
+        # "checkpoints/go2seesaw_mqe_reward_0",
+        # "checkpoints/go2seesaw_mqe_reward_1",
+        # "checkpoints/go2seesaw_mqe_reward_2",
+        # "checkpoints/go2seesaw_mqe_reward_3",
+        # "checkpoints/go2seesaw_mqe_reward_4",
+    ]
+    scratch_evaluation(experiment_directories)
