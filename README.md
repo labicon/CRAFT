@@ -28,7 +28,7 @@ evaluates task–policy alignment using visual information.
 
 ## Installation ##
 
-We will announce our code after refactoring.
+For our quadruped navigation environment, see branch `quadruped_navigation'
 
 ## Acknowledgement ##
 
