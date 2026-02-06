@@ -46,7 +46,7 @@ if __name__ == '__main__':
     # task_name = "go1rotationdoor"
     # task_name = "go1bridge"
 
-    task_name = "go2seesaw"
+    task_name = "go2pushbox"
 
     args.num_envs = 1
     args.headless = False

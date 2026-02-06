@@ -24,6 +24,7 @@ from mqe.envs.configs.go1_bridge_config import Go1BridgeCfg
 
 from mqe.envs.configs.go2_gate_config import Go2GateCfg
 from mqe.envs.configs.go2_seesaw_config import Go2SeesawCfg
+from mqe.envs.configs.go2_pushbox_config import Go2PushboxCfg
 
 # wrappers
 from mqe.envs.wrappers.empty_wrapper import EmptyWrapper
@@ -39,6 +40,7 @@ from mqe.envs.wrappers.go1_bridge_wrapper import Go1BridgeWrapper
 
 from mqe.envs.wrappers.go2_gate_wrapper import Go2GateWrapper
 from mqe.envs.wrappers.go2_seesaw_wrapper import Go2SeesawWrapper
+from mqe.envs.wrappers.go2_pushbox_wrapper import Go2PushboxWrapper
 
 from mqe.utils import get_args, make_env
 
@@ -119,7 +121,12 @@ ENV_DICT = {
         "class": Go2Object,
         "config": Go2SeesawCfg,
         "wrapper": Go2SeesawWrapper
-    }
+    },
+    "go2pushbox": {
+        "class": Go2Object,
+        "config": Go2PushboxCfg,
+        "wrapper": Go2PushboxWrapper
+    },
 }
 
 def make_mqe_env(env_name: str, args=None, custom_cfg=None) -> Tuple[LeggedRobotField, LeggedRobotFieldCfg]:
