@@ -1,0 +1,80 @@
+<<Environment_Description>>
+
+The 'state' variable is a dictionary that contains:
+"box_pos": tensor (num_envs, num_agents, 2) for the box's xy coordinates. Note that for each agent, the value is identical.
+"box_yaw": tensor (num_envs, num_agents, 1) for the box's yaw angle in radians [-pi, pi]. Note that for each agent, the value is identical.
+"agent_pos": tensor (num_envs, num_agents, 2) for each agent's xy coordinates.
+"agent_yaw": tensor (num_envs, num_agents, 1) for each agent's yaw angle.
+
+The 'action' variable is a tensor (num_envs, num_agents, 3) for (x linear velocity command, y linear velocity command, yaw angular velocity command)
+Note that the coordinates in the state are in the global frame and the coordinates of the action are in the agent's local frame.
+
+You can use helper functions to calculate reward.
+self._box_forward_movement(state, action): returns tensor (num_envs, num_agents) for box movement in x direction since the last step
+self._box_y_deviation(state, action): returns tensor (num_envs, num_agents) for the absolute y-distance of the box from the center (y=0)
+self._agent_distance(state, action): returns tensor (num_envs, num_agents) for the Euclidean distance between the two agents
+self._agents_distance_to_box(state, action): returns tensor (num_envs, num_agents) for the distance between each agent and the box center
+self._success_evaluation(state, action): returns tensor (num_envs, num_agents) which returns 1 if the box reached the target position (x >= 3.5) and 0 otherwise
+self._check_reward_shape(reward): returns reshaped reward tensor to avoid index error
+
+An example reward function format for the task is 
+```python
+def gpt_reward(self, state, action):
+
+    reward = torch.zeros((self.num_envs, self.num_agents), device=self.env.device)
+    rew_dict = {}
+    max_reward = 10.0
+
+    box_pos = state["box_pos"]
+    agent_pos = state["agent_pos"]
+    
+    # 1. Reward for box forward position/progress (basic simple reward) - max 2.0
+    # Ideally we want the box X to be large.
+    # We can normalize it if we have a target or just reward raw value clipped.
+    # Here we assume we want to push it past x=5.0
+    box_x = box_pos[:, :, 0] # (num_envs, num_agents)
+    progress_reward = torch.clamp(box_x / 5.0, 0.0, 1.0) * 2.0
+    progress_reward = self._check_reward_shape(progress_reward)
+    rew_dict["box_progress"] = torch.mean(progress_reward)
+
+    # 2. Reward for keeping box centered (y near 0) - max 1.0
+    box_y = box_pos[:, :, 1]
+    # Reward is high when |y| is low. e.g. exp(-|y|)
+    center_reward = 1.0 * torch.exp(-2.0 * torch.abs(box_y))
+    center_reward = self._check_reward_shape(center_reward)
+    rew_dict["box_centering"] = torch.mean(center_reward)
+
+    # 3. Penalty/Reward for distance between agents (Collision avoidance) - max 1.0
+    # Calculate distance between agent 0 and agent 1
+    # agent_pos is (num_envs, num_agents, 2)
+    pos0 = agent_pos[:, 0, :]
+    pos1 = agent_pos[:, 1, :]
+    dist = torch.norm(pos0 - pos1, dim=1, keepdim=True) # (num_envs, 1)
+    dist = dist.repeat(1, self.num_agents) # (num_envs, num_agents)
+    
+    distance_threshold = 0.5
+    safe_distance_reward = torch.zeros_like(dist)
+    safe_distance_reward[dist > distance_threshold] = 1.0
+    safe_distance_reward = self._check_reward_shape(safe_distance_reward)
+    rew_dict["safe_distance"] = torch.mean(safe_distance_reward)
+    
+    # Total Reward
+    reward = progress_reward + center_reward + safe_distance_reward
+    
+    # Normalize to max_reward if needed or just clamp
+    reward = torch.clamp(reward, 0.0, max_reward)
+    reward *= 1 / max_reward
+    
+    return reward, rew_dict, max_reward
+```
+
+You should re-implement the reward function to assign a proper reward function for the given task. 
+You can change the reward components that align well with the task.
+Do not include any new inputs in the functions.
+
+Note that you are designing a reward function for a team, not a single agent. 
+
+Generate a reward function code and command for:
+Task Name: <<Task_Name>>
+Description: <<Task_Description>>
+Reason: <<Task_Reason>>

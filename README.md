@@ -70,6 +70,14 @@ OPENAI_API_KEY: "your_openai_api_key_here"
 
 ### Scripts
 
+Set `LD_LIBRARY_PATH` to include your conda environment's library directory.
+For the `mqe` environment:
+
+```bash
+# Replace with your actual path (e.g., ~/miniconda3/envs/mqe/lib)
+export LD_LIBRARY_PATH=/path/to/conda/envs/mqe/lib
+```
+
 We provide a unified bash script `run_experiments.sh` to facilitate running multiple trials of experiments efficiently.
 This `run_experiments.sh` script supports running both the automated curriculum and manual baselines.
 

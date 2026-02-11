@@ -1,0 +1,22 @@
+<<Environment_Description>>
+
+Varaibles you can use for curriculum descriptions are
+- xy position of the box center
+- yaw angle of the box
+- xy position of each agent
+- yaw angle of each agent
+
+These are the rules that you have to consider when writing a curriculum
+(1) You cannot change start position of agents and box.
+(2) You cannot change the number of agents.
+
+Three candidates of curriculums are:
+
+Candidate 1:
+<<Candidate_1>>
+
+Candidate 2:
+<<Candidate_2>>
+
+Candidate 3:
+<<Candidate_3>>

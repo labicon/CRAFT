@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     task_name = "go2pushbox"
 
-    args.num_envs = 1
+    args.num_envs = 2
     args.headless = False
     args.record_video = False
 

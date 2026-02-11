@@ -28,23 +28,15 @@ class Go2PushboxCfg(Go2Cfg):
         BarrierTrack_kwargs = merge_dict(Go2Cfg.terrain.BarrierTrack_kwargs, dict(
             options = [
                 "init",
-                "gate",
                 "wall",
             ],
             # wall_thickness= 0.2,
-            track_width = 5.0,
+            track_width = 3.6,
             init = dict(
-                block_length = 2.0,
-                room_size = (1.0, 2.5),
+                block_length = 4.2,
+                room_size = (4.2, 1.8),
                 border_width = 0.0,
                 offset = (0, 0),
-            ),
-            gate = dict(
-                block_length = 5.0,
-                width = 1.5,
-                depth = 0.1, # size along the forward axis
-                offset = (0, 0),
-                random = (0, 0.5),
             ),
             wall = dict(
                 block_length = 0.1
@@ -65,13 +57,13 @@ class Go2PushboxCfg(Go2Cfg):
         init_state_class = Go2Cfg.init_state
         init_states = [
             init_state_class(
-                pos = [0.0, 0.0, 0.42],
+                pos = [-1.2, 0.0, 0.36],
                 rot = [0.0, 0.0, 0.0, 1.0],
                 lin_vel = [0.0, 0.0, 0.0],
                 ang_vel = [0.0, 0.0, 0.0],
             ),
             init_state_class(
-                pos = [0.0, 0.0, 0.42],
+                pos = [-1.2, 0.0, 0.36],
                 rot = [0.0, 0.0, 0.0, 1.0],
                 lin_vel = [0.0, 0.0, 0.0],
                 ang_vel = [0.0, 0.0, 0.0],
@@ -79,7 +71,7 @@ class Go2PushboxCfg(Go2Cfg):
         ]
         init_states_npc = [
             init_state_class(
-                pos = [2.5, 0.0, 0.6],
+                pos = [2.7, 0.0, 0.6],
                 rot = [0.0, 0.0, 0.0, 1.0],
                 lin_vel = [0.0, 0.0, 0.0],
                 ang_vel = [0.0, 0.0, 0.0],
@@ -95,6 +87,7 @@ class Go2PushboxCfg(Go2Cfg):
         termination_terms = [
             "roll",
             "pitch",
+            "distance",
         ]
 
     class domain_rand(Go2Cfg.domain_rand):
@@ -122,5 +115,5 @@ class Go2PushboxCfg(Go2Cfg):
             # exceed_torque_limits_i = -2e-1
 
     class viewer(Go2Cfg.viewer):
-        pos = [0., 6., 5.]  # [m]
-        lookat = [4., 6., 0.]  # [m]
+        pos = [3.2, 0., 4.]
+        lookat = [3.2, 2.5, 0.]

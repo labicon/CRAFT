@@ -11,9 +11,9 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, help="Random seed", default=0)
     parser.add_argument("--logdir", type=str, help="Log directory", default="logs")
     parser.add_argument("--module", type=str, default="curriculum", choices=["manual", "curriculum"], help="Select module: manual or curriculum")
-    parser.add_argument("--task", type=str, default="go2gate", choices=["go2gate", "go2seesaw"], help="Select task: go2gate or go2seesaw")
+    parser.add_argument("--task", type=str, default="go2gate", choices=["go2gate", "go2seesaw", "go2pushbox"], help="Select task: go2gate or go2seesaw")
     args = parser.parse_args()
-
+    
     seed = args.seed
 
     current_datetime = datetime.now().strftime("%m-%d_%H-%M")

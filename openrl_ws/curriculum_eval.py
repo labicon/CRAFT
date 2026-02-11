@@ -14,7 +14,7 @@ def eval(load_dir, seed=0):
     from openrl_ws.utils import get_args
     from openrl_ws.test import save_video, save_images
     args = get_args()
-    args.task = "go2seesaw"
+    args.task = "go2pushbox"
     args.headless = True
     args.record_video = True
     args.seed = seed
@@ -27,7 +27,6 @@ def eval(load_dir, seed=0):
     obs = env.reset(seed=seed)
     obs_buffer = [obs]
     reward_buffer = {"agent_0": 0.0, "agent_1": 0.0}
-    target_pos = env.target_pos
 
     while True:
         action, _ = agent.act(obs)
@@ -37,7 +36,7 @@ def eval(load_dir, seed=0):
         reward_buffer["agent_1"] += reward[0, 1]
         if done[0, 0]:
             # traj_dict, rew_dict = analyze_go2gate_trajectory(obs_buffer, reward_buffer, target_pos)
-            traj_dict, rew_dict = analyze_go2seesaw_trajectory(obs_buffer, reward_buffer, env)
+            traj_dict, rew_dict = analyze_go2pushbox_trajectory(obs_buffer, reward_buffer, env)
             print(f"Total reward for agent 0: {reward_buffer['agent_0']}, agent 1: {reward_buffer['agent_1']}")
             for key, value in traj_dict.items():
                 print(f"{key}: {value}")
@@ -52,7 +51,6 @@ def eval(load_dir, seed=0):
             # Save the video
             frames = env.get_complete_frames()
             video_array = np.concatenate([np.expand_dims(frame, axis=0) for frame in frames ], axis=0).swapaxes(1, 3).swapaxes(2, 3)
-            print(video_array.shape)
             save_video(video_array, 50, output_path=os.path.join(load_dir, f"rollout_{seed}.mp4"))
             save_images(video_array, output_dir=os.path.join(load_dir, "images"))
 
@@ -142,6 +140,56 @@ def analyze_go2seesaw_trajectory(traj_buffer, rew_buffer, env):
         "target_pos": target_pos,
         "agent_0_pos": agent_0_pos,
         "agent_1_pos": agent_1_pos,
+    }
+
+    rew_dict = {
+        "total_reward_agent_0": rew_buffer["agent_0"],
+        "total_reward_agent_1": rew_buffer["agent_1"],
+    }
+
+    return traj_dict, rew_dict
+
+def analyze_go2pushbox_trajectory(traj_buffer, rew_buffer, env):
+    stepsize = len(traj_buffer)
+    max_samples = 20
+    step = max(1, stepsize // max_samples)
+
+    # Downsample the trajectory buffer
+    sampled_traj_buffer = traj_buffer[::step]
+
+    # traj_buffer is a list of obs arrays, each with shape (num_envs, num_agents, obs_dim)
+    # Stack them to get a single array of shape (T, num_envs, num_agents, obs_dim)
+    obs_trajectory = np.stack(sampled_traj_buffer, axis=0)
+
+    # The observation for each agent is:
+    # [agent_id(2), self_base_info(3), other_agent_base_info(3), box_pos(2), box_yaw(1)]
+    # self_base_info is [pos(2), yaw(1)]
+
+    # We can extract all info from agent 0's perspective.
+    # Assuming num_envs = 1, which is typical for evaluation.
+    # Shape becomes (T, num_agents, obs_dim)
+    obs_agent_0 = np.round(obs_trajectory[:, 0, 0, :], decimals=2) # Trajectory of obs for agent 0 in env 0
+
+    # Extract XY positions
+    # agent_0_pos is indices 2,3 (x,y)
+    agent_0_pos = obs_agent_0[:, 2:4]
+    agent_0_yaw = obs_agent_0[:, 4]
+    # agent_1_pos is indices 5,6 (x,y)
+    agent_1_pos = obs_agent_0[:, 5:7]
+    agent_1_yaw = obs_agent_0[:, 7]
+
+    # box_pos is indices 8,9 (x,y)
+    box_pos = obs_agent_0[:, 8:10]
+    # box_yaw is index 10
+    box_yaw = obs_agent_0[:, 10]
+    
+    traj_dict = {
+        "box_pos": box_pos,
+        "box_yaw": box_yaw,
+        "agent_0_pos": agent_0_pos,
+        "agent_0_yaw": agent_0_yaw,
+        "agent_1_pos": agent_1_pos,
+        "agent_1_yaw": agent_1_yaw,
     }
 
     rew_dict = {

@@ -1,0 +1,11 @@
+You are a multi-agent reinforcement engineer trying to evaluate whether an experiment aligns with a given task description.
+You will be given a language description of the task and trajectory rollouts of robots and objects from multiple experiments.
+Based on this information, choose the best experiment that aligns with the task description.
+
+The task is part of a curriculum learning sequence.
+Focus mainly on evaluating the agents based on current task, but should also be assessed in the context of their progress in their final goal.
+
+Follow the output format.
+
+Decision: Experiment [number]
+Reason: 

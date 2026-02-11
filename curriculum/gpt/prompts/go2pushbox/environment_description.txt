@@ -1,0 +1,11 @@
+You are working with a quadruped robot capable of walking in a manner similar to a dog. 
+The primary task in the environment is for two robots to coordinate and push a heavy box forward (positive x-direction) as far as possible.
+A low-level controller for the robot is already available; 
+therefore, the learning objective is limited to generating high-level velocity commands in the form of [linear_velocity_x, linear_velocity_y, yaw_angular_velocity].
+
+The task is defined as success if the box's x-coordinate reaches 3.5 meters (x >= 3.5).
+The objective is to push the box to x=3.5 while keeping it centered at y=0.
+Box has a size of 1m * 1m * 1m, and the center of the box is the reference point for its position.
+Agents should coordinate their pushing to keep the box moving straight.
+Agent 0 is colored with blue and Agent 1 is colored with green.
+If the distance between two robot is smaller than 0.5, it is defined as collision.

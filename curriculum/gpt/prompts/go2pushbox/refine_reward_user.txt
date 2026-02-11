@@ -1,0 +1,31 @@
+The 'state' variable is a dictionary that contains:
+"box_pos": tensor (num_envs, num_agents, 2) for the center coordinates of the box.
+"box_yaw": tensor (num_envs, num_agents, 1) for the box's yaw angle in radians [-pi, pi]. Note that for each agent, the value is identical.
+"agent_pos": tensor (num_envs, num_agents, 2) for the agent's xy coordinates.
+"agent_yaw": tensor (num_envs, num_agents, 1) for the agent's yaw angle.
+
+The 'action' variable is a tensor (num_envs, num_agents, 3) for (x linear velocity command, y linear velocity command, yaw angular velocity command)
+Note that the coordinates in the state are in the global frame and the coordinates of the action are in the agent's local frame.
+
+You can use helper functions to calculate reward.
+self._box_forward_movement(state, action): returns tensor (num_envs, num_agents) for box movement in x direction since the last step
+self._box_y_deviation(state, action): returns tensor (num_envs, num_agents) for the absolute y-distance of the box from the center (y=0)
+self._agent_distance(state, action): returns tensor (num_envs, num_agents) for the Euclidean distance between the two agents
+self._box_yaw(state, action): returns tensor (num_envs, num_agents) for the yaw angle of the box in radians [-pi, pi]
+self._agents_distance_to_box(state, action): returns tensor (num_envs, num_agents) for the distance between each agent and the box center
+self._success_evaluation(state, action): returns tensor (num_envs, num_agents) which returns 1 if the box reached the target position (x >= 3.5) and 0 otherwise
+self._check_reward_shape(reward): returns reshaped reward tensor to avoid index error
+
+Current task is:
+<<Current_Task>>
+Former tasks that RL succeeded in learning:
+<<Former_Tasks>>
+
+Reward function that was tried:
+<<Reward_Function>>
+
+Advice on how to improve the reward function:
+<<Advice>>
+
+Do not deviate from the reward structure given in the example.
+Note that the advice might not account for what information it can use in the reward function. So not all the advice might be applicable.
