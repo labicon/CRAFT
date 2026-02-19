@@ -24,6 +24,78 @@ class Go2PushboxWrapper(EmptyWrapper):
             "step count": 0
         }
 
+        self.contact_force_threshold = 0.1
+        self.contact_distance_threshold = 0.7
+        self.head_contact_reward_scale = 2.0
+        self.non_head_contact_penalty_scale = -3.0
+        self.debug_contact_reward = False
+        self.debug_print_interval = 50
+        self._head_body_indices = []
+        self._non_head_body_indices = []
+        self._cache_contact_body_indices()
+
+    def _cache_contact_body_indices(self):
+        if not hasattr(self.env, "body_name_to_index"):
+            return
+        head_names = ["Head_upper", "Head_lower"]
+        non_head_keywords = ["thigh", "calf", "hip", "base"]
+        head_indices = [self.env.body_name_to_index.get(name) for name in head_names]
+        head_indices = [idx for idx in head_indices if idx is not None]
+        non_head_indices = []
+        for name, idx in self.env.body_name_to_index.items():
+            lname = name.lower()
+            if any(keyword in lname for keyword in non_head_keywords):
+                non_head_indices.append(idx)
+        non_head_indices = [idx for idx in non_head_indices if idx not in head_indices]
+        self._head_body_indices = sorted(set(head_indices))
+        self._non_head_body_indices = sorted(set(non_head_indices))
+
+    def _agent_body_contact_forces(self, body_indices):
+        if not body_indices:
+            return torch.zeros(self.num_envs, self.num_agents, 0, device=self.device)
+        base = torch.tensor(body_indices, device=self.device)
+        agent_offsets = torch.arange(self.num_agents, device=self.device).unsqueeze(1) * self.env.num_bodies
+        idxs = (base.unsqueeze(0) + agent_offsets).reshape(-1)
+        forces = self.env.contact_forces[:, idxs, :].view(self.num_envs, self.num_agents, -1, 3)
+        return torch.norm(forces, dim=-1)
+
+    def _contact_mask_for_bodies(self, body_indices):
+        if not body_indices or not hasattr(self.env, "robot_rigid_body_state"):
+            return torch.zeros(self.num_envs, self.num_agents, 0, device=self.device, dtype=torch.bool)
+        body_pos = self.env.robot_rigid_body_state[:, :, body_indices, 0:3]
+        # Use world-frame box position to match rigid-body world-frame coordinates.
+        box_pos = self.root_states_npc.view(self.num_envs, self.num_npcs, 13)[:, 0, :3]
+        box_pos = box_pos.unsqueeze(1).unsqueeze(2)
+        dist = torch.norm(body_pos[..., :2] - box_pos[..., :2], dim=-1)
+        forces = self._agent_body_contact_forces(body_indices)
+        return (forces > self.contact_force_threshold) & (dist < self.contact_distance_threshold)
+
+    def _raw_contact_rate(self, body_indices):
+        forces = self._agent_body_contact_forces(body_indices)
+        if forces.numel() == 0:
+            return 0.0
+        return float((forces > self.contact_force_threshold).any(dim=-1).float().mean().item())
+
+    def _gated_contact_rate(self, body_indices):
+        contact_mask = self._contact_mask_for_bodies(body_indices)
+        if contact_mask.numel() == 0:
+            return 0.0
+        return float(contact_mask.any(dim=-1).float().mean().item())
+
+    def _head_box_collision_flag(self):
+        """Return batched 0/1 flags with shape (num_envs, num_agents)."""
+        head_contact_mask = self._contact_mask_for_bodies(self._head_body_indices)
+        if head_contact_mask.numel() == 0:
+            return torch.zeros(self.num_envs, self.num_agents, device=self.device)
+        return head_contact_mask.any(dim=-1).float()
+
+    def _non_head_box_collision_flag(self):
+        """Return batched 0/1 flags with shape (num_envs, num_agents)."""
+        non_head_contact_mask = self._contact_mask_for_bodies(self._non_head_body_indices)
+        if non_head_contact_mask.numel() == 0:
+            return torch.zeros(self.num_envs, self.num_agents, device=self.device)
+        return non_head_contact_mask.any(dim=-1).float()
+
     def reset(self):
         obs_buf = self.env.reset()
 
@@ -98,6 +170,24 @@ class Go2PushboxWrapper(EmptyWrapper):
         self.reward_buffer["step count"] += 1
 
         reward, reward_dict, max_reward = self.gpt_reward(global_state, action)
+
+        if self.debug_contact_reward and self.reward_buffer["step count"] % self.debug_print_interval == 0:
+            def _to_float(v):
+                if isinstance(v, torch.Tensor):
+                    return float(v.detach().mean().item())
+                return float(v)
+            print(
+                "[Go2PushBox Debug] "
+                f"step={self.reward_buffer['step count']} "
+                f"raw_head_contact_rate={self._raw_contact_rate(self._head_body_indices):.4f} "
+                f"raw_non_head_contact_rate={self._raw_contact_rate(self._non_head_body_indices):.4f} "
+                f"gated_head_contact_rate={self._gated_contact_rate(self._head_body_indices):.4f} "
+                f"gated_non_head_contact_rate={self._gated_contact_rate(self._non_head_body_indices):.4f} "
+                f"head_contact={_to_float(reward_dict.get('head_contact', 0.0)):.4f} "
+                f"non_head_contact_penalty={_to_float(reward_dict.get('non_head_contact_penalty', 0.0)):.4f} "
+                f"collision_avoidance={_to_float(reward_dict.get('collision_avoidance', 0.0)):.4f} "
+                f"reward_mean={float(reward.detach().mean().item()):.4f}"
+            )
 
         for key, value in reward_dict.items():
             reward_key = f"Reward/{key}"

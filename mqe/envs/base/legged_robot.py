@@ -586,10 +586,10 @@ class LeggedRobot(BaseTask):
 
 
         # rigid_body_state
-        # self.rigid_body_state = gymtorch.wrap_tensor(rigid_body_state)[:self.num_envs * self.num_bodies, :]
-        # self.foot_positions = self.rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:, self.feet_indices, 0:3]
-        # self.foot_velocities = self.rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:, self.feet_indices, 7:10]
-        # self.prev_foot_velocities = self.foot_velocities.clone()
+        self.rigid_body_state = gymtorch.wrap_tensor(rigid_body_state).view(self.num_envs, -1, 13)
+        self.robot_rigid_body_state = self.rigid_body_state[:, : self.num_agents * self.num_bodies, :].view(
+            self.num_envs, self.num_agents, self.num_bodies, 13
+        )
 
         # contact force
         self.contact_forces = gymtorch.wrap_tensor(net_contact_forces).view(self.num_envs, -1, 3) # shape: num_envs, num_bodies, xyz axis
@@ -803,6 +803,8 @@ class LeggedRobot(BaseTask):
 
         # save body names from the asset
         body_names = self.gym.get_asset_rigid_body_names(robot_asset)
+        self.body_names = list(body_names)
+        self.body_name_to_index = {name: idx for idx, name in enumerate(self.body_names)}
         self.num_bodies = self.gym.get_asset_rigid_body_count(robot_asset)
         feet_names = [s for s in body_names if self.cfg.asset.foot_name in s]
         penalized_contact_names = []
