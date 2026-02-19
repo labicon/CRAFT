@@ -3,4 +3,4 @@ env_path: "./mqe/envs/wrappers/go2_pushbox_wrapper_source.py"
 num_reward_samples: 3
 num_reward_feedback_samples: 2 
 iter_per_task: 20000000
-line_num: 159
+line_num: 200

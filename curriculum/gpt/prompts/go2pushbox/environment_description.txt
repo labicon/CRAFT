@@ -1,19 +1,20 @@
-You are working with a quadruped robot capable of walking in a manner similar to a dog. 
-The primary task in the environment is for two robots to coordinate and push a heavy box forward (positive x-direction) as far as possible.
-A low-level controller for the robot is already available; 
+You are working with a quadruped robot capable of walking in a manner similar to a dog.
+The primary task in the environment is for two robots to coordinate and push a heavy box to a randomly assigned target position.
+A low-level controller for the robot is already available;
 therefore, the learning objective is limited to generating high-level velocity commands in the form of [linear_velocity_x, linear_velocity_y, yaw_angular_velocity].
 
 **Task Success Criteria:**
-The task is considered successful when the x-coordinate of the box's center reaches or exceeds 3.5 meters (x >= 3.5).
+The task is considered successful when the box's center is within 0.5 meters of the target position.
+The target position is randomized each episode: x in [2.0, 3.5], y in [-1.5, 1.5].
 
 **Objective & Coordination:**
-1.  **Transport:** Push the box forward along the positive x-axis to the target distance of 3.5m.
-2.  **Alignment:** Maintain the box's center at y=0 to ensure straight movement. The two agents must coordinate their pushing forces to prevent the box from rotating or drifting sideways.
+1.  **Transport:** Push the box to the target position. The target can be in any direction relative to the box's starting position.
+2.  **Alignment:** The two agents must coordinate their pushing forces to move the box efficiently toward the target while preventing the box from rotating excessively.
 3.  **Technique:** Agents must use their heads to apply force to the box. Using legs or other body parts for pushing is suboptimal and should be avoided.
 
 **Object Properties:**
--   **Box Dimensions:** 0.5m (length, x) * 1.5m (width, y) * 0.5m (height, z).
+-   **Box Dimensions:** 1.0m (length, x) * 1.0m (width, y) * 0.8m (height, z).
 -   **Reference:** The box's position is defined by its geometric center.
--   **Spacing:** The box's 1.5m width allows two agents to push side-by-side. Agents must maintain sufficient spacing to push in parallel without colliding.
+-   **Spacing:** Agents must maintain sufficient spacing to push without colliding.
 Agent 0 is colored with blue and Agent 1 is colored with green.
 If the distance between two robot is smaller than 0.5, it is defined as collision.

@@ -15,7 +15,7 @@ def eval(load_dir, seed=0):
     from openrl_ws.test import save_video, save_images
     args = get_args()
     args.task = "go2pushbox"
-    args.headless = True
+    args.headless = False
     args.record_video = True
     args.seed = seed
     env, _ = make_env(args, custom_cfg(args), single_agent=False)
@@ -162,7 +162,7 @@ def analyze_go2pushbox_trajectory(traj_buffer, rew_buffer, env):
     obs_trajectory = np.stack(sampled_traj_buffer, axis=0)
 
     # The observation for each agent is:
-    # [agent_id(2), self_base_info(3), other_agent_base_info(3), box_pos(2), box_yaw(1)]
+    # [agent_id(2), self_base_info(3), other_agent_base_info(3), box_pos(2), box_yaw(1), target_pos(2)]
     # self_base_info is [pos(2), yaw(1)]
 
     # We can extract all info from agent 0's perspective.
@@ -182,10 +182,13 @@ def analyze_go2pushbox_trajectory(traj_buffer, rew_buffer, env):
     box_pos = obs_agent_0[:, 8:10]
     # box_yaw is index 10
     box_yaw = obs_agent_0[:, 10]
-    
+    # target_pos is indices 11,12 (x,y)
+    target_pos = obs_agent_0[:, 11:13]
+
     traj_dict = {
         "box_pos": box_pos,
         "box_yaw": box_yaw,
+        "target_pos": target_pos,
         "agent_0_pos": agent_0_pos,
         "agent_0_yaw": agent_0_yaw,
         "agent_1_pos": agent_1_pos,

@@ -5,6 +5,8 @@ Varaibles you can use for curriculum descriptions are
 - yaw angle of the box
 - xy position of each agent
 - yaw angle of each agent
+- xy position of the target (randomized each episode: x in [2.0, 3.5], y in [-1.5, 1.5])
+- distance from box to target
 
 These are the rules that you have to consider when writing a curriculum
 (1) You cannot change start position of agents and box.

@@ -4,11 +4,11 @@ Task Name: <<Task_Name>>
 Description: <<Task_Description>>
 Reason: <<Task_Reason>>
 
-The final goal for the two quadruped is to push the box forward significantly.
-The objective is to maximize the box's x-coordinate (forward progress).
-While pushing, the box should stay centered in the y-axis (y=0).
-Box has a size of 1m * 1m * 1m, and the center of the box is the reference point for its position.
-Agents should coordinate their pushing to keep the box moving straight.
+The final goal for the two quadruped robots is to push the box to a randomly assigned target position.
+The target position is randomized each episode: x in [2.0, 3.5], y in [-1.5, 1.5].
+The task is successful when the box's center is within 0.5 meters of the target.
+Box has a size of 1.0m * 1.0m * 0.8m, and the center of the box is the reference point for its position.
+Agents should coordinate their pushing to move the box efficiently toward the target.
 Agent 0 is colored with blue and Agent 1 is colored with green.
 If the distance between two robot is smaller than 0.5, it is defined as collision.
 
