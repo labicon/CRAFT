@@ -9,6 +9,7 @@ The target position is randomized each episode: x in [2.0, 3.5], y in [-1.5, 1.5
 The task is successful when the box's center is within 0.5 meters of the target.
 Box has a size of 1.0m * 1.0m * 0.8m, and the center of the box is the reference point for its position.
 Agents should coordinate their pushing to move the box efficiently toward the target.
+Agents should push the box with head links (`Head_upper`, `Head_lower`) and avoid pushing/colliding with the box using non-head body parts.
 Agent 0 is colored with blue and Agent 1 is colored with green.
 If the distance between two robot is smaller than 0.5, it is defined as collision.
 

@@ -18,7 +18,11 @@ self._box_y_deviation(state, action): returns tensor (num_envs, num_agents) for 
 self._agent_distance(state, action): returns tensor (num_envs, num_agents) for the Euclidean distance between the two agents
 self._agents_distance_to_box(state, action): returns tensor (num_envs, num_agents) for the distance between each agent and the box center
 self._success_evaluation(state, action): returns tensor (num_envs, num_agents) which returns 1 if the box is within 0.5m of the target position and 0 otherwise
+self._head_box_collision_flag(): returns tensor (num_envs, num_agents), 1 if head links collide with box and 0 otherwise
+self._non_head_box_collision_flag(): returns tensor (num_envs, num_agents), 1 if non-head links collide with box and 0 otherwise
 self._check_reward_shape(reward): returns reshaped reward tensor to avoid index error
+
+For this task, include reward terms that encourage pushing with head links and penalize non-head collisions with the box.
 
 An example reward function format for the task is
 ```python
