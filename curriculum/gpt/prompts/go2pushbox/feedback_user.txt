@@ -11,6 +11,5 @@ Box has a size of 1.0m * 1.0m * 0.8m, and the center of the box is the reference
 Agents should coordinate their pushing to move the box efficiently toward the target.
 Agents should push the box with head links (`Head_upper`, `Head_lower`) and avoid pushing/colliding with the box using non-head body parts.
 Agent 0 is colored with blue and Agent 1 is colored with green.
-If the distance between two robot is smaller than 0.5, it is defined as collision.
 
 Previous tasks in curriculum are

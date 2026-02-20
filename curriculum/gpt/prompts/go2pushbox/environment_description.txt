@@ -16,6 +16,5 @@ The target position is randomized each episode: x in [2.0, 3.5], y in [-1.5, 1.5
 **Object Properties:**
 -   **Box Dimensions:** 1.0m (length, x) * 1.0m (width, y) * 0.8m (height, z).
 -   **Reference:** The box's position is defined by its geometric center.
--   **Spacing:** Agents must maintain sufficient spacing to push without colliding.
+-   **Spacing:** Agents must maintain sufficient spacing to push efficiently.
 Agent 0 is colored with blue and Agent 1 is colored with green.
-If the distance between two robot is smaller than 0.5, it is defined as collision.

@@ -87,7 +87,6 @@ class Go2PushboxCfg(Go2Cfg):
         termination_terms = [
             "roll",
             "pitch",
-            "distance",
         ]
 
     class domain_rand(Go2Cfg.domain_rand):

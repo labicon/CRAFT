@@ -15,7 +15,6 @@ self._box_forward_movement(state, action): returns tensor (num_envs, num_agents)
 self._box_distance_to_target(state, action): returns tensor (num_envs, num_agents) for the Euclidean distance from the box center to the target position
 self._box_movement_toward_target(state, action): returns tensor (num_envs, num_agents) for cumulative reduction in distance from box to target since episode reset (positive means closer)
 self._box_y_deviation(state, action): returns tensor (num_envs, num_agents) for the absolute y-coordinate of the box
-self._agent_distance(state, action): returns tensor (num_envs, num_agents) for the Euclidean distance between the two agents
 self._agents_distance_to_box(state, action): returns tensor (num_envs, num_agents) for the distance between each agent and the box center
 self._success_evaluation(state, action): returns tensor (num_envs, num_agents) which returns 1 if the box is within 0.5m of the target position and 0 otherwise
 self._head_box_collision_flag(): returns tensor (num_envs, num_agents), 1 if head links collide with box and 0 otherwise
@@ -44,14 +43,16 @@ def gpt_reward(self, state, action):
     proximity_reward = self._check_reward_shape(proximity_reward)
     rew_dict["target_proximity"] = torch.mean(proximity_reward)
 
-    # 3. Penalty/Reward for distance between agents (Collision avoidance) - max 1.0
-    agent_distance = self._agent_distance(state, action)
-    safe_distance_reward = torch.where(agent_distance > 0.5, 1.0, 0.0)
-    safe_distance_reward = self._check_reward_shape(safe_distance_reward)
-    rew_dict["safe_distance"] = torch.mean(safe_distance_reward)
+    # 3. Reward for using head contact on the box and avoiding non-head collision
+    head_contact_reward = self._head_box_collision_flag() * 1.0
+    non_head_contact_penalty = self._non_head_box_collision_flag() * (-1.0)
+    head_contact_reward = self._check_reward_shape(head_contact_reward)
+    non_head_contact_penalty = self._check_reward_shape(non_head_contact_penalty)
+    rew_dict["head_contact"] = torch.mean(head_contact_reward)
+    rew_dict["non_head_contact_penalty"] = torch.mean(non_head_contact_penalty)
 
     # Total Reward
-    reward = progress_reward + proximity_reward + safe_distance_reward
+    reward = progress_reward + proximity_reward + head_contact_reward + non_head_contact_penalty
 
     # Normalize to max_reward if needed or just clamp
     reward = torch.clamp(reward, 0.0, max_reward)

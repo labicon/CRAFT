@@ -13,7 +13,6 @@ self._box_forward_movement(state, action): returns tensor (num_envs, num_agents)
 self._box_distance_to_target(state, action): returns tensor (num_envs, num_agents) for the Euclidean distance from the box center to the target position
 self._box_movement_toward_target(state, action): returns tensor (num_envs, num_agents) for cumulative reduction in distance from box to target since episode reset (positive means closer)
 self._box_y_deviation(state, action): returns tensor (num_envs, num_agents) for the absolute y-coordinate of the box
-self._agent_distance(state, action): returns tensor (num_envs, num_agents) for the Euclidean distance between the two agents
 self._agents_distance_to_box(state, action): returns tensor (num_envs, num_agents) for the distance between each agent and the box center
 self._success_evaluation(state, action): returns tensor (num_envs, num_agents) which returns 1 if the box is within 0.5m of the target position and 0 otherwise
 self._head_box_collision_flag(): returns tensor (num_envs, num_agents), 1 if head links collide with box and 0 otherwise
