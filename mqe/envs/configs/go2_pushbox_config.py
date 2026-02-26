@@ -9,9 +9,9 @@ class Go2PushboxCfg(Go2Cfg):
         env_name = "go2pushbox"
         num_envs = 1
         num_agents = 2
-        num_npcs = 1
+        num_npcs = 2
         episode_length_s = 15
-    
+
     class asset(Go2Cfg.asset):
         terminate_after_contacts_on = []
         file_npc = "{LEGGED_GYM_ROOT_DIR}/resources/objects/box.urdf"
@@ -19,6 +19,8 @@ class Go2PushboxCfg(Go2Cfg):
         npc_collision = True
         fix_npc_base_link = False
         npc_gravity = True
+        file_npc_marker = "{LEGGED_GYM_ROOT_DIR}/resources/objects/cylinder_blue.urdf"
+        name_npc_marker = "target_marker"
     
     class terrain(Go2Cfg.terrain):
 
@@ -71,7 +73,14 @@ class Go2PushboxCfg(Go2Cfg):
         ]
         init_states_npc = [
             init_state_class(
-                pos = [2.7, 0.0, 0.6],
+                pos = [2.5, 0.0, 0.6],
+                rot = [0.0, 0.0, 0.0, 1.0],
+                lin_vel = [0.0, 0.0, 0.0],
+                ang_vel = [0.0, 0.0, 0.0],
+            ),
+            # Target marker (visualization only; position overridden per episode in Go2PushboxObject)
+            init_state_class(
+                pos = [3.0, 0.0, 0.05],
                 rot = [0.0, 0.0, 0.0, 1.0],
                 lin_vel = [0.0, 0.0, 0.0],
                 ang_vel = [0.0, 0.0, 0.0],

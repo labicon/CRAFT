@@ -11,7 +11,7 @@ The target position is randomized each episode: x in [2.0, 3.5], y in [-1.5, 1.5
 1.  **Transport:** Push the box to the target position. The target can be in any direction relative to the box's starting position.
 2.  **Alignment:** The two agents must coordinate their pushing forces to move the box efficiently toward the target while preventing the box from rotating excessively.
 3.  **Technique:** Agents should push the box with their head links (`Head_upper`, `Head_lower`) as the primary contact.
-4.  **Collision Constraint:** Contact between the box and non-head body parts (base, hips, thighs, calves, feet) should be minimized and penalized.
+4.  **Collision Constraint:** Contact between the box and non-head body parts (base, hips, thighs, calves) should be minimized and penalized.
 
 **Object Properties:**
 -   **Box Dimensions:** 1.0m (length, x) * 1.0m (width, y) * 0.8m (height, z).

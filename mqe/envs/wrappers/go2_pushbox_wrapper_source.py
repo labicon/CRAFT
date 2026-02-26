@@ -26,8 +26,6 @@ class Go2PushboxWrapper(EmptyWrapper):
 
         self.contact_force_threshold = 0.1
         self.contact_distance_threshold = 0.7
-        self.head_contact_reward_scale = 2.0
-        self.non_head_contact_penalty_scale = -3.0
         self.debug_contact_reward = False
         self.debug_print_interval = 50
         self._head_body_indices = []
@@ -96,17 +94,22 @@ class Go2PushboxWrapper(EmptyWrapper):
             return torch.zeros(self.num_envs, self.num_agents, device=self.device)
         return non_head_contact_mask.any(dim=-1).float()
 
+    @property
+    def target_pos(self):
+        """Target position relative to env_origin, read from the marker's sim state (NPC 1)."""
+        npc_states = self.root_states_npc.view(self.num_envs, self.num_npcs, 13)
+        return npc_states[:, 1, :2] - self.env.env_origins[:, :2]
+
     def reset(self):
         obs_buf = self.env.reset()
 
-        # Randomize target position per env
-        self.target_pos = torch.zeros(self.num_envs, 2, device=self.device)
-        self.target_pos[:, 0] = torch.empty(self.num_envs, device=self.device).uniform_(2.0, 3.5)
-        self.target_pos[:, 1] = torch.empty(self.num_envs, device=self.device).uniform_(-1.5, 1.5)
-
-        box_pos = self.root_states_npc[:, :3] - self.env.env_origins
+        # Box is NPC 0; target marker is NPC 1.  Target position is read directly
+        # from the sim (set by Go2PushboxObject._reset_root_states).
+        npc_states = self.root_states_npc.view(self.num_envs, self.num_npcs, 13)
+        box_state = npc_states[:, 0, :]
+        box_pos = box_state[:, :3] - self.env.env_origins
         # get_euler_xyz returns (roll, pitch, yaw) as tuple of tensors
-        _, _, box_yaw = get_euler_xyz(self.root_states_npc[:, 3:7])
+        _, _, box_yaw = get_euler_xyz(box_state[:, 3:7])
         box_yaw = (box_yaw + np.pi) % (2 * np.pi) - np.pi
 
         base_pos = obs_buf.base_pos
@@ -132,16 +135,17 @@ class Go2PushboxWrapper(EmptyWrapper):
         action = torch.clip(action, -1, 1)
         obs_buf, _, termination, info = self.env.step((action * self.action_scale).reshape(-1, self.action_space.shape[0]))
 
-        box_pos = self.root_states_npc[:, :3] - self.env.env_origins
+        # Box is NPC 0; target marker is NPC 1.  Target is read from the sim —
+        # Go2PushboxObject._reset_root_states already randomized it for reset envs.
+        npc_states = self.root_states_npc.view(self.num_envs, self.num_npcs, 13)
+        box_state = npc_states[:, 0, :]
+        box_pos = box_state[:, :3] - self.env.env_origins
         # get_euler_xyz returns (roll, pitch, yaw) as tuple of tensors
-        _, _, box_yaw = get_euler_xyz(self.root_states_npc[:, 3:7])
+        _, _, box_yaw = get_euler_xyz(box_state[:, 3:7])
         box_yaw = (box_yaw + np.pi) % (2 * np.pi) - np.pi
 
-        # Re-randomize target and update last_box_pos for auto-reset envs
+        # Update last_box_pos for auto-reset envs
         if len(self.env.reset_ids) > 0:
-            n = len(self.env.reset_ids)
-            self.target_pos[self.env.reset_ids, 0] = torch.empty(n, device=self.device).uniform_(2.0, 3.5)
-            self.target_pos[self.env.reset_ids, 1] = torch.empty(n, device=self.device).uniform_(-1.5, 1.5)
             self.last_box_pos[self.env.reset_ids] = box_pos[self.env.reset_ids].clone()
 
         base_pos = obs_buf.base_pos

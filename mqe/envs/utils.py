@@ -7,6 +7,7 @@ from mqe.envs.npc.go1_object import Go1Object
 from mqe.envs.npc.go1_football_defender import Go1FootballDefender
 
 from mqe.envs.npc.go2_object import Go2Object
+from mqe.envs.npc.go2_pushbox_object import Go2PushboxObject
 
 # configs
 from mqe.envs.field.legged_robot_field_config import LeggedRobotFieldCfg
@@ -123,7 +124,7 @@ ENV_DICT = {
         "wrapper": Go2SeesawWrapper
     },
     "go2pushbox": {
-        "class": Go2Object,
+        "class": Go2PushboxObject,
         "config": Go2PushboxCfg,
         "wrapper": Go2PushboxWrapper
     },

@@ -28,6 +28,8 @@ def train(save_dir, exp_name, training_iter=1000000):
     args.use_valuenorm = True
     args.use_adv_normalize = True
     args.entropy_coef = 0.0001
+    # args.batch_size = 4096
+    # args.mini_batch_size = 128
 
     callback = CheckpointCallback(
         save_freq=5000,
@@ -74,6 +76,8 @@ def load_train(save_dir, exp_name, load_dir, training_iter=1000000):
     args.use_valuenorm = True
     args.use_adv_normalize = True
     args.entropy_coef = 0.0001
+    # args.batch_size = 4096
+    # args.mini_batch_size = 128
 
     callback = CheckpointCallback(
         save_freq=5000,
