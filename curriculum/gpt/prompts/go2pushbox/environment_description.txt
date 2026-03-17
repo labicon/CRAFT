@@ -4,8 +4,8 @@ A low-level controller for the robot is already available;
 therefore, the learning objective is limited to generating high-level velocity commands in the form of [linear_velocity_x, linear_velocity_y, yaw_angular_velocity].
 
 **Task Success Criteria:**
-The task is considered successful when the box's center is within 0.5 meters of the target position.
-The target position is randomized each episode: x in [2.0, 3.5], y in [-1.5, 1.5].
+The task is considered successful when the box's center is within 0.2 meters of the target position.
+The target position is randomized each episode: x in [2.8, 3.5], y in [-1.5, 1.5].
 
 **Objective & Coordination:**
 1.  **Transport:** Push the box to the target position. The target can be in any direction relative to the box's starting position.
@@ -16,5 +16,11 @@ The target position is randomized each episode: x in [2.0, 3.5], y in [-1.5, 1.5
 **Object Properties:**
 -   **Box Dimensions:** 1.0m (length, x) * 1.0m (width, y) * 0.8m (height, z).
 -   **Reference:** The box's position is defined by its geometric center.
+-   **Initial Box Yaw:** The box starts rotated at π/4 radians (45°), so its faces are diagonal to the global x/y axes.
 -   **Spacing:** Agents must maintain sufficient spacing to push efficiently.
+
+**Desired Agent Yaw Alignment (for effective pushing):**
+-   **Agent 0 (blue):** Should align its yaw to match the box's yaw (π/4) — facing the box's local forward face.
+-   **Agent 1 (green):** Should align its yaw to the box's yaw minus π/2 (i.e., -π/4) — facing the box's local side face.
+-   This coordination ensures each agent pushes a different face of the rotated box, enabling efficient and stable transport.
 Agent 0 is colored with blue and Agent 1 is colored with green.

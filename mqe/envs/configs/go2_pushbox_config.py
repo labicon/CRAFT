@@ -74,7 +74,7 @@ class Go2PushboxCfg(Go2Cfg):
         init_states_npc = [
             init_state_class(
                 pos = [2.5, 0.0, 0.6],
-                rot = [0.0, 0.0, 0.0, 1.0],
+                rot = [0.0, 0.0, 0.3827, 0.9239],
                 lin_vel = [0.0, 0.0, 0.0],
                 ang_vel = [0.0, 0.0, 0.0],
             ),

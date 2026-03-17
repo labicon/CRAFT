@@ -54,7 +54,7 @@ class Go2PushboxObject(Go2Object):
 
         # Only randomize the target marker's position, which is the second NPC (index 1)
         target_marker_ids = npc_ids[1::self.num_npcs]  # Assuming the marker is every second NPC
-        target_x_range = [-0.5, 0.5]  # Example range for target x position
+        target_x_range = [-0.2, 0.5]  # Example range for target x position
         target_y_range = [-1.5, 1.5]  # Example range for target y position
         self.root_states_npc[target_marker_ids, 0:1] += torch_rand_float(*target_x_range, (len(target_marker_ids), 1), device=self.device)
         self.root_states_npc[target_marker_ids, 1:2] += torch_rand_float(*target_y_range, (len(target_marker_ids), 1), device=self.device)

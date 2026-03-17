@@ -16,20 +16,20 @@ def train(save_dir, exp_name, training_iter=1000000):
     args.task = "go2pushbox"
     args.num_envs = 500
     args.headless = True
+    args.separate_policy = True
 
     env, env_cfg = make_env(args, custom_cfg(args), single_agent=False)
     
     # args.config = "./openrl_ws/cfgs/ppo.yaml" # Somehow this does not work
-    args.lr = 7e-4
-    args.critic_lr = 7e-4
+    args.lr = 1e-3
+    args.critic_lr = 1e-3
     args.log_interval = 5
     # args.use_recurrent_policy = True
     args.use_joint_action_loss = False
     args.use_valuenorm = True
     args.use_adv_normalize = True
     args.entropy_coef = 0.0001
-    # args.batch_size = 4096
-    # args.mini_batch_size = 128
+    args.num_mini_batch = 4
 
     callback = CheckpointCallback(
         save_freq=5000,
@@ -64,20 +64,20 @@ def load_train(save_dir, exp_name, load_dir, training_iter=1000000):
     args.num_envs = 500
     args.headless = True
     args.train_timesteps = training_iter
+    args.separate_policy = True
 
     env, env_cfg = make_env(args, custom_cfg(args), single_agent=False)
 
     # args.config = "./openrl_ws/cfgs/ppo.yaml" # Somehow this does not work
-    args.lr = 7e-4
-    args.critic_lr = 7e-4
+    args.lr = 1e-3
+    args.critic_lr = 1e-3
     args.log_interval = 5
     # args.use_recurrent_policy = True
     args.use_joint_action_loss = False
     args.use_valuenorm = True
     args.use_adv_normalize = True
     args.entropy_coef = 0.0001
-    # args.batch_size = 4096
-    # args.mini_batch_size = 128
+    args.num_mini_batch = 4
 
     callback = CheckpointCallback(
         save_freq=5000,

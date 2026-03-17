@@ -253,7 +253,7 @@ class Go2PushboxWrapper(EmptyWrapper):
 
     def _success_evaluation(self, state, action):
         dist = self._box_distance_to_target(state, action)
-        success = (dist <= 0.5).float()
+        success = (dist <= 0.2).float()
         return success
 
     def _check_reward_shape(self, reward):
