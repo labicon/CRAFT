@@ -28,7 +28,7 @@ def train(save_dir, exp_name, training_iter=1000000):
     args.use_joint_action_loss = False
     args.use_valuenorm = True
     args.use_adv_normalize = True
-    args.entropy_coef = 0.0001
+    args.entropy_coef = 0.001
     args.num_mini_batch = 4
 
     callback = CheckpointCallback(
@@ -76,7 +76,7 @@ def load_train(save_dir, exp_name, load_dir, training_iter=1000000):
     args.use_joint_action_loss = False
     args.use_valuenorm = True
     args.use_adv_normalize = True
-    args.entropy_coef = 0.0001
+    args.entropy_coef = 0.001
     args.num_mini_batch = 4
 
     callback = CheckpointCallback(

@@ -1,26 +1,27 @@
 You are working with a quadruped robot capable of walking in a manner similar to a dog.
-The primary task in the environment is for two robots to coordinate and push a heavy box to a randomly assigned target position.
+The primary task in the environment is for two robots to coordinate and push a heavy rectangular box to a randomly assigned target position.
 A low-level controller for the robot is already available;
 therefore, the learning objective is limited to generating high-level velocity commands in the form of [linear_velocity_x, linear_velocity_y, yaw_angular_velocity].
 
 **Task Success Criteria:**
 The task is considered successful when the box's center is within 0.2 meters of the target position.
-The target position is randomized each episode: x in [2.8, 3.5], y in [-1.5, 1.5].
+The target position is randomized each episode: x in [2.0, 3.5], y in [-1.5, 1.5].
 
 **Objective & Coordination:**
 1.  **Transport:** Push the box to the target position. The target can be in any direction relative to the box's starting position.
-2.  **Alignment:** The two agents must coordinate their pushing forces to move the box efficiently toward the target while preventing the box from rotating excessively.
-3.  **Technique:** Agents should push the box with their head links (`Head_upper`, `Head_lower`) as the primary contact.
-4.  **Collision Constraint:** Contact between the box and non-head body parts (base, hips, thighs, calves) should be minimized and penalized.
+2.  **Steering:** Because the box is elongated along the y-axis, reaching an off-center target requires rotating the box's yaw. The two agents both remain on the back face and steer by applying slightly asymmetric forces (e.g., one pushing a bit harder) while both maintain yaw alignment with the box. Do not have agents move to different faces or adopt different yaw targets.
+3.  **Technique:** Both agents push the same face of the box (the back face, perpendicular to the box's local x-axis) using their head links (`Head_upper`, `Head_lower`) as the primary contact.
+4.  **Yaw Alignment:** For effective pushing, both agents should align their own yaw to match the box's current yaw angle. This ensures force is applied along the box's forward direction.
+5.  **Collision Constraint:** Contact between the box and non-head body parts (base, hips, thighs, calves) should be minimized and penalized.
 
 **Object Properties:**
--   **Box Dimensions:** 1.0m (length, x) * 1.0m (width, y) * 0.8m (height, z).
+-   **Box Dimensions:** 1.0m (length, x) × 3.0m (width, y) × 0.8m (height, z). The box is elongated along the y-axis.
 -   **Reference:** The box's position is defined by its geometric center.
--   **Initial Box Yaw:** The box starts rotated at π/4 radians (45°), so its faces are diagonal to the global x/y axes.
--   **Spacing:** Agents must maintain sufficient spacing to push efficiently.
+-   **Initial Box Yaw:** The box starts at yaw = 0, aligned with the global x/y axes.
+-   **Spacing:** Both agents start behind the box (at negative x relative to the box), positioned to contact the back face.
 
 **Desired Agent Yaw Alignment (for effective pushing):**
--   **Agent 0 (blue):** Should align its yaw to match the box's yaw (π/4) — facing the box's local forward face.
--   **Agent 1 (green):** Should align its yaw to the box's yaw minus π/2 (i.e., -π/4) — facing the box's local side face.
--   This coordination ensures each agent pushes a different face of the rotated box, enabling efficient and stable transport.
+-   Both agents should align their yaw to match the box's current yaw angle at all times.
+-   This coordination ensures both agents push along the box's forward direction.
+-   To steer the box, agents can apply different forces while maintaining yaw alignment, inducing box rotation without losing contact efficiency.
 Agent 0 is colored with blue and Agent 1 is colored with green.

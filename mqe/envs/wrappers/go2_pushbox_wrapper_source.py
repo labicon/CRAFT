@@ -195,12 +195,12 @@ class Go2PushboxWrapper(EmptyWrapper):
 
         for key, value in reward_dict.items():
             reward_key = f"Reward/{key}"
-            self.reward_buffer[reward_key] = value
+            self.reward_buffer[reward_key] = self.reward_buffer.get(reward_key, 0) + value * self.num_envs * self.num_agents
 
         eval_dict = self._eval(global_state, action)
         for key, value in eval_dict.items():
             eval_key = f"Eval/{key}"
-            self.reward_buffer[eval_key] = value
+            self.reward_buffer[eval_key] = self.reward_buffer.get(eval_key, 0) + value * self.num_envs * self.num_agents
 
         return obs, reward, termination, info
 
@@ -255,6 +255,28 @@ class Go2PushboxWrapper(EmptyWrapper):
         dist = self._box_distance_to_target(state, action)
         success = (dist <= 0.2).float()
         return success
+
+    def _agent_yaw_error_to_box(self, state, action):
+        """Absolute angular error (radians, [0, pi]) between each agent's yaw and the box's yaw.
+        Returns tensor (num_envs, num_agents). Smaller means better alignment for pushing."""
+        agent_yaw = state["agent_yaw"]  # (num_envs, num_agents, 1)
+        box_yaw = state["box_yaw"]      # (num_envs, num_agents, 1)
+        diff = agent_yaw - box_yaw
+        error = torch.abs((diff + torch.pi) % (2 * torch.pi) - torch.pi)
+        return self._check_reward_shape(error.squeeze(-1))
+
+    def _box_yaw_to_target(self, state, action):
+        """Absolute angular error (radians, [0, pi]) between the box's current yaw and the
+        direction from the box toward the target. Returns tensor (num_envs, num_agents).
+        Smaller means the box is oriented to be pushed straight toward the target."""
+        box_pos = state["box_pos"]      # (num_envs, num_agents, 2)
+        target_pos = state["target_pos"]  # (num_envs, num_agents, 2)
+        box_yaw = state["box_yaw"]      # (num_envs, num_agents, 1)
+        delta = target_pos - box_pos    # (num_envs, num_agents, 2)
+        desired_yaw = torch.atan2(delta[..., 1], delta[..., 0])  # (num_envs, num_agents)
+        diff = desired_yaw - box_yaw.squeeze(-1)
+        error = torch.abs((diff + torch.pi) % (2 * torch.pi) - torch.pi)
+        return self._check_reward_shape(error)
 
     def _check_reward_shape(self, reward):
         if reward.shape == (self.num_envs, self.num_agents):

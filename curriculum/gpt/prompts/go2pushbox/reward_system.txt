@@ -15,3 +15,4 @@ Some helpful tips for writing reward function code:
 (5) Do not change other predefined parts in the code. 
 (6) Make sure that the returned reward shape is (self.num_envs, self.num_agents). If you are not sure, verify it using the self._check_reward_shape function.
 (7) When assigning success reward, You should assign high weights as it is the most important measure for the task. Assign at least 5.0 for the success reward.
+(8) Every intermediate tensor used in reward computation must have shape (num_envs, num_agents) before being combined with other reward terms. Always apply self._check_reward_shape() to any tensor before multiplying or adding it to others. A shape mismatch (e.g., (num_envs,) vs (num_envs, num_agents)) will cause a runtime error.

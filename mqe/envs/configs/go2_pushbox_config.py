@@ -10,7 +10,7 @@ class Go2PushboxCfg(Go2Cfg):
         num_envs = 1
         num_agents = 2
         num_npcs = 2
-        episode_length_s = 15
+        episode_length_s = 25
 
     class asset(Go2Cfg.asset):
         terminate_after_contacts_on = []
@@ -19,7 +19,8 @@ class Go2PushboxCfg(Go2Cfg):
         npc_collision = True
         fix_npc_base_link = False
         npc_gravity = True
-        file_npc_marker = "{LEGGED_GYM_ROOT_DIR}/resources/objects/cylinder_blue.urdf"
+        file_npc_marker = "{LEGGED_GYM_ROOT_DIR}/resources/objects/cylinder_red.urdf"
+        # file_npc_marker = "{LEGGED_GYM_ROOT_DIR}/resources/objects/cylinder_blue.urdf"
         name_npc_marker = "target_marker"
     
     class terrain(Go2Cfg.terrain):
@@ -33,10 +34,10 @@ class Go2PushboxCfg(Go2Cfg):
                 "wall",
             ],
             # wall_thickness= 0.2,
-            track_width = 3.6,
+            track_width = 7.2,
             init = dict(
-                block_length = 4.2,
-                room_size = (4.2, 1.8),
+                block_length = 8.4,
+                room_size = (8.4, 3.6),
                 border_width = 0.0,
                 offset = (0, 0),
             ),
@@ -57,15 +58,15 @@ class Go2PushboxCfg(Go2Cfg):
     class init_state(Go2Cfg.init_state):
         multi_init_state = True
         init_state_class = Go2Cfg.init_state
-        init_states = [
+        init_states = [ # Quadruped 1, Quadruped 2
             init_state_class(
-                pos = [-1.2, 0.0, 0.36],
+                pos = [-3.3, 0.9, 0.36],
                 rot = [0.0, 0.0, 0.0, 1.0],
                 lin_vel = [0.0, 0.0, 0.0],
                 ang_vel = [0.0, 0.0, 0.0],
             ),
             init_state_class(
-                pos = [-1.2, 0.0, 0.36],
+                pos = [-3.3, -0.9, 0.36],
                 rot = [0.0, 0.0, 0.0, 1.0],
                 lin_vel = [0.0, 0.0, 0.0],
                 ang_vel = [0.0, 0.0, 0.0],
@@ -73,14 +74,14 @@ class Go2PushboxCfg(Go2Cfg):
         ]
         init_states_npc = [
             init_state_class(
-                pos = [2.5, 0.0, 0.6],
-                rot = [0.0, 0.0, 0.3827, 0.9239],
+                pos = [2.5, 0.0, 0.6], # Box
+                rot = [0.0, 0.0, 0.0, 1.0],
                 lin_vel = [0.0, 0.0, 0.0],
                 ang_vel = [0.0, 0.0, 0.0],
             ),
             # Target marker (visualization only; position overridden per episode in Go2PushboxObject)
             init_state_class(
-                pos = [3.0, 0.0, 0.05],
+                pos = [5.5, 0.0, 0.05],
                 rot = [0.0, 0.0, 0.0, 1.0],
                 lin_vel = [0.0, 0.0, 0.0],
                 ang_vel = [0.0, 0.0, 0.0],
@@ -123,5 +124,5 @@ class Go2PushboxCfg(Go2Cfg):
             # exceed_torque_limits_i = -2e-1
 
     class viewer(Go2Cfg.viewer):
-        pos = [3.2, 0., 4.]
-        lookat = [3.2, 2.5, 0.]
+        pos = [4.8, 0.0, 5.5]
+        lookat = [4.8, 3.5, 0.0]

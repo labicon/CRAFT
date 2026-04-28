@@ -20,8 +20,12 @@ self._success_evaluation(state, action): returns tensor (num_envs, num_agents) w
 self._head_box_collision_flag(): returns tensor (num_envs, num_agents), 1 if head links collide with box and 0 otherwise
 self._non_head_box_collision_flag(): returns tensor (num_envs, num_agents), 1 if non-head links collide with box and 0 otherwise
 self._check_reward_shape(reward): returns reshaped reward tensor to avoid index error
+self._agent_yaw_error_to_box(state, action): returns tensor (num_envs, num_agents) for the absolute angular error (radians, [0, pi]) between each agent's yaw and the box's yaw. Use this to reward yaw alignment for effective pushing.
+self._box_yaw_to_target(state, action): returns tensor (num_envs, num_agents) for the absolute angular error (radians, [0, pi]) between the box's current yaw and the direction from the box toward the target. Use this to reward the box being oriented toward the target for steering.
 
-The box starts at yaw = π/4 (45°). For efficient pushing, Agent 0 (blue) should align its yaw to the box's yaw (π/4) and Agent 1 (green) should align its yaw to the box's yaw minus π/2 (i.e., -π/4), so each agent pushes a different face of the rotated box.
+The box starts at yaw = 0 (aligned with global axes). The box is elongated along the y-axis (1.0m × 3.0m).
+Both agents push the same face of the box (the back face). For efficient pushing, both Agent 0 (blue) and Agent 1 (green) should align their yaw to match the box's current yaw angle.
+To steer the box toward an off-center target, agents must coordinate to induce box yaw rotation while maintaining alignment.
 For this task, include reward terms that encourage pushing with head links and penalize non-head collisions with the box.
 
 An example reward function format for the task is
@@ -44,7 +48,17 @@ def gpt_reward(self, state, action):
     proximity_reward = self._check_reward_shape(proximity_reward)
     rew_dict["target_proximity"] = torch.mean(proximity_reward)
 
-    # 3. Reward for using head contact on the box and avoiding non-head collision
+    # 3. Reward for agent yaw alignment with box yaw (both agents should match box yaw) - max 1.0
+    box_yaw = state["box_yaw"]  # (num_envs, num_agents, 1)
+    agent_yaw = state["agent_yaw"]  # (num_envs, num_agents, 1)
+    yaw_error = torch.abs(agent_yaw - box_yaw)
+    # Wrap to [-pi, pi]
+    yaw_error = torch.abs((yaw_error + torch.pi) % (2 * torch.pi) - torch.pi)
+    yaw_alignment_reward = 1.0 * torch.exp(-2.0 * yaw_error.squeeze(-1))
+    yaw_alignment_reward = self._check_reward_shape(yaw_alignment_reward)
+    rew_dict["yaw_alignment"] = torch.mean(yaw_alignment_reward)
+
+    # 4. Reward for using head contact on the box and avoiding non-head collision
     head_contact_reward = self._head_box_collision_flag() * 1.0
     non_head_contact_penalty = self._non_head_box_collision_flag() * (-1.0)
     head_contact_reward = self._check_reward_shape(head_contact_reward)
@@ -53,7 +67,7 @@ def gpt_reward(self, state, action):
     rew_dict["non_head_contact_penalty"] = torch.mean(non_head_contact_penalty)
 
     # Total Reward
-    reward = progress_reward + proximity_reward + head_contact_reward + non_head_contact_penalty
+    reward = progress_reward + proximity_reward + yaw_alignment_reward + head_contact_reward + non_head_contact_penalty
 
     # Normalize to max_reward if needed or just clamp
     reward = torch.clamp(reward, 0.0, max_reward)

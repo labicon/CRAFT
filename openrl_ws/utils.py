@@ -308,19 +308,15 @@ def reset_value_network(args, agent):
     
     return agent
 
-def reset_policy_std(agent):
-    from openrl.modules.networks.utils.act import ACTLayer
+def reset_policy_std(agent, logstd_init=0.5):
+    logstd = agent.net.module.models['policy'].act.action_out.logstd
+    original_bias = logstd._bias.data.clone()
 
-    original_policy_std = copy.deepcopy(agent.net.module.models['policy'].act)
+    nn.init.constant_(logstd._bias, logstd_init)
 
-    reset_weights(agent.net.module.models['policy'].act.action_out.fc_mean)
-    reset_weights(agent.net.module.models['policy'].act.action_out.logstd)
-
-    act_different = not compare_models(original_policy_std.action_out, agent.net.module.models['policy'].act.action_out)
-
-    if act_different:
-        print("Policy std reset successfully. Weights are different from the original.")
+    if not torch.equal(original_bias, logstd._bias.data):
+        print(f"Policy logstd reset to {logstd_init} (std={logstd_init:.3f} -> exp={torch.exp(torch.tensor(logstd_init)):.3f}).")
     else:
-        raise ValueError("Policy std reset failed, weights are identical to the original.")
-    
+        raise ValueError("Policy logstd reset failed, values are identical to the original.")
+
     return agent
