@@ -5,9 +5,10 @@ import shutil
 import subprocess
 import glob
 import base64
+import sys
 
-from gpt.curriculum_api import CurriculumAPI
-from gpt.utils import *
+from curriculum.gpt.curriculum_api import CurriculumAPI
+from curriculum.gpt.utils import *
 
 MAX_ATTEMPT = 10
 
@@ -172,8 +173,9 @@ class Curriculum_Module:
         iter_per_task = self.cfg["iter_per_task"]
         if curriculum_idx == 0:
             print(f"Training task {task['Name']} sample {sample_num} from scratch")
-            process = subprocess.run(["python", 
-                                        "./openrl_ws/curriculum_train.py",
+            process = subprocess.run([sys.executable,
+                                        "-m",
+                                        "openrl_ws.curriculum_train",
                                         "--run_date", self.experiment_time,
                                         "--curriculum_task", task['Name'], 
                                         "--sample_idx", str(sample_num),
@@ -185,8 +187,9 @@ class Curriculum_Module:
             previous_task = self.curriculum[curriculum_idx - 1]
             load_sample_num = self.best_model_idx_list[curriculum_idx - 1]
             print(f"Training task {task['Name']} sample {sample_num} from previous task {previous_task['Name']} sample {load_sample_num}")
-            process = subprocess.run(["python", 
-                                        "./openrl_ws/curriculum_train.py", 
+            process = subprocess.run([sys.executable,
+                                        "-m",
+                                        "openrl_ws.curriculum_train",
                                         "--run_date", self.experiment_time,
                                         "--curriculum_task", task['Name'], 
                                         "--sample_idx", str(sample_num),
@@ -240,8 +243,9 @@ class Curriculum_Module:
     def collect_evaluation_data(self, task, sample_num, rollout):    
         print(f"Collecting evaluation data for task {task['Name']} sample {sample_num}") 
         # Save the trajectory analysis in the log path        
-        process = subprocess.run(["python",
-                                    "./openrl_ws/curriculum_eval.py",
+        process = subprocess.run([sys.executable,
+                                    "-m",
+                                    "openrl_ws.curriculum_eval",
                                     "--run_date", self.experiment_time,
                                     "--curriculum_task", task['Name'],
                                     "--sample_idx", str(sample_num),

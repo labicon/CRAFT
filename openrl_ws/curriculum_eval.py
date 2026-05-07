@@ -7,7 +7,8 @@ from openrl.runners.common import PPOAgent
 
 import argparse
 import pickle as pkl
-import os, sys
+import os
+import sys
 import numpy as np
 
 def eval(load_dir, seed=0):

@@ -4,8 +4,8 @@ import pickle
 import shutil
 import subprocess
 
-from gpt.curriculum_api import CurriculumAPI, extract_task_details
-from gpt.utils import *
+from curriculum.gpt.curriculum_api import CurriculumAPI, extract_task_details
+from curriculum.gpt.utils import *
 
 MAX_ATTEMPT = 5
 

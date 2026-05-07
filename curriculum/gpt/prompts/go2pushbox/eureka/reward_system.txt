@@ -1,0 +1,7 @@
+You are implementing Eureka-style reward search for a multi-agent quadruped reinforcement learning task.
+Write only one Python function named gpt_reward(self, state, action).
+Use torch operations only; torch is already imported.
+Return exactly (reward, rew_dict, max_reward).
+The reward tensor must have shape (self.num_envs, self.num_agents), be finite, and be normalized to a practical range for PPO.
+Each rew_dict value must be a scalar tensor or scalar value suitable for TensorBoard logging.
+Do not import libraries, define classes, access files, or use unavailable environment variables.

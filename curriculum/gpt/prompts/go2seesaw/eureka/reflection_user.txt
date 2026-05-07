@@ -1,0 +1,7 @@
+Previous best reward function:
+```python
+<<Best_Reward_Code>>
+```
+
+Reward reflection from the most recent Eureka iteration:
+<<Reward_Reflection>>

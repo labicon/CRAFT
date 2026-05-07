@@ -1,0 +1,15 @@
+Generate a reward function for the full task: <<Task_Name>>.
+
+Iteration: <<Iteration>>
+Candidate index: <<Candidate_Index>>
+
+Task description:
+<<Environment_Description>>
+
+Reward authoring context, available state keys, helper functions, and output format:
+<<Reward_Context>>
+
+This is a Eureka baseline, not curriculum learning. Optimize the full task directly.
+Prefer dense shaping that improves task progress, but include terminal success terms and penalties for unsafe or degenerate behavior.
+Use distinct reward component names in rew_dict so later iterations can interpret TensorBoard curves.
+Return only a fenced Python code block.
