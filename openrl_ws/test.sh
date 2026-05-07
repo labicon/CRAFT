@@ -6,5 +6,6 @@ python ./openrl_ws/test.py \
     --algo ppo \
     --sim_device cuda:0 \
     --rl_device cuda:0 \
-    --num_envs 1 --checkpoint "/home/kang/CRAFT/logs/02-22_03-42/1_Head Contact Establishment(02-22_03-42)/sample_0/model/module.pt" \
-    # --record_video 
+    --seed 9 \
+    --num_envs 1 --checkpoint "/home/kang/CRAFT/logs/03-21_21-51/4_Final task(03-21_21-51)/sample_1/model/module.pt" \
+    --record_video 

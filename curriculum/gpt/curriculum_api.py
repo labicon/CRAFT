@@ -7,10 +7,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-from gpt.utils import *
+from curriculum.gpt.utils import *
 
-GPT_LLM_MODEL = "gpt-4o-2024-08-06" # gpt-4-1106-preview, gpt-4-0613, gpt-4-32k, gpt-3.5-turbo-1106 gpt-4-turbo-preview
-GPT_VLM_MODEL = "o4-mini-2025-04-16"
+GPT_LLM_MODEL = "gpt-5.4-mini-2026-03-17" # gpt-4-1106-preview, gpt-4-0613, gpt-4-32k, gpt-3.5-turbo-1106 gpt-4-turbo-preview
+GPT_VLM_MODEL = "gpt-5.4-mini-2026-03-17"
 
 class CurriculumAPI:
     def __init__(self, prompt_path, log_path, line_num):

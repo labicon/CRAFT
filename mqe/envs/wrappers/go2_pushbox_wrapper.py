@@ -195,12 +195,12 @@ class Go2PushboxWrapper(EmptyWrapper):
 
         for key, value in reward_dict.items():
             reward_key = f"Reward/{key}"
-            self.reward_buffer[reward_key] = value
+            self.reward_buffer[reward_key] = self.reward_buffer.get(reward_key, 0) + value * self.num_envs * self.num_agents
 
         eval_dict = self._eval(global_state, action)
         for key, value in eval_dict.items():
             eval_key = f"Eval/{key}"
-            self.reward_buffer[eval_key] = value
+            self.reward_buffer[eval_key] = self.reward_buffer.get(eval_key, 0) + value * self.num_envs * self.num_agents
 
         return obs, reward, termination, info
 
@@ -253,8 +253,30 @@ class Go2PushboxWrapper(EmptyWrapper):
 
     def _success_evaluation(self, state, action):
         dist = self._box_distance_to_target(state, action)
-        success = (dist <= 0.5).float()
+        success = (dist <= 0.2).float()
         return success
+
+    def _agent_yaw_error_to_box(self, state, action):
+        """Absolute angular error (radians, [0, pi]) between each agent's yaw and the box's yaw.
+        Returns tensor (num_envs, num_agents). Smaller means better alignment for pushing."""
+        agent_yaw = state["agent_yaw"]  # (num_envs, num_agents, 1)
+        box_yaw = state["box_yaw"]      # (num_envs, num_agents, 1)
+        diff = agent_yaw - box_yaw
+        error = torch.abs((diff + torch.pi) % (2 * torch.pi) - torch.pi)
+        return self._check_reward_shape(error.squeeze(-1))
+
+    def _box_yaw_to_target(self, state, action):
+        """Absolute angular error (radians, [0, pi]) between the box's current yaw and the
+        direction from the box toward the target. Returns tensor (num_envs, num_agents).
+        Smaller means the box is oriented to be pushed straight toward the target."""
+        box_pos = state["box_pos"]      # (num_envs, num_agents, 2)
+        target_pos = state["target_pos"]  # (num_envs, num_agents, 2)
+        box_yaw = state["box_yaw"]      # (num_envs, num_agents, 1)
+        delta = target_pos - box_pos    # (num_envs, num_agents, 2)
+        desired_yaw = torch.atan2(delta[..., 1], delta[..., 0])  # (num_envs, num_agents)
+        diff = desired_yaw - box_yaw.squeeze(-1)
+        error = torch.abs((diff + torch.pi) % (2 * torch.pi) - torch.pi)
+        return self._check_reward_shape(error)
 
     def _check_reward_shape(self, reward):
         if reward.shape == (self.num_envs, self.num_agents):
@@ -291,45 +313,92 @@ class Go2PushboxWrapper(EmptyWrapper):
         }
         return eval_info
 
-
     def gpt_reward(self, state, action):
-
-        reward = torch.zeros((self.num_envs, self.num_agents), device=self.env.device)
+        device = self.env.device
+        reward = torch.zeros((self.num_envs, self.num_agents), device=device)
         rew_dict = {}
-        max_reward = 8.0
+        max_reward = 10.0
 
-        # 1. Reward for moving box toward a fixed target position - max 3.0
+        # Core task signal: make progress toward the target
         toward_target = self._box_movement_toward_target(state, action)
-        progress_reward = toward_target * 3.0
+        dist_to_target = self._box_distance_to_target(state, action)
+        box_yaw_to_target = self._box_yaw_to_target(state, action)
+
+        # Stronger emphasis on actual progress, but bounded for PPO stability
+        progress_reward = 2.2 * torch.tanh(1.2 * toward_target)
         progress_reward = self._check_reward_shape(progress_reward)
         rew_dict["box_progress"] = torch.mean(progress_reward)
 
-        # 2. Reward for being close to a fixed target position - max 2.0
-        dist_to_target = self._box_distance_to_target(state, action)
-        proximity_reward = 2.0 * torch.exp(-1.0 * dist_to_target)
+        # Dense proximity shaping to keep the box moving toward the goal
+        proximity_reward = 1.6 * torch.exp(-1.4 * dist_to_target)
         proximity_reward = self._check_reward_shape(proximity_reward)
         rew_dict["target_proximity"] = torch.mean(proximity_reward)
 
-        # 3. Reward for using head contact on the box and avoiding non-head collision
-        head_contact_reward = self._head_box_collision_flag() * 1.0
-        non_head_contact_penalty = self._non_head_box_collision_flag() * (-1.0)
+        # Encourage the box to rotate toward the target direction for steering
+        # This helps when the target is off-axis and reduces sideways drift
+        yaw_to_target_reward = 0.8 * torch.exp(-2.0 * box_yaw_to_target)
+        yaw_to_target_reward = self._check_reward_shape(yaw_to_target_reward)
+        rew_dict["box_yaw_to_target"] = torch.mean(yaw_to_target_reward)
+
+        # Both agents should align yaw with the box yaw for efficient push contact
+        agent_yaw_error = self._agent_yaw_error_to_box(state, action)
+        yaw_alignment_reward = 1.15 * torch.exp(-2.2 * agent_yaw_error)
+        yaw_alignment_reward = self._check_reward_shape(yaw_alignment_reward)
+        rew_dict["agent_yaw_alignment"] = torch.mean(yaw_alignment_reward)
+
+        # Keep agents near the back face of the box so they can sustain push contact
+        agent_box_dist = self._agents_distance_to_box(state, action)
+        push_distance_reward = 0.65 * torch.exp(-1.6 * agent_box_dist)
+        push_distance_reward = self._check_reward_shape(push_distance_reward)
+        rew_dict["agent_box_proximity"] = torch.mean(push_distance_reward)
+
+        # Reward head contact specifically, since the task uses the head links for pushing
+        head_contact = self._head_box_collision_flag().float()
+        head_contact_reward = 1.05 * head_contact
         head_contact_reward = self._check_reward_shape(head_contact_reward)
-        non_head_contact_penalty = self._check_reward_shape(non_head_contact_penalty)
         rew_dict["head_contact"] = torch.mean(head_contact_reward)
-        rew_dict["non_head_contact_penalty"] = torch.mean(non_head_contact_penalty)
 
-        # 4. Success reward for effectively coordinating to place the box within 0.5 meters of target
-        success_reward = self._success_evaluation(state, action) * 5.0
-        success_reward = self._check_reward_shape(success_reward)
-        rew_dict["success_reward"] = torch.mean(success_reward)
+        # Penalize any box contact from non-head body parts to discourage unsafe pushing
+        non_head_collision = self._non_head_box_collision_flag().float()
+        non_head_collision_penalty = -1.8 * non_head_collision
+        non_head_collision_penalty = self._check_reward_shape(non_head_collision_penalty)
+        rew_dict["non_head_collision_penalty"] = torch.mean(non_head_collision_penalty)
 
-        # Total Reward
-        reward = (progress_reward + proximity_reward + head_contact_reward +
-                  non_head_contact_penalty + success_reward)
+        # Mild penalty for excessive lateral displacement of the box.
+        # This still allows turning, but discourages uncontrolled side-slip.
+        box_y_dev = self._box_y_deviation(state, action)
+        y_deviation_penalty = -0.25 * torch.tanh(1.0 * box_y_dev)
+        y_deviation_penalty = self._check_reward_shape(y_deviation_penalty)
+        rew_dict["box_y_deviation_penalty"] = torch.mean(y_deviation_penalty)
 
-        # Normalize to max_reward if needed or just clamp
-        reward = torch.clamp(reward, 0.0, max_reward)
-        reward *= 1 / max_reward
+        # Success bonus for reaching the target region
+        success = self._success_evaluation(state, action).float()
+        success_bonus = 2.5 * success
+        success_bonus = self._check_reward_shape(success_bonus)
+        rew_dict["success_bonus"] = torch.mean(success_bonus)
+
+        # Mild action regularization to reduce thrashing and unstable oscillations
+        action_l2 = torch.sum(action ** 2, dim=-1)
+        action_penalty = -0.02 * action_l2
+        action_penalty = self._check_reward_shape(action_penalty)
+        rew_dict["action_penalty"] = torch.mean(action_penalty)
+
+        # Total reward
+        reward = (
+            progress_reward
+            + proximity_reward
+            + yaw_to_target_reward
+            + yaw_alignment_reward
+            + push_distance_reward
+            + head_contact_reward
+            + non_head_collision_penalty
+            + y_deviation_penalty
+            + success_bonus
+            + action_penalty
+        )
+
+        # Keep the reward in a practical PPO range and avoid extreme outliers
+        reward = torch.clamp(reward, -2.0, max_reward)
+        reward = reward / max_reward
 
         return reward, rew_dict, max_reward
-

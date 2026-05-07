@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     task_name = "go2pushbox"
 
-    args.num_envs = 2
+    args.num_envs = 1
     args.headless = False
     args.record_video = False
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     while True:
         # obs, _, _, _ = env.step(0 * torch.tensor([[[1, 0, 0],[1, 0, 0],[1, 0, 0],[1, 0, 0],],],
         #                         dtype=torch.float32, device="cuda").repeat(env.num_envs, 1, 1))
-        obs, _, done, _ = env.step(0 * torch.tensor([[[1, 0, 0],[1, 0, 0],],],
+        obs, _, done, _ = env.step(torch.tensor([[[1, 0, 0.2],[1, 0, -0.2],],],
                                 dtype=torch.float32, device="cuda").repeat(env.num_envs, 1, 1))
         # if done.tolist()[0]:
         #     print("done")
