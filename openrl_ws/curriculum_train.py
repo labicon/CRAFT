@@ -9,11 +9,11 @@ import shutil
 import argparse
 import sys
 
-def train(save_dir, exp_name, training_iter=1000000):
+def train(task, save_dir, exp_name, training_iter=1000000):
     from openrl.utils.callbacks.checkpoint_callback import CheckpointCallback
-    args = get_args()  
+    args = get_args()
     args.train_timesteps = training_iter
-    args.task = "go2pushbox"
+    args.task = task
     args.num_envs = 500
     args.headless = True
     args.separate_policy = True
@@ -57,10 +57,10 @@ def train(save_dir, exp_name, training_iter=1000000):
 
     agent.save(save_dir)
 
-def load_train(save_dir, exp_name, load_dir, training_iter=1000000):  
+def load_train(task, save_dir, exp_name, load_dir, training_iter=1000000):
     from openrl.utils.callbacks.checkpoint_callback import CheckpointCallback
     args = get_args()
-    args.task = "go2pushbox"
+    args.task = task
     args.num_envs = 500
     args.headless = True
     args.train_timesteps = training_iter
@@ -114,6 +114,7 @@ def load_train(save_dir, exp_name, load_dir, training_iter=1000000):
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description="Train a Go1 Navigation agent")
+    parser.add_argument("--task", type=str, required=True, help="Environment task name (e.g. go2gate, go2pushbox)")
     parser.add_argument("--run_date", type=str, default=None, help="Run date for curriculum learning")
     parser.add_argument("--curriculum_task", type=str, default=None, help="Curriculum task for curriculum learning")
     parser.add_argument("--sample_idx", type=int, default=None, help="Sample index for curriculum learning")
@@ -123,6 +124,7 @@ if __name__ == '__main__':
     parser.add_argument("--load_sample_idx", type=int, default=None, help="Load sample index for curriculum learning")
 
     args = parser.parse_args()
+    task = args.task
     run_date = args.run_date
     curriculum_task = args.curriculum_task
     sample_idx = args.sample_idx
@@ -138,7 +140,6 @@ if __name__ == '__main__':
     if os.path.exists(save_dir):
         shutil.rmtree(save_dir)
     os.makedirs(save_dir)
-    # exp_name = f"{run_date}_{curriculum_task}_sample_{sample_idx}"
     exp_name = f"{curriculum_task}_sample_{sample_idx}"
 
     if load:
@@ -147,6 +148,6 @@ if __name__ == '__main__':
             raise FileNotFoundError(f"Log directory {load_dir} does not exist. Please check the run date and curriculum task.")
 
     if not load:
-        train(save_dir, exp_name, training_iter)
+        train(task, save_dir, exp_name, training_iter)
     else:
-        load_train(save_dir, exp_name, load_dir, training_iter)
+        load_train(task, save_dir, exp_name, load_dir, training_iter)

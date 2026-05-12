@@ -14,6 +14,7 @@ MAX_ATTEMPT = 10
 
 class Curriculum_Module:
     def __init__(self, task, env_path, logger_path, run_datetime, cfg, seed=0):
+        self.task = task
         self.env_path = env_path
         self.prompt_path = f"./curriculum/gpt/prompts/{task}"
         self.gpt_api = CurriculumAPI(self.prompt_path, logger_path, 
@@ -176,8 +177,9 @@ class Curriculum_Module:
             process = subprocess.run([sys.executable,
                                         "-m",
                                         "openrl_ws.curriculum_train",
+                                        "--task", self.task,
                                         "--run_date", self.experiment_time,
-                                        "--curriculum_task", task['Name'], 
+                                        "--curriculum_task", task['Name'],
                                         "--sample_idx", str(sample_num),
                                         "--training_iter", str(iter_per_task),
                                         ],
@@ -190,8 +192,9 @@ class Curriculum_Module:
             process = subprocess.run([sys.executable,
                                         "-m",
                                         "openrl_ws.curriculum_train",
+                                        "--task", self.task,
                                         "--run_date", self.experiment_time,
-                                        "--curriculum_task", task['Name'], 
+                                        "--curriculum_task", task['Name'],
                                         "--sample_idx", str(sample_num),
                                         "--load", "True",
                                         "--load_task", previous_task['Name'],
@@ -246,6 +249,7 @@ class Curriculum_Module:
         process = subprocess.run([sys.executable,
                                     "-m",
                                     "openrl_ws.curriculum_eval",
+                                    "--task", self.task,
                                     "--run_date", self.experiment_time,
                                     "--curriculum_task", task['Name'],
                                     "--sample_idx", str(sample_num),
