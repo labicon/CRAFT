@@ -1,7 +1,18 @@
 import argparse
+import os
+
+# Parse --gpu early so CUDA_VISIBLE_DEVICES is set before any CUDA initialization.
+# With this set, physical GPU X appears as cuda:0 in all processes.
+# Subprocesses inherit this env var automatically.
+# Note: IsaacGym's renderer uses OpenGL/Vulkan and ignores CUDA_VISIBLE_DEVICES,
+# so --graphics_device_id must always be the physical GPU ID (passed via subprocess args).
+_pre = argparse.ArgumentParser(add_help=False)
+_pre.add_argument("--gpu", type=int, default=0)
+_pre_args, _ = _pre.parse_known_args()
+os.environ["CUDA_VISIBLE_DEVICES"] = str(_pre_args.gpu)
+
 import yaml
 from datetime import datetime
-import os
 
 from curriculum.train.manual_curriculum import Manual_Module
 from curriculum.train.curriculum_train import Curriculum_Module
@@ -15,7 +26,7 @@ if __name__ == "__main__":
     parser.add_argument("--task", type=str, default="go2gate", choices=["go2gate", "go2seesaw", "go2pushbox"], help="Select task: go2gate or go2seesaw")
     parser.add_argument("--debug", action="store_true", help="Use a lightweight debug configuration when supported by the selected module")
     parser.add_argument("--resume", type=str, default=None, help="Path to a previous Eureka log directory to resume from (eureka module only)")
-    parser.add_argument("--gpu", type=int, default=0, help="GPU device ID to use for simulation and RL (e.g. 0, 1, 2)")
+    parser.add_argument("--gpu", type=int, default=0, help="Physical GPU device ID (e.g. 0, 1, 2)")
     args = parser.parse_args()
 
     seed = args.seed
@@ -48,5 +59,5 @@ if __name__ == "__main__":
         module = Curriculum_Module(args.task, env_path, logger_path, current_datetime, cfg, seed, args.gpu)
     else:
         module = EurekaBaseline(args.task, env_path, logger_path, current_datetime, cfg, seed, args.gpu)
-        
+
     module.train()

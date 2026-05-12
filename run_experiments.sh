@@ -2,9 +2,9 @@
 
 # Number of runs
 NUM_RUNS=5
-ENV_NAME="go2pushbox"
+ENV_NAME="go2gate"
 MANUAL=false
-GPU=0
+GPU=5
 
 # Parse flags
 while [[ "$#" -gt 0 ]]; do

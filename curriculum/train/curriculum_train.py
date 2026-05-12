@@ -173,8 +173,11 @@ class Curriculum_Module:
 
     def train_single(self, curriculum_idx, task, sample_num):
         iter_per_task = self.cfg["iter_per_task"]
-        gpu_args = ["--sim_device", f"cuda:{self.gpu_id}",
-                    "--rl_device", f"cuda:{self.gpu_id}",
+        # CUDA_VISIBLE_DEVICES is inherited from main.py, so cuda:0 maps to the
+        # correct physical GPU. graphics_device_id must be the physical ID because
+        # IsaacGym's renderer uses OpenGL/Vulkan and ignores CUDA_VISIBLE_DEVICES.
+        gpu_args = ["--sim_device", "cuda:0",
+                    "--rl_device", "cuda:0",
                     "--graphics_device_id", str(self.gpu_id)]
         if curriculum_idx == 0:
             print(f"Training task {task['Name']} sample {sample_num} from scratch")
@@ -258,7 +261,7 @@ class Curriculum_Module:
                                     "--curriculum_task", task['Name'],
                                     "--sample_idx", str(sample_num),
                                     "--seed", str(rollout),
-                                    "--sim_device", f"cuda:{self.gpu_id}",
+                                    "--sim_device", "cuda:0",
                                     "--graphics_device_id", str(self.gpu_id),
                                     ],
                                     )
