@@ -10,7 +10,7 @@ from curriculum.gpt.eureka_api import EurekaAPI
 
 
 class EurekaBaseline:
-    def __init__(self, task, env_path, logger_path, run_datetime, cfg, seed=0):
+    def __init__(self, task, env_path, logger_path, run_datetime, cfg, seed=0, gpu_id=0):
         self.task = task
         self.env_path = env_path
         self.prompt_path = f"./curriculum/gpt/prompts/{task}"
@@ -18,6 +18,7 @@ class EurekaBaseline:
         self.experiment_time = run_datetime
         self.cfg = cfg
         self.seed = seed
+        self.gpu_id = gpu_id
         self.eureka_cfg = cfg.get("eureka", {})
         self.num_iterations = int(self.eureka_cfg.get("num_iterations", 3))
         self.num_candidates = int(self.eureka_cfg.get("num_candidates", 3))
@@ -154,6 +155,9 @@ class EurekaBaseline:
                 str(self.training_iter),
                 "--seed",
                 str(self.seed),
+                "--sim_device", f"cuda:{self.gpu_id}",
+                "--rl_device", f"cuda:{self.gpu_id}",
+                "--graphics_device_id", str(self.gpu_id),
             ],
             check=True,
         )
@@ -223,6 +227,8 @@ class EurekaBaseline:
                         seed_dir,
                         "--seed",
                         str(seed),
+                        "--sim_device", f"cuda:{self.gpu_id}",
+                        "--graphics_device_id", str(self.gpu_id),
                     ],
                     check=True,
                 )
@@ -272,6 +278,8 @@ class EurekaBaseline:
                     seed_dir,
                     "--seed",
                     str(seed),
+                    "--sim_device", f"cuda:{self.gpu_id}",
+                    "--graphics_device_id", str(self.gpu_id),
                 ],
                 check=True,
             )

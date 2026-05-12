@@ -9,7 +9,7 @@ import shutil
 import argparse
 import sys
 
-def train(task, save_dir, exp_name, training_iter=1000000):
+def train(task, save_dir, exp_name, training_iter=1000000, sim_device="cuda:0", rl_device="cuda:0", graphics_device_id=0):
     from openrl.utils.callbacks.checkpoint_callback import CheckpointCallback
     args = get_args()
     args.train_timesteps = training_iter
@@ -17,6 +17,10 @@ def train(task, save_dir, exp_name, training_iter=1000000):
     args.num_envs = 500
     args.headless = True
     args.separate_policy = True
+    args.sim_device = sim_device
+    args.sim_device_id = int(sim_device.split(":")[-1]) if ":" in sim_device else 0
+    args.rl_device = rl_device
+    args.graphics_device_id = graphics_device_id
 
     env, env_cfg = make_env(args, custom_cfg(args), single_agent=False)
     
@@ -57,7 +61,7 @@ def train(task, save_dir, exp_name, training_iter=1000000):
 
     agent.save(save_dir)
 
-def load_train(task, save_dir, exp_name, load_dir, training_iter=1000000):
+def load_train(task, save_dir, exp_name, load_dir, training_iter=1000000, sim_device="cuda:0", rl_device="cuda:0", graphics_device_id=0):
     from openrl.utils.callbacks.checkpoint_callback import CheckpointCallback
     args = get_args()
     args.task = task
@@ -65,6 +69,10 @@ def load_train(task, save_dir, exp_name, load_dir, training_iter=1000000):
     args.headless = True
     args.train_timesteps = training_iter
     args.separate_policy = True
+    args.sim_device = sim_device
+    args.sim_device_id = int(sim_device.split(":")[-1]) if ":" in sim_device else 0
+    args.rl_device = rl_device
+    args.graphics_device_id = graphics_device_id
 
     env, env_cfg = make_env(args, custom_cfg(args), single_agent=False)
 
@@ -122,6 +130,9 @@ if __name__ == '__main__':
     parser.add_argument("--load", type=bool, default=False, help="Load previous training checkpoint")
     parser.add_argument("--load_task", type=str, default=None, help="Load task for curriculum learning")
     parser.add_argument("--load_sample_idx", type=int, default=None, help="Load sample index for curriculum learning")
+    parser.add_argument("--sim_device", type=str, default="cuda:0", help="Physics simulation device (e.g. cuda:0, cuda:1)")
+    parser.add_argument("--rl_device", type=str, default="cuda:0", help="RL algorithm device (e.g. cuda:0, cuda:1)")
+    parser.add_argument("--graphics_device_id", type=int, default=0, help="GPU index for rendering (e.g. 0, 1)")
 
     args = parser.parse_args()
     task = args.task
@@ -132,6 +143,9 @@ if __name__ == '__main__':
     load = args.load
     load_task = args.load_task
     load_sample_idx = args.load_sample_idx
+    sim_device = args.sim_device
+    rl_device = args.rl_device
+    graphics_device_id = args.graphics_device_id
 
     del args, parser
     sys.argv = [sys.argv[0]]
@@ -148,6 +162,6 @@ if __name__ == '__main__':
             raise FileNotFoundError(f"Log directory {load_dir} does not exist. Please check the run date and curriculum task.")
 
     if not load:
-        train(task, save_dir, exp_name, training_iter)
+        train(task, save_dir, exp_name, training_iter, sim_device, rl_device, graphics_device_id)
     else:
-        load_train(task, save_dir, exp_name, load_dir, training_iter)
+        load_train(task, save_dir, exp_name, load_dir, training_iter, sim_device, rl_device, graphics_device_id)

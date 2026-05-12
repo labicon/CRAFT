@@ -13,11 +13,11 @@ from curriculum.gpt.utils import *
 MAX_ATTEMPT = 10
 
 class Curriculum_Module:
-    def __init__(self, task, env_path, logger_path, run_datetime, cfg, seed=0):
+    def __init__(self, task, env_path, logger_path, run_datetime, cfg, seed=0, gpu_id=0):
         self.task = task
         self.env_path = env_path
         self.prompt_path = f"./curriculum/gpt/prompts/{task}"
-        self.gpt_api = CurriculumAPI(self.prompt_path, logger_path, 
+        self.gpt_api = CurriculumAPI(self.prompt_path, logger_path,
                                      line_num=cfg['line_num'])
         self.logger_path = logger_path
         self.best_reward_code = {}
@@ -26,6 +26,7 @@ class Curriculum_Module:
         self.best_sim_reward = None
         self.cfg = cfg
         self.seed = seed
+        self.gpu_id = gpu_id
         self.terminate_training = False
         self.experiment_time = run_datetime
         
@@ -172,6 +173,9 @@ class Curriculum_Module:
 
     def train_single(self, curriculum_idx, task, sample_num):
         iter_per_task = self.cfg["iter_per_task"]
+        gpu_args = ["--sim_device", f"cuda:{self.gpu_id}",
+                    "--rl_device", f"cuda:{self.gpu_id}",
+                    "--graphics_device_id", str(self.gpu_id)]
         if curriculum_idx == 0:
             print(f"Training task {task['Name']} sample {sample_num} from scratch")
             process = subprocess.run([sys.executable,
@@ -182,7 +186,7 @@ class Curriculum_Module:
                                         "--curriculum_task", task['Name'],
                                         "--sample_idx", str(sample_num),
                                         "--training_iter", str(iter_per_task),
-                                        ],
+                                        ] + gpu_args,
                                         )
 
         else:
@@ -200,7 +204,7 @@ class Curriculum_Module:
                                         "--load_task", previous_task['Name'],
                                         "--load_sample_idx", str(load_sample_num),
                                         "--training_iter", str(iter_per_task),
-                                        ],
+                                        ] + gpu_args,
                                         )
 
 
@@ -243,9 +247,9 @@ class Curriculum_Module:
                                         version_number=sample_num)
         self.current_reward_code_list.append(reward_code)
 
-    def collect_evaluation_data(self, task, sample_num, rollout):    
-        print(f"Collecting evaluation data for task {task['Name']} sample {sample_num}") 
-        # Save the trajectory analysis in the log path        
+    def collect_evaluation_data(self, task, sample_num, rollout):
+        print(f"Collecting evaluation data for task {task['Name']} sample {sample_num}")
+        # Save the trajectory analysis in the log path
         process = subprocess.run([sys.executable,
                                     "-m",
                                     "openrl_ws.curriculum_eval",
@@ -254,6 +258,8 @@ class Curriculum_Module:
                                     "--curriculum_task", task['Name'],
                                     "--sample_idx", str(sample_num),
                                     "--seed", str(rollout),
+                                    "--sim_device", f"cuda:{self.gpu_id}",
+                                    "--graphics_device_id", str(self.gpu_id),
                                     ],
                                     )
         

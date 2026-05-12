@@ -15,6 +15,7 @@ if __name__ == "__main__":
     parser.add_argument("--task", type=str, default="go2gate", choices=["go2gate", "go2seesaw", "go2pushbox"], help="Select task: go2gate or go2seesaw")
     parser.add_argument("--debug", action="store_true", help="Use a lightweight debug configuration when supported by the selected module")
     parser.add_argument("--resume", type=str, default=None, help="Path to a previous Eureka log directory to resume from (eureka module only)")
+    parser.add_argument("--gpu", type=int, default=0, help="GPU device ID to use for simulation and RL (e.g. 0, 1, 2)")
     args = parser.parse_args()
 
     seed = args.seed
@@ -42,10 +43,10 @@ if __name__ == "__main__":
     env_path = cfg['env_path']
 
     if args.module == "manual":
-        module = Manual_Module(args.task, env_path, logger_path, current_datetime, cfg, seed)
+        module = Manual_Module(args.task, env_path, logger_path, current_datetime, cfg, seed, args.gpu)
     elif args.module == "curriculum":
-        module = Curriculum_Module(args.task, env_path, logger_path, current_datetime, cfg, seed)
+        module = Curriculum_Module(args.task, env_path, logger_path, current_datetime, cfg, seed, args.gpu)
     else:
-        module = EurekaBaseline(args.task, env_path, logger_path, current_datetime, cfg, seed)
+        module = EurekaBaseline(args.task, env_path, logger_path, current_datetime, cfg, seed, args.gpu)
         
     module.train()

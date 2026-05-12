@@ -10,7 +10,7 @@ import shutil
 import sys
 
 
-def train(task, save_dir, exp_name, training_iter, seed):
+def train(task, save_dir, exp_name, training_iter, seed, sim_device="cuda:0", rl_device="cuda:0", graphics_device_id=0):
     from openrl.utils.callbacks.checkpoint_callback import CheckpointCallback
 
     args = get_args()
@@ -20,6 +20,10 @@ def train(task, save_dir, exp_name, training_iter, seed):
     args.headless = True
     args.separate_policy = True
     args.train_timesteps = training_iter
+    args.sim_device = sim_device
+    args.sim_device_id = int(sim_device.split(":")[-1]) if ":" in sim_device else 0
+    args.rl_device = rl_device
+    args.graphics_device_id = graphics_device_id
 
     env, _ = make_env(args, custom_cfg(args), single_agent=False)
 
@@ -57,6 +61,9 @@ if __name__ == "__main__":
     parser.add_argument("--exp_name", type=str, required=True)
     parser.add_argument("--training_iter", type=int, required=True)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--sim_device", type=str, default="cuda:0", help="Physics simulation device (e.g. cuda:0, cuda:1)")
+    parser.add_argument("--rl_device", type=str, default="cuda:0", help="RL algorithm device (e.g. cuda:0, cuda:1)")
+    parser.add_argument("--graphics_device_id", type=int, default=0, help="GPU index for rendering (e.g. 0, 1)")
     args = parser.parse_args()
 
     task = args.task
@@ -64,6 +71,9 @@ if __name__ == "__main__":
     exp_name = args.exp_name
     training_iter = args.training_iter
     seed = args.seed
+    sim_device = args.sim_device
+    rl_device = args.rl_device
+    graphics_device_id = args.graphics_device_id
 
     del args, parser
     sys.argv = [sys.argv[0]]
@@ -72,4 +82,4 @@ if __name__ == "__main__":
         shutil.rmtree(save_dir)
     os.makedirs(save_dir, exist_ok=True)
 
-    train(task, save_dir, exp_name, training_iter, seed)
+    train(task, save_dir, exp_name, training_iter, seed, sim_device, rl_device, graphics_device_id)

@@ -16,7 +16,7 @@ import sys
 import numpy as np
 
 
-def eval_candidate(task, load_dir, output_dir, seed=0):
+def eval_candidate(task, load_dir, output_dir, seed=0, sim_device="cuda:0", graphics_device_id=0):
     from openrl_ws.test import save_images, save_video
 
     args = get_args()
@@ -25,6 +25,10 @@ def eval_candidate(task, load_dir, output_dir, seed=0):
     args.record_video = True
     args.seed = seed
     args.separate_policy = True
+    args.sim_device = sim_device
+    args.sim_device_id = int(sim_device.split(":")[-1]) if ":" in sim_device else 0
+    args.rl_device = sim_device
+    args.graphics_device_id = graphics_device_id
 
     env, _ = make_env(args, custom_cfg(args), single_agent=False)
     net = PPONet(env, cfg=args, device=args.rl_device)
@@ -76,16 +80,20 @@ if __name__ == "__main__":
     parser.add_argument("--load_dir", type=str, required=True)
     parser.add_argument("--output_dir", type=str, required=True)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--sim_device", type=str, default="cuda:0", help="Physics simulation device (e.g. cuda:0, cuda:1)")
+    parser.add_argument("--graphics_device_id", type=int, default=0, help="GPU index for rendering (e.g. 0, 1)")
     args = parser.parse_args()
 
     task = args.task
     load_dir = args.load_dir
     output_dir = args.output_dir
     seed = args.seed
+    sim_device = args.sim_device
+    graphics_device_id = args.graphics_device_id
 
     del args, parser
     sys.argv = [sys.argv[0]]
 
     if not os.path.exists(load_dir):
         raise FileNotFoundError(f"Log directory {load_dir} does not exist.")
-    eval_candidate(task, load_dir, output_dir, seed)
+    eval_candidate(task, load_dir, output_dir, seed, sim_device, graphics_device_id)
