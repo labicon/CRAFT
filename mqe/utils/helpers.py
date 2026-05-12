@@ -291,11 +291,12 @@ class FloatingCameraSensor(Sensor):
         self.env.gym.set_camera_location(self.rendering_camera, self.env.envs[0], gymapi.Vec3(*pos), gymapi.Vec3(*lookat))
 
     def get_observation(self, env_ids = None):
+        self.env.gym.fetch_results(self.env.sim, True)
         self.env.gym.step_graphics(self.env.sim)
         self.env.gym.render_all_camera_sensors(self.env.sim)
         img = self.env.gym.get_camera_image(self.env.sim, self.env.envs[0], self.rendering_camera, gymapi.IMAGE_COLOR)
         w, h = img.shape
-        return img.reshape([w, h // 4, 4])
+        return img.reshape([w, h // 4, 4]).copy()
     
 class AttachedCameraSensor(Sensor):
     def __init__(self, env, attached_robot_asset=None):

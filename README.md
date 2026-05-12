@@ -120,3 +120,50 @@ python curriculum/main.py --task [TASK_NAME] --module [MODULE_TYPE]
     python curriculum/main.py --task go2seesaw --module manual
     ```
 
+## Evaluation and Rendering Troubleshooting
+
+### Server video contains terrain but no robots or task objects
+
+When running `openrl_ws/curriculum_eval.py` on a server, the saved `rollout_*.mp4`
+or `images/snapshot_*.png` may show only the environment/terrain while the robots
+and objects such as the seesaw are missing. The frames may also look static or
+nearly identical even though the policy runs without crashing.
+
+This is usually an Isaac Gym camera-rendering issue in headless/server execution.
+Use headless rendering for evaluation and keep the simulation, RL, and graphics
+devices on the same GPU:
+
+```bash
+python openrl_ws/curriculum_eval.py \
+  --task go2seesaw \
+  --load_dir "logs/go2seesaw/09-03_17-49/3_Elevated Ascent(09-03_17-49)/sample_0/model" \
+  --sim_device cuda:4 \
+  --graphics_device_id 4
+```
+
+On VNC/X11 servers, avoid `headless=False` for video recording. A virtual
+`DISPLAY` can cause Isaac Gym to use the wrong OpenGL path for camera sensors.
+`curriculum_eval.py` clears `DISPLAY` before importing the environment so Isaac
+Gym uses GPU headless rendering.
+
+The recording camera must also fetch completed physics results before rendering
+and copy each camera image before storing it. Otherwise Isaac Gym can return
+stale actor transforms or a reused image buffer, producing videos where only
+static terrain appears.
+
+### CUDA out of memory when selecting a free GPU
+
+If a checkpoint was saved with tensors on `cuda:0`, `torch.load()` may try to
+restore tensors to `cuda:0` unless the loader maps them to the requested device.
+If this happens, either run with device remapping:
+
+```bash
+CUDA_VISIBLE_DEVICES=4 python openrl_ws/curriculum_eval.py \
+  --task go2seesaw \
+  --load_dir "logs/go2seesaw/09-03_17-49/3_Elevated Ascent(09-03_17-49)/sample_0/model" \
+  --sim_device cuda:0 \
+  --graphics_device_id 0
+```
+
+or ensure the OpenRL checkpoint loader uses `map_location` for the target
+`args.rl_device`.

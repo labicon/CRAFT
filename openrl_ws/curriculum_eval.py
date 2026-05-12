@@ -1,3 +1,6 @@
+import os
+os.environ.pop("DISPLAY", None)  # force EGL (GPU headless) instead of GLX (VNC software renderer)
+
 from openrl_ws.utils import make_env
 # from openrl_ws.test import save_video
 from mqe.envs.utils import custom_cfg
@@ -7,7 +10,6 @@ from openrl.runners.common import PPOAgent
 
 import argparse
 import pickle as pkl
-import os
 import sys
 import numpy as np
 
@@ -20,15 +22,19 @@ def analyze_trajectory(task, obs_buffer, reward_buffer, env):
         return analyze_go2pushbox_trajectory(obs_buffer, reward_buffer, env)
     raise ValueError(f"Unsupported task: {task}")
 
-def eval(task, load_dir, seed=0):
+def eval(task, load_dir, seed=0, sim_device="cuda:0", graphics_device_id=0):
     from openrl_ws.utils import get_args
     from openrl_ws.test import save_video, save_images
     args = get_args()
     args.task = task
-    args.headless = False
+    args.headless = True
     args.record_video = True
     args.seed = seed
     args.separate_policy = True
+    args.sim_device = sim_device
+    args.sim_device_id = int(sim_device.split(":")[-1]) if ":" in sim_device else 0
+    args.rl_device = sim_device
+    args.graphics_device_id = graphics_device_id
     env, _ = make_env(args, custom_cfg(args), single_agent=False)
     net = PPONet(env, cfg=args, device=args.rl_device)
     agent = PPOAgent(net)
@@ -220,10 +226,14 @@ if __name__ == "__main__":
     parser.add_argument("--curriculum_task", type=str, default=None, help="Curriculum task name")
     parser.add_argument("--sample_idx", type=int, default=None, help="Sample index for the experiment")
     parser.add_argument("--seed", type=int, default=0, help="Random seed for evaluation")
+    parser.add_argument("--sim_device", type=str, default="cuda:0", help="Physics simulation device (e.g. cuda:0, cuda:1)")
+    parser.add_argument("--graphics_device_id", type=int, default=0, help="GPU index for rendering/camera (e.g. 0, 1)")
 
     args = parser.parse_args()
     task = args.task
     seed = args.seed
+    sim_device = args.sim_device
+    graphics_device_id = args.graphics_device_id
     if args.load_dir:
         save_dir = args.load_dir
     else:
@@ -236,4 +246,4 @@ if __name__ == "__main__":
         raise FileNotFoundError(f"Model directory {save_dir} does not exist.")
 
     print(f"Evaluating model from {save_dir}")
-    eval(task, load_dir=save_dir, seed=seed)
+    eval(task, load_dir=save_dir, seed=seed, sim_device=sim_device, graphics_device_id=graphics_device_id)
