@@ -140,6 +140,7 @@ class EurekaBaseline:
         return candidate
 
     def _train_candidate(self, model_dir, exp_name):
+        subprocess_env = {k: v for k, v in os.environ.items() if k != "CUDA_VISIBLE_DEVICES"}
         subprocess.run(
             [
                 sys.executable,
@@ -155,10 +156,11 @@ class EurekaBaseline:
                 str(self.training_iter),
                 "--seed",
                 str(self.seed),
-                "--sim_device", "cuda:0",
-                "--rl_device", "cuda:0",
+                "--sim_device", f"cuda:{self.gpu_id}",
+                "--rl_device", f"cuda:{self.gpu_id}",
                 "--graphics_device_id", str(self.gpu_id),
             ],
+            env=subprocess_env,
             check=True,
         )
 
@@ -227,9 +229,10 @@ class EurekaBaseline:
                         seed_dir,
                         "--seed",
                         str(seed),
-                        "--sim_device", "cuda:0",
+                        "--sim_device", f"cuda:{self.gpu_id}",
                         "--graphics_device_id", str(self.gpu_id),
                     ],
+                    env={k: v for k, v in os.environ.items() if k != "CUDA_VISIBLE_DEVICES"},
                     check=True,
                 )
                 result = {"seed": seed, "output_dir": seed_dir}
@@ -278,9 +281,10 @@ class EurekaBaseline:
                     seed_dir,
                     "--seed",
                     str(seed),
-                    "--sim_device", "cuda:0",
+                    "--sim_device", f"cuda:{self.gpu_id}",
                     "--graphics_device_id", str(self.gpu_id),
                 ],
+                env={k: v for k, v in os.environ.items() if k != "CUDA_VISIBLE_DEVICES"},
                 check=True,
             )
             results.append({"seed": seed, "output_dir": seed_dir})

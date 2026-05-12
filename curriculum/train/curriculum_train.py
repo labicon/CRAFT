@@ -173,11 +173,11 @@ class Curriculum_Module:
 
     def train_single(self, curriculum_idx, task, sample_num):
         iter_per_task = self.cfg["iter_per_task"]
-        # CUDA_VISIBLE_DEVICES is inherited from main.py, so cuda:0 maps to the
-        # correct physical GPU. graphics_device_id must be the physical ID because
-        # IsaacGym's renderer uses OpenGL/Vulkan and ignores CUDA_VISIBLE_DEVICES.
-        gpu_args = ["--sim_device", "cuda:0",
-                    "--rl_device", "cuda:0",
+        # Strip CUDA_VISIBLE_DEVICES from subprocess env so IsaacGym sees the full
+        # GPU list and the explicit physical device args below work correctly.
+        subprocess_env = {k: v for k, v in os.environ.items() if k != "CUDA_VISIBLE_DEVICES"}
+        gpu_args = ["--sim_device", f"cuda:{self.gpu_id}",
+                    "--rl_device", f"cuda:{self.gpu_id}",
                     "--graphics_device_id", str(self.gpu_id)]
         if curriculum_idx == 0:
             print(f"Training task {task['Name']} sample {sample_num} from scratch")
@@ -190,6 +190,7 @@ class Curriculum_Module:
                                         "--sample_idx", str(sample_num),
                                         "--training_iter", str(iter_per_task),
                                         ] + gpu_args,
+                                        env=subprocess_env,
                                         )
 
         else:
@@ -208,6 +209,7 @@ class Curriculum_Module:
                                         "--load_sample_idx", str(load_sample_num),
                                         "--training_iter", str(iter_per_task),
                                         ] + gpu_args,
+                                        env=subprocess_env,
                                         )
 
 
@@ -252,6 +254,7 @@ class Curriculum_Module:
 
     def collect_evaluation_data(self, task, sample_num, rollout):
         print(f"Collecting evaluation data for task {task['Name']} sample {sample_num}")
+        subprocess_env = {k: v for k, v in os.environ.items() if k != "CUDA_VISIBLE_DEVICES"}
         # Save the trajectory analysis in the log path
         process = subprocess.run([sys.executable,
                                     "-m",
@@ -261,9 +264,10 @@ class Curriculum_Module:
                                     "--curriculum_task", task['Name'],
                                     "--sample_idx", str(sample_num),
                                     "--seed", str(rollout),
-                                    "--sim_device", "cuda:0",
+                                    "--sim_device", f"cuda:{self.gpu_id}",
                                     "--graphics_device_id", str(self.gpu_id),
                                     ],
+                                    env=subprocess_env,
                                     )
         
         # Load the trajectory and reward data
