@@ -23,14 +23,13 @@ def train(task, save_dir, exp_name, training_iter, seed):
 
     env, _ = make_env(args, custom_cfg(args), single_agent=False)
 
-    args.lr = 1e-3
-    args.critic_lr = 1e-3
+    args.lr = 7e-4
+    args.critic_lr = 7e-4
     args.log_interval = 5
     args.use_joint_action_loss = False
     args.use_valuenorm = True
     args.use_adv_normalize = True
-    args.entropy_coef = 0.001
-    args.num_mini_batch = 4
+    args.entropy_coef = 0.0001
 
     callback = CheckpointCallback(save_freq=5000, save_path=save_dir)
     net = PPONet(env, cfg=args, device=args.rl_device)

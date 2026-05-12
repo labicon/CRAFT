@@ -14,13 +14,21 @@ if __name__ == "__main__":
     parser.add_argument("--module", type=str, default="curriculum", choices=["manual", "curriculum", "eureka"], help="Select module: manual, curriculum, or eureka")
     parser.add_argument("--task", type=str, default="go2gate", choices=["go2gate", "go2seesaw", "go2pushbox"], help="Select task: go2gate or go2seesaw")
     parser.add_argument("--debug", action="store_true", help="Use a lightweight debug configuration when supported by the selected module")
+    parser.add_argument("--resume", type=str, default=None, help="Path to a previous Eureka log directory to resume from (eureka module only)")
     args = parser.parse_args()
-    
+
     seed = args.seed
 
+    if args.resume:
+        logger_path = args.resume.rstrip("/") + "/"
+        if not os.path.isdir(logger_path):
+            raise ValueError(f"Resume path does not exist: {logger_path}")
+    else:
+        current_datetime = datetime.now().strftime("%m-%d_%H-%M")
+        logger_path = f"{args.logdir}/{current_datetime}/"
+        os.makedirs(logger_path, exist_ok=True)
+
     current_datetime = datetime.now().strftime("%m-%d_%H-%M")
-    logger_path = f"{args.logdir}/{current_datetime}/"
-    os.makedirs(logger_path, exist_ok=True)
 
     with open(f"./curriculum/configs/{args.task}.yaml", "r") as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)

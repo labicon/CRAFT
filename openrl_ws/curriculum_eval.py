@@ -11,11 +11,20 @@ import os
 import sys
 import numpy as np
 
-def eval(load_dir, seed=0):
+def analyze_trajectory(task, obs_buffer, reward_buffer, env):
+    if task == "go2gate":
+        return analyze_go2gate_trajectory(obs_buffer, reward_buffer, env.target_pos)
+    if task == "go2seesaw":
+        return analyze_go2seesaw_trajectory(obs_buffer, reward_buffer, env)
+    if task == "go2pushbox":
+        return analyze_go2pushbox_trajectory(obs_buffer, reward_buffer, env)
+    raise ValueError(f"Unsupported task: {task}")
+
+def eval(task, load_dir, seed=0):
     from openrl_ws.utils import get_args
     from openrl_ws.test import save_video, save_images
     args = get_args()
-    args.task = "go2pushbox"
+    args.task = task
     args.headless = False
     args.record_video = True
     args.seed = seed
@@ -37,8 +46,7 @@ def eval(load_dir, seed=0):
         reward_buffer["agent_0"] += reward[0, 0]
         reward_buffer["agent_1"] += reward[0, 1]
         if done[0, 0]:
-            # traj_dict, rew_dict = analyze_go2gate_trajectory(obs_buffer, reward_buffer, target_pos)
-            traj_dict, rew_dict = analyze_go2pushbox_trajectory(obs_buffer, reward_buffer, env)
+            traj_dict, rew_dict = analyze_trajectory(task, obs_buffer, reward_buffer, env)
             print(f"Total reward for agent 0: {reward_buffer['agent_0']}, agent 1: {reward_buffer['agent_1']}")
             for key, value in traj_dict.items():
                 print(f"{key}: {value}")
@@ -206,24 +214,26 @@ def analyze_go2pushbox_trajectory(traj_buffer, rew_buffer, env):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate a trained model")
+    parser.add_argument("--task", type=str, required=True, help="Environment task name (e.g. go2gate, go2pushbox)")
+    parser.add_argument("--load_dir", type=str, default=None, help="Direct path to model dir; overrides --run_date/--curriculum_task/--sample_idx")
     parser.add_argument("--run_date", type=str, default=None, help="Run date for the experiment")
     parser.add_argument("--curriculum_task", type=str, default=None, help="Curriculum task name")
     parser.add_argument("--sample_idx", type=int, default=None, help="Sample index for the experiment")
     parser.add_argument("--seed", type=int, default=0, help="Random seed for evaluation")
-    
+
     args = parser.parse_args()
-    run_date = args.run_date
-    curriculum_task = args.curriculum_task
-    sample_idx = args.sample_idx
+    task = args.task
     seed = args.seed
+    if args.load_dir:
+        save_dir = args.load_dir
+    else:
+        save_dir = os.path.join("logs", args.run_date, args.curriculum_task, f"sample_{args.sample_idx}", "model")
 
     del args, parser
     sys.argv = [sys.argv[0]]
 
-    save_dir = os.path.join("logs", run_date, curriculum_task, f"sample_{sample_idx}", "model")
     if not os.path.exists(save_dir):
-        raise FileNotFoundError(f"Log directory {save_dir} does not exist. Please check the run date and curriculum task.")
-    exp_name = f"{run_date}_{curriculum_task}_sample_{sample_idx}"
+        raise FileNotFoundError(f"Model directory {save_dir} does not exist.")
 
     print(f"Evaluating model from {save_dir}")
-    eval(load_dir=save_dir, seed=seed)
+    eval(task, load_dir=save_dir, seed=seed)

@@ -9,8 +9,8 @@ import matplotlib.ticker as ticker
 
 from curriculum.gpt.utils import *
 
-GPT_LLM_MODEL = "gpt-5.4-mini-2026-03-17" # gpt-4-1106-preview, gpt-4-0613, gpt-4-32k, gpt-3.5-turbo-1106 gpt-4-turbo-preview
-GPT_VLM_MODEL = "gpt-5.4-mini-2026-03-17"
+GPT_LLM_MODEL = "gpt-4o-2024-08-06" # gpt-4-1106-preview, gpt-4-0613, gpt-4-32k, gpt-3.5-turbo-1106 gpt-4-turbo-preview
+GPT_VLM_MODEL = "o4-mini-2025-04-16"
 
 class CurriculumAPI:
     def __init__(self, prompt_path, log_path, line_num):
@@ -18,6 +18,7 @@ class CurriculumAPI:
         self.prompt_path = prompt_path
         self.log_path = log_path
         self.insert_line_num = line_num
+        self.task_name = os.path.basename(os.path.normpath(prompt_path))
 
     def generate_curriculum(self):
         initial_system = file_to_string(self.prompt_path + "/curriculum_system.txt")
@@ -184,9 +185,9 @@ class CurriculumAPI:
         advice_user = advice_user.replace("<<Failure_Reason>>", failure_reason)
 
         # Find tensorboard event file
-        pattern = os.path.join("./training-log", "MQE-Curriculum", "go2pushbox", 
-                               f"{task['Name']}_sample_{sample_num}/", 
-                                "tensorboard",
+        pattern = os.path.join("./training-log", "MQE-Curriculum", self.task_name,
+                               f"{task['Name']}_sample_{sample_num}/",
+                               "tensorboard",
                                "events.out.tfevents.*")
         event_files = glob.glob(pattern)
         if not event_files:
