@@ -177,7 +177,7 @@ if __name__ == "__main__":
     args = get_args()
     
     # Ensure vectorized settings
-    # args.headless = True # Often desirable for fast eval but user might want video
+    args.headless = True # Often desirable for fast eval but user might want video
     
     env, _ = make_env(args, custom_cfg(args))
     

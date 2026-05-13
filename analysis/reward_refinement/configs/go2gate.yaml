@@ -1,13 +1,12 @@
 Task: "go2gate"
 env_path: "./mqe/envs/wrappers/go2_gate_wrapper_source.py"
-num_reward_samples: 3
-num_reward_feedback_samples: 2 
-iter_per_task: 20_000_000
 line_num: 213
+iter_per_task: 20000000
+num_reward_samples: 3
+final_eval_seeds: [0, 1, 2, 3, 4]
 eureka:
   num_iterations: 3
   num_candidates: 3
-  training_iter: 50_000_000
   intermediate_eval_seeds: [0]
   final_eval_seeds: [0, 1, 2, 3, 4]
   objective_terms:
@@ -31,6 +30,6 @@ eureka:
 eureka_debug:
   num_iterations: 1
   num_candidates: 1
-  training_iter: 1000
+  training_iter: 100000
   intermediate_eval_seeds: [0]
   final_eval_seeds: []

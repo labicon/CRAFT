@@ -2,11 +2,12 @@ Task: "go2pushbox"
 env_path: "./mqe/envs/wrappers/go2_pushbox_wrapper_source.py"
 num_reward_samples: 3
 num_reward_feedback_samples: 2 
-iter_per_task: 30000000
+iter_per_task: 30_000_000
 line_num: 316
 eureka:
   num_iterations: 3
   num_candidates: 3
+  training_iter: 50_000_000
   intermediate_eval_seeds: [0]
   final_eval_seeds: [0, 1, 2, 3, 4]
   objective_terms:
