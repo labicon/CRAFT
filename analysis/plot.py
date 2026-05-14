@@ -12,6 +12,7 @@ import matplotlib.ticker as ticker
 
 CONFIGS = {
     "go2gate": {
+        "eureka_root": "logs/Eureka_GPT4o",
         "curriculum_directories": [
             "CRAFT_runs/go2gate/08-02_12-13",
             "CRAFT_runs/go2gate/08-02_19-44",
@@ -58,6 +59,7 @@ CONFIGS = {
         }
     },
     "go2seesaw": {
+        "eureka_root": "logs/Eureka_GPT4o",
         "curriculum_directories": [
             "CRAFT_runs/go2seesaw/08-17_10-44",
             "CRAFT_runs/go2seesaw/08-18_09-25",
@@ -119,7 +121,8 @@ COLORS = {
     "scratch": "#ff7f0e",     # Orange
     "no_refine": "#2ca02c",   # Green
     "example": "#d62728",     # Red
-    "mqe": "#9467bd"          # Purple
+    "mqe": "#9467bd",         # Purple
+    "eureka": "#e377c2",      # Pink
 }
 
 LABELS = {
@@ -127,7 +130,8 @@ LABELS = {
     "scratch": "No Curriculum",
     "no_refine": "No Refine",
     "example": "Example Reward",
-    "mqe": "Environment Reward"
+    "mqe": "Environment Reward",
+    "eureka": "Eureka",
 }
 
 
@@ -254,6 +258,45 @@ def load_eval(model_path):
             return eval_results
     return None
 
+def load_eureka_best_eval(eureka_root, task):
+    """Find the best-scoring Eureka run for *task* and return its last checkpoint's eval_results."""
+    task_runs = []
+    for dirpath, dirnames, _ in os.walk(eureka_root):
+        summary_path = os.path.join(dirpath, "eureka", "eureka_summary.pkl")
+        if os.path.exists(summary_path):
+            try:
+                with open(summary_path, "rb") as f:
+                    summary = pickle.load(f)
+                if summary.get("task") == task:
+                    task_runs.append((dirpath, summary))
+            except Exception:
+                pass
+            dirnames[:] = [d for d in dirnames if d != "eureka"]
+
+    if not task_runs:
+        return None
+
+    best_run_dir, best_summary = max(
+        task_runs,
+        key=lambda x: x[1]["best_candidate"].get("score", float("-inf")),
+    )
+    best = best_summary["best_candidate"]
+    model_dir = os.path.join(
+        best_run_dir, "eureka",
+        f"iteration_{best['iteration']}",
+        f"candidate_{best['candidate_idx']}",
+        "model",
+    )
+    checkpoints = get_model_directories(model_dir)
+    if not checkpoints:
+        print(f"Warning: no checkpoints found in {model_dir}")
+        return None
+
+    result = load_eval(checkpoints[-1])
+    if result is None:
+        print(f"Warning: eval_results.pkl not found in {checkpoints[-1]}")
+    return result
+
 def process_evaluation(directories, method_type="curriculum", extra_metrics=None):
     if extra_metrics is None:
         extra_metrics = {}
@@ -362,7 +405,9 @@ def main():
     
     # Gather Data
     results = {}
-    
+    extra_metrics = {}
+    eureka_eval = None
+
     if args.task == "lift":
         print("Loading Lift data from pickle...")
         try:
@@ -384,7 +429,7 @@ def main():
             return
     else:
         extra_metrics = config.get("metrics", {})
-        
+
         print("Processing Curriculum...")
         results["curriculum"] = process_evaluation(config["curriculum_directories"], "curriculum", extra_metrics)
         print("Processing No Refine...")
@@ -395,6 +440,14 @@ def main():
         results["example"] = process_evaluation(config["example_directories"], "example", extra_metrics)
         print("Processing MQE...")
         results["mqe"] = process_evaluation(config["mqe_directories"], "mqe", extra_metrics)
+
+        eureka_eval = None
+        eureka_root = config.get("eureka_root")
+        if eureka_root:
+            print("Loading Eureka best run...")
+            eureka_eval = load_eureka_best_eval(eureka_root, args.task)
+            if eureka_eval is None:
+                print("  No Eureka eval results found (run analysis/eureka_eval.py first)")
     
     # Define plotting helper
     def plot_metric(metric_key, title, ylabel, filename_suffix, use_percent=False):
@@ -441,9 +494,27 @@ def main():
                     std_curve = np.std(arr, axis=0)
             
             if mean_curve is not None:
-                # Pad/Fix 0 at start if needed (Lift notebook does this inside plot_with_std)
-                # But here we standardize. 
                 plot_with_std(plt.gca(), x, mean_curve, std_curve, label, color)
+
+        # Eureka: single horizontal dotted line at the last checkpoint's value.
+        if eureka_eval is not None:
+            eureka_val = None
+            if metric_key == "total_success":
+                eureka_val = eureka_eval["success_runs"] / eureka_eval["total_runs"] * 100
+            elif metric_key == "partial_success":
+                eureka_val = eureka_eval["partial_success_runs"] / eureka_eval["total_runs"] * 100
+            else:
+                eval_key = extra_metrics.get(metric_key)
+                if eval_key and eval_key in eureka_eval:
+                    eureka_val = eureka_eval[eval_key]
+            if eureka_val is not None:
+                plt.axhline(
+                    y=eureka_val,
+                    color=COLORS["eureka"],
+                    linestyle="--",
+                    linewidth=3,
+                    label=LABELS["eureka"],
+                )
 
         plt.title(title, fontsize=36)
         plt.xlabel("Training Steps", fontsize=28)
@@ -477,7 +548,6 @@ def main():
 
     # 3. Other Metrics
     if args.task != "lift":
-        extra_metrics = config.get("metrics", {})
         titles = config.get("plot_titles", {})
         ylabels = config.get("y_labels", {})
         
