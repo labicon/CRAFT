@@ -35,12 +35,11 @@ if __name__ == "__main__":
         logger_path = args.resume.rstrip("/") + "/"
         if not os.path.isdir(logger_path):
             raise ValueError(f"Resume path does not exist: {logger_path}")
+        current_datetime = os.path.basename(args.resume.rstrip("/"))
     else:
         current_datetime = datetime.now().strftime("%m-%d_%H-%M")
         logger_path = f"{args.logdir}/{current_datetime}/"
         os.makedirs(logger_path, exist_ok=True)
-
-    current_datetime = datetime.now().strftime("%m-%d_%H-%M")
 
     with open(f"./curriculum/configs/{args.task}.yaml", "r") as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)
