@@ -58,11 +58,9 @@ class GateEvaluator:
         initial_min_dist = self.distance_to_target(obs)
         initial_x_traversed = self.x_traversed(obs)
         
-        # Structure: {metric_name: (initial_values, reduction_function)}
-        # reduction_function takes (accumulated_val, current_val)
         return {
-            "minimum_distance": (initial_min_dist, np.minimum),
-            "x_traversed": (initial_x_traversed, np.maximum)
+            "minimum_distance": initial_min_dist,
+            "x_traversed": initial_x_traversed,
         }
 
     def update_step_metrics(self, obs, current_metrics):
@@ -180,7 +178,8 @@ if __name__ == "__main__":
     args.headless = True # Often desirable for fast eval but user might want video
     
     env, _ = make_env(args, custom_cfg(args))
-    
+    env.reset()  # populate env attributes (e.g. gate_pos) before constructing evaluator
+
     # Initialize evaluator based on task
     try:
         evaluator = get_evaluator(args.task, env)
@@ -188,7 +187,7 @@ if __name__ == "__main__":
         print(e)
         exit(1)
 
-    net = PPONet(env, device="cuda:0")  # Create neural network.
+    net = PPONet(env, cfg=args, device=args.rl_device)  # Create neural network.
     agent = PPOAgent(net)  # Initialize the agent.
 
     if getattr(args, "checkpoint") is not None:

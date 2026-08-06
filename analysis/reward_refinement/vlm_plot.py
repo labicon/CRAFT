@@ -143,67 +143,73 @@ def cumulative_best(row):
 # Plotting
 # ──────────────────────────────────────────────────────────────────────────────
 
-def plot_progression(success_matrix, partial_matrix, output_path, show):
+VLM_COLOR = "#1f77b4"
+
+
+def _style_ax(ax):
+    ax.grid(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.tick_params(axis="both", which="major", labelsize=18)
+
+
+def plot_progression(success_matrix, output_path, show):
     import matplotlib.pyplot as plt
 
     n_runs, n_samples = success_matrix.shape
     x = np.arange(n_samples)
-    colors = plt.cm.tab10.colors
 
     mean_sr = np.nanmean(success_matrix, axis=0)
     std_sr = np.nanstd(success_matrix, axis=0)
-    mean_psr = np.nanmean(partial_matrix, axis=0)
-    std_psr = np.nanstd(partial_matrix, axis=0)
 
     cum_best_matrix = np.array([cumulative_best(success_matrix[i]) for i in range(n_runs)])
     mean_cum = np.nanmean(cum_best_matrix, axis=0)
     std_cum = np.nanstd(cum_best_matrix, axis=0)
 
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-
-    # ── Left: per-sample success rate ────────────────────────────────────────
-    ax = axes[0]
-    for i in range(n_runs):
-        ax.plot(x, success_matrix[i], color=colors[i % len(colors)], alpha=0.30, linewidth=1.2)
-    ax.plot(x, mean_sr, color="tab:blue", linewidth=2.5, label="Success (mean)")
-    ax.fill_between(x, mean_sr - std_sr, mean_sr + std_sr, color="tab:blue", alpha=0.15)
-    ax.plot(x, mean_psr, color="tab:orange", linewidth=2.0, linestyle="--",
-            label="Partial success (mean)")
-    ax.fill_between(x, mean_psr - std_psr, mean_psr + std_psr, color="tab:orange", alpha=0.12)
-    ax.set_xlabel("Refinement sample", fontsize=13)
-    ax.set_ylabel("Success rate (%)", fontsize=13)
-    ax.set_title("Success Rate per VLM Refinement Sample", fontsize=13)
-    ax.set_xticks(x)
-    ax.set_ylim(-2, 105)
-    ax.legend(fontsize=11)
-    ax.grid(True, linestyle="--", alpha=0.4)
-
-    # ── Right: cumulative best ────────────────────────────────────────────────
-    ax = axes[1]
-    for i in range(n_runs):
-        ax.plot(x, cum_best_matrix[i], color=colors[i % len(colors)], alpha=0.30, linewidth=1.2)
-    ax.plot(x, mean_cum, color="tab:green", linewidth=2.5, label="Cumulative best (mean)")
-    ax.fill_between(x, mean_cum - std_cum, mean_cum + std_cum, color="tab:green", alpha=0.15)
-    ax.set_xlabel("Refinement sample", fontsize=13)
-    ax.set_ylabel("Best success rate so far (%)", fontsize=13)
-    ax.set_title("Cumulative Best Success Rate", fontsize=13)
-    ax.set_xticks(x)
-    ax.set_ylim(-2, 105)
-    ax.legend(fontsize=11)
-    ax.grid(True, linestyle="--", alpha=0.4)
-
-    plt.tight_layout()
-
     out_dir = os.path.dirname(os.path.abspath(output_path))
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
-    plt.savefig(output_path, dpi=150, bbox_inches="tight")
-    print(f"Saved: {output_path}")
+    base, ext = os.path.splitext(output_path)
+    if not ext:
+        ext = ".pdf"
 
+    # ── Figure 1: per-sample success rate ────────────────────────────────────
+    fig1, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(x, mean_sr, color=VLM_COLOR, linewidth=3, label="VLM refinement")
+    ax.fill_between(x, mean_sr - std_sr, mean_sr + std_sr, color=VLM_COLOR, alpha=0.1)
+    ax.set_xlabel("Refinement sample", fontsize=28)
+    ax.set_ylabel("Success rate (%)", fontsize=28)
+    ax.set_title("Success Rate per VLM Refinement Sample", fontsize=36)
+    ax.set_xticks(x)
+    ax.set_ylim(0, 80)
+    ax.legend(frameon=False, loc="upper left", fontsize=18)
+    _style_ax(ax)
+    fig1.tight_layout()
+    path_sr = f"{base}_success_rate{ext}"
+    fig1.savefig(path_sr, dpi=300, bbox_inches="tight")
+    print(f"Saved: {path_sr}")
     if show:
         plt.show()
+    plt.close(fig1)
 
-    plt.close(fig)
+    # ── Figure 2: cumulative best ─────────────────────────────────────────────
+    fig2, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(x, mean_cum, color=VLM_COLOR, linewidth=3, label="VLM refinement")
+    ax.fill_between(x, mean_cum - std_cum, mean_cum + std_cum, color=VLM_COLOR, alpha=0.1)
+    ax.set_xlabel("Refinement sample", fontsize=28)
+    ax.set_ylabel("Best success rate so far (%)", fontsize=28)
+    ax.set_title("Cumulative Best Success Rate", fontsize=36)
+    ax.set_xticks(x)
+    ax.set_ylim(0, 80)
+    ax.legend(frameon=False, loc="upper left", fontsize=18)
+    _style_ax(ax)
+    fig2.tight_layout()
+    path_cum = f"{base}_cumulative_best{ext}"
+    fig2.savefig(path_cum, dpi=300, bbox_inches="tight")
+    print(f"Saved: {path_cum}")
+    if show:
+        plt.show()
+    plt.close(fig2)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -226,16 +232,23 @@ def main():
     args = parser.parse_args()
 
     dir_arg = os.path.abspath(args.dir)
-    output_path = args.output or os.path.join(dir_arg, "vlm_refinement_progression.pdf")
+    output_path = args.output or os.path.join(dir_arg, "vlm_refinement")
     show = args.show
 
     if not os.path.isdir(dir_arg):
         raise FileNotFoundError(f"Directory not found: {dir_arg}")
 
-    # Set matplotlib backend before importing pyplot.
     import matplotlib
     if not show:
         matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    plt.rcParams["font.family"] = "DejaVu Sans"
+    try:
+        plt.rcParams["font.family"] = "P052"
+    except Exception:
+        pass
+    plt.rcParams["pdf.fonttype"] = 42
+    plt.rcParams["ps.fonttype"] = 42
 
     run_dirs = find_vlm_runs(dir_arg)
     if not run_dirs:
@@ -258,22 +271,20 @@ def main():
         print("\nNo eval_results.pkl found. Run vlm_eval.py first.")
         return
 
-    success_matrix, partial_matrix = aggregate_runs(all_run_results)
+    success_matrix, _ = aggregate_runs(all_run_results)
     n_runs, n_samples = success_matrix.shape
     print(f"\nAggregated: {n_runs} runs × {n_samples} samples")
 
     # Summary table
-    print(f"\n{'Sample':<8} {'Mean SR':>8} {'± Std':>7} {'Mean PSR':>9} {'N eval':>7}")
+    print(f"\n{'Sample':<8} {'Mean SR':>8} {'± Std':>7} {'N eval':>7}")
     for col in range(n_samples):
         col_sr = success_matrix[:, col]
-        col_psr = partial_matrix[:, col]
         n_eval = int(np.sum(~np.isnan(col_sr)))
         mean_sr = float(np.nanmean(col_sr))
         std_sr = float(np.nanstd(col_sr))
-        mean_psr = float(np.nanmean(col_psr))
-        print(f"{col:<8} {mean_sr:>7.1f}% {std_sr:>6.1f}% {mean_psr:>8.1f}%  {n_eval:>5}")
+        print(f"{col:<8} {mean_sr:>7.1f}% {std_sr:>6.1f}%  {n_eval:>5}")
 
-    plot_progression(success_matrix, partial_matrix, output_path, show)
+    plot_progression(success_matrix, output_path, show)
     print("\nDone.")
 
 

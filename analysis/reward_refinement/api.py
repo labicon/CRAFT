@@ -9,7 +9,7 @@ from tensorboard.backend.event_processing.event_accumulator import EventAccumula
 from curriculum.gpt.curriculum_api import CurriculumAPI
 from curriculum.gpt.utils import encode_image, file_to_string, gpt_interaction_image
 
-GPT_VLM_MODEL = "gpt-o4-mini-2025-04-16"
+GPT_VLM_MODEL = "o4-mini-2025-04-16"
 
 
 class VLMRefinementAPI(CurriculumAPI):

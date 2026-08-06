@@ -12,21 +12,31 @@ import matplotlib.ticker as ticker
 
 CONFIGS = {
     "go2gate": {
-        "eureka_root": "logs/Eureka_GPT4o",
+        "eureka_root": "logs/Eureka_long",
         "curriculum_directories": [
-            "CRAFT_runs/go2gate/08-02_12-13",
-            "CRAFT_runs/go2gate/08-02_19-44",
-            "CRAFT_runs/go2gate/08-04_17-21",
+            # "CRAFT_runs/go2gate/08-02_12-13",
+            # "CRAFT_runs/go2gate/08-02_19-44",
+            # "CRAFT_runs/go2gate/08-04_17-21",
+            "logs/CRAFT_updated/go2gate/05-12_12-57",
+            "logs/CRAFT_updated/go2gate/05-13_18-29",
+            "logs/CRAFT_updated/go2gate/05-22_21-36",
+            "logs/CRAFT_updated/go2gate/05-11_19-37",
+            "logs/CRAFT_updated/go2gate/05-13_01-02",
         ],
         "no_refine_directories": [
             "CRAFT_runs/go2gate/08-16_05-14_no_refine_2",
             "CRAFT_runs/go2gate/08-16_17-09_no_refine_3",
             "CRAFT_runs/go2gate/08-17_15-09_no_refine_5",
+            "/home/kanghyun/mqe-curriculum/logs/go2gate/08-15_00-32_no_refine_1",
+            "/home/kanghyun/mqe-curriculum/logs/go2gate/08-17_04-20_no_refine_4",
         ],
         "scratch_directories": [
             "baselines/checkpoints/go2gate/go2gate_08-02_12-13_scratch",
             "baselines/checkpoints/go2gate/go2gate_08-02_19-44_scratch",
             "baselines/checkpoints/go2gate/go2gate_08-04_17-21_scratch",
+            "baselines/checkpoints/go2gate/go2gate_05-11_19-42_scratch",
+            "baselines/checkpoints/go2gate/go2gate_05-12_12-57_scratch",
+            "baselines/checkpoints/go2gate/go2gate_05-13_01-02_scratch"
         ],
         "example_directories": [
             "baselines/checkpoints/go2gate/go2gate_example_reward_1",
@@ -59,21 +69,31 @@ CONFIGS = {
         }
     },
     "go2seesaw": {
-        "eureka_root": "logs/Eureka_GPT4o",
+        "eureka_root": "logs/Eureka_long",
         "curriculum_directories": [
-            "CRAFT_runs/go2seesaw/08-17_10-44",
-            "CRAFT_runs/go2seesaw/08-18_09-25",
-            "CRAFT_runs/go2seesaw/08-19_02-44",
+            # "CRAFT_runs/go2seesaw/08-17_10-44",
+            # "CRAFT_runs/go2seesaw/08-18_09-25",
+            # "CRAFT_runs/go2seesaw/08-19_02-44",
+            "logs/CRAFT_updated/go2seesaw/05-11_19-42",
+            "logs/CRAFT_updated/go2seesaw/05-12_20-39",
+            "logs/CRAFT_updated/go2seesaw/05-14_13-11",
+            "logs/CRAFT_updated/go2seesaw/05-12_03-04",
+            "logs/CRAFT_updated/go2seesaw/05-13_03-55",
         ],
         "no_refine_directories": [
             "CRAFT_runs/go2seesaw/09-01_03-39_no_refine",
             "CRAFT_runs/go2seesaw/09-02_17-02_no_refine",
             "CRAFT_runs/go2seesaw/09-03_11-53_no_refine",
+            "logs/go2seesaw/09-01_21-45_no_refine",
+            "logs/go2seesaw/09-04_04-43_no_refine"
         ],
         "scratch_directories": [
             "baselines/checkpoints/go2seesaw/go2seesaw_08-17_10-44_scratch",
             "baselines/checkpoints/go2seesaw/go2seesaw_08-18_09-25_scratch",
             "baselines/checkpoints/go2seesaw/go2seesaw_08-19_02-44_scratch",
+            "baselines/checkpoints/go2seesaw/go2seesaw_05-11_19-42_scratch",
+            "baselines/checkpoints/go2seesaw/go2seesaw_05-12_03-04_scratch",
+            "baselines/checkpoints/go2seesaw/go2seesaw_05-12_20-39_scratch",
         ],
         "example_directories": [
             "baselines/checkpoints/go2seesaw/go2seesaw_example_reward_0",
@@ -259,7 +279,8 @@ def load_eval(model_path):
     return None
 
 def load_eureka_best_eval(eureka_root, task):
-    """Find the best-scoring Eureka run for *task* and return its last checkpoint's eval_results."""
+    """For each Eureka run under eureka_root, load the best candidate's final checkpoint
+    eval_results. Returns a list with one eval_results dict per run."""
     task_runs = []
     for dirpath, dirnames, _ in os.walk(eureka_root):
         summary_path = os.path.join(dirpath, "eureka", "eureka_summary.pkl")
@@ -273,29 +294,25 @@ def load_eureka_best_eval(eureka_root, task):
                 pass
             dirnames[:] = [d for d in dirnames if d != "eureka"]
 
-    if not task_runs:
-        return None
-
-    best_run_dir, best_summary = max(
-        task_runs,
-        key=lambda x: x[1]["best_candidate"].get("score", float("-inf")),
-    )
-    best = best_summary["best_candidate"]
-    model_dir = os.path.join(
-        best_run_dir, "eureka",
-        f"iteration_{best['iteration']}",
-        f"candidate_{best['candidate_idx']}",
-        "model",
-    )
-    checkpoints = get_model_directories(model_dir)
-    if not checkpoints:
-        print(f"Warning: no checkpoints found in {model_dir}")
-        return None
-
-    result = load_eval(checkpoints[-1])
-    if result is None:
-        print(f"Warning: eval_results.pkl not found in {checkpoints[-1]}")
-    return result
+    results = []
+    for run_dir, summary in task_runs:
+        best = summary["best_candidate"]
+        model_dir = os.path.join(
+            run_dir, "eureka",
+            f"iteration_{best['iteration']}",
+            f"candidate_{best['candidate_idx']}",
+            "model",
+        )
+        checkpoints = get_model_directories(model_dir)
+        if not checkpoints:
+            print(f"Warning: no checkpoints found in {model_dir}")
+            continue
+        result = load_eval(checkpoints[-1])
+        if result is None:
+            print(f"Warning: eval_results.pkl not found in {checkpoints[-1]}")
+            continue
+        results.append(result)
+    return results
 
 def process_evaluation(directories, method_type="curriculum", extra_metrics=None):
     if extra_metrics is None:
@@ -446,7 +463,7 @@ def main():
         if eureka_root:
             print("Loading Eureka best run...")
             eureka_eval = load_eureka_best_eval(eureka_root, args.task)
-            if eureka_eval is None:
+            if not eureka_eval:
                 print("  No Eureka eval results found (run analysis/eureka_eval.py first)")
     
     # Define plotting helper
@@ -496,24 +513,33 @@ def main():
             if mean_curve is not None:
                 plot_with_std(plt.gca(), x, mean_curve, std_curve, label, color)
 
-        # Eureka: single horizontal dotted line at the last checkpoint's value.
-        if eureka_eval is not None:
-            eureka_val = None
-            if metric_key == "total_success":
-                eureka_val = eureka_eval["success_runs"] / eureka_eval["total_runs"] * 100
-            elif metric_key == "partial_success":
-                eureka_val = eureka_eval["partial_success_runs"] / eureka_eval["total_runs"] * 100
-            else:
-                eval_key = extra_metrics.get(metric_key)
-                if eval_key and eval_key in eureka_eval:
-                    eureka_val = eureka_eval[eval_key]
-            if eureka_val is not None:
+        # Eureka: horizontal dashed line (mean) + shaded band (±std) across all runs.
+        if eureka_eval:
+            eureka_vals = []
+            for er in eureka_eval:
+                if metric_key == "total_success":
+                    eureka_vals.append(er["success_runs"] / er["total_runs"] * 100)
+                elif metric_key == "partial_success":
+                    eureka_vals.append(er["partial_success_runs"] / er["total_runs"] * 100)
+                else:
+                    eval_key = extra_metrics.get(metric_key)
+                    if eval_key and eval_key in er:
+                        eureka_vals.append(er[eval_key])
+            if eureka_vals:
+                mean_val = np.mean(eureka_vals)
+                std_val = np.std(eureka_vals)
                 plt.axhline(
-                    y=eureka_val,
+                    y=mean_val,
                     color=COLORS["eureka"],
                     linestyle="--",
                     linewidth=3,
                     label=LABELS["eureka"],
+                )
+                plt.axhspan(
+                    mean_val - std_val,
+                    mean_val + std_val,
+                    color=COLORS["eureka"],
+                    alpha=0.1,
                 )
 
         plt.title(title, fontsize=36)

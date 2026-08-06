@@ -1,7 +1,7 @@
 export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=$PWD
 # task="go1football-defender"
-task="go2pushbox"
+task="go2gate"
 # task="go2switch"
 # task="go1seesaw"
 # task="go1sheep-easy"
@@ -38,7 +38,7 @@ for run in $(seq 1 $NUM_RUNS); do
         --sim_device cuda:$device \
         --rl_device cuda:$device \
         --seed 0 \
-        --exp_name go2pushbox \
+        --exp_name go2gate-from-scratch-05-13_01-02 \
         --use_wandb
 
     echo "Run $run finished at $(date)"

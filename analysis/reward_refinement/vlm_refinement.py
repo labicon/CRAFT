@@ -54,13 +54,17 @@ def make_curriculum(run_datetime):
 
 
 class VLMRefinementExperiment:
-    def __init__(self, cfg, log_dir, run_datetime, seed=0):
+    def __init__(self, cfg, log_dir, run_datetime, seed=0,
+                 sim_device="cuda:0", rl_device="cuda:0", graphics_device_id=0):
         self.task = cfg["Task"]
         self.env_path = cfg["env_path"]
         self.num_reward_samples = cfg.get("num_reward_samples", 3)
         self.iter_per_task = cfg["iter_per_task"]
         self.final_eval_seeds = cfg.get("final_eval_seeds", [0, 1, 2, 3, 4])
         self.seed = seed
+        self.sim_device = sim_device
+        self.rl_device = rl_device
+        self.graphics_device_id = graphics_device_id
         self.log_dir = log_dir
         self.run_datetime = run_datetime
         self.curriculum = make_curriculum(run_datetime)
@@ -84,6 +88,18 @@ class VLMRefinementExperiment:
 
         if start_sample > 0:
             print(f"Resuming from sample {start_sample} ({len(reward_samples)} already done)")
+
+        # When extending: the final sample of the previous run has no outgoing advice yet.
+        if (start_sample > 0
+                and len(advices) < start_sample
+                and start_sample < self.num_reward_samples
+                and failure_reasons
+                and failure_reasons[-1] != "Success"):
+            last_idx = start_sample - 1
+            print(f"Generating missing advice for sample {last_idx} before extending...")
+            advice = self._get_advice(last_idx, reward_samples[last_idx], failure_reasons[last_idx])
+            advices.append(advice)
+            self._save_state(reward_samples, failure_reasons, advices, best_model_dir)
 
         for sample_num in range(start_sample, self.num_reward_samples):
             print(f"\n=== Sample {sample_num} ===")
@@ -188,6 +204,9 @@ class VLMRefinementExperiment:
                 "--exp_name", exp_name,
                 "--training_iter", str(self.iter_per_task),
                 "--seed", str(self.seed),
+                "--sim_device", self.sim_device,
+                "--rl_device", self.rl_device,
+                "--graphics_device_id", str(self.graphics_device_id),
             ],
             check=True,
             cwd=str(REPO_ROOT),
@@ -227,6 +246,8 @@ class VLMRefinementExperiment:
                 "--load_dir", model_dir,
                 "--output_dir", output_dir,
                 "--seed", str(seed),
+                "--sim_device", self.sim_device,
+                "--graphics_device_id", str(self.graphics_device_id),
             ],
             check=True,
             cwd=str(REPO_ROOT),
@@ -322,6 +343,14 @@ def main():
     parser.add_argument("--logdir", type=str, default=None)
     parser.add_argument("--debug", action="store_true", help="Short training run for smoke-testing")
     parser.add_argument("--resume", type=str, default=None, help="Path to existing log dir to resume")
+    parser.add_argument("--num_reward_samples", type=int, default=None,
+                        help="Override num_reward_samples from config (use with --resume to extend)")
+    parser.add_argument("--sim_device", type=str, default="cuda:0",
+                        help="Physics simulation device (e.g. cuda:0, cuda:1)")
+    parser.add_argument("--rl_device", type=str, default="cuda:0",
+                        help="RL algorithm device (e.g. cuda:0, cuda:1)")
+    parser.add_argument("--graphics_device_id", type=int, default=0,
+                        help="GPU index for rendering (e.g. 0, 1)")
     args = parser.parse_args()
 
     config_path = Path(__file__).parent / "configs" / "go2gate.yaml"
@@ -332,6 +361,9 @@ def main():
         cfg["iter_per_task"] = 100000
         cfg["num_reward_samples"] = 2
         cfg["final_eval_seeds"] = [0]
+
+    if args.num_reward_samples is not None:
+        cfg["num_reward_samples"] = args.num_reward_samples
 
     if args.resume:
         log_dir = args.resume.rstrip("/")
@@ -345,7 +377,13 @@ def main():
         os.makedirs(log_dir, exist_ok=True)
 
     print(f"Log dir: {log_dir}")
-    experiment = VLMRefinementExperiment(cfg, log_dir, run_datetime, seed=args.seed)
+    experiment = VLMRefinementExperiment(
+        cfg, log_dir, run_datetime,
+        seed=args.seed,
+        sim_device=args.sim_device,
+        rl_device=args.rl_device,
+        graphics_device_id=args.graphics_device_id,
+    )
     experiment.train()
 
 

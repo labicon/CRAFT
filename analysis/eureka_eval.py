@@ -22,6 +22,7 @@ import pickle
 import re
 import sys
 import argparse
+import multiprocessing as mp
 from collections import defaultdict
 
 import numpy as np
@@ -101,6 +102,25 @@ def best_model_dir(run_dir, summary):
     )
 
 
+def all_candidate_dirs(run_dir):
+    """Return all iteration_*/candidate_*/model dirs found under run_dir/eureka/."""
+    eureka_dir = os.path.join(run_dir, "eureka")
+    dirs = []
+    iter_pat = re.compile(r"^iteration_(\d+)$")
+    cand_pat = re.compile(r"^candidate_(\d+)$")
+    for iter_name in sorted(os.listdir(eureka_dir)):
+        if not iter_pat.match(iter_name):
+            continue
+        iter_path = os.path.join(eureka_dir, iter_name)
+        for cand_name in sorted(os.listdir(iter_path)):
+            if not cand_pat.match(cand_name):
+                continue
+            model_path = os.path.join(iter_path, cand_name, "model")
+            if os.path.isdir(model_path):
+                dirs.append((iter_name, cand_name, model_path))
+    return dirs
+
+
 # ──────────────────────────────────────────────
 # Evaluation loop
 # ──────────────────────────────────────────────
@@ -167,7 +187,7 @@ def run_eval(evaluator, agent, env, num_runs):
     return eval_results
 
 
-def eval_task_group(task, runs, num_runs, sim_device, graphics_device_id, force, last_only=False):
+def eval_task_group(task, runs, num_runs, sim_device, rl_device, graphics_device_id, force, last_only=False, all_candidates=False):
     """Evaluate all runs for a single task under one Isaac Gym environment."""
     from openrl_ws.utils import make_env, get_args
     from openrl_ws.eval import get_evaluator
@@ -183,54 +203,76 @@ def eval_task_group(task, runs, num_runs, sim_device, graphics_device_id, force,
     env_args.separate_policy = True
     env_args.sim_device = sim_device
     env_args.sim_device_id = int(sim_device.split(":")[-1]) if ":" in sim_device else 0
-    env_args.rl_device = sim_device
+    env_args.rl_device = rl_device
     env_args.graphics_device_id = graphics_device_id
+    env_args.num_envs = 100
 
     env, _ = make_env(env_args, custom_cfg(env_args), single_agent=False)
+    env.reset()  # populate env attributes (e.g. gate_pos) before constructing evaluator
     evaluator = get_evaluator(task, env)
     net = PPONet(env, cfg=env_args, device=env_args.rl_device)
     agent = PPOAgent(net)
     agent.set_env(env)
 
     for run_dir, summary in runs:
-        best = summary["best_candidate"]
-        model_dir = best_model_dir(run_dir, summary)
         print(f"\n[{task}] {run_dir}")
-        print(f"  Best: iteration {best['iteration']}, candidate {best['candidate_idx']}")
 
-        if not os.path.isdir(model_dir):
-            print(f"  Model dir not found, skipping: {model_dir}")
-            continue
+        if all_candidates:
+            candidates = all_candidate_dirs(run_dir)
+            if not candidates:
+                print("  No candidate dirs found, skipping")
+                continue
+            print(f"  Evaluating all {len(candidates)} candidate(s)")
+        else:
+            best = summary["best_candidate"]
+            print(f"  Best: iteration {best['iteration']}, candidate {best['candidate_idx']}")
+            model_dir = best_model_dir(run_dir, summary)
+            if not os.path.isdir(model_dir):
+                print(f"  Model dir not found, skipping: {model_dir}")
+                continue
+            candidates = [(f"iteration_{best['iteration']}", f"candidate_{best['candidate_idx']}", model_dir)]
 
-        checkpoints = get_model_checkpoints(model_dir)
-        if not checkpoints:
-            print(f"  No checkpoints found in {model_dir}, skipping")
-            continue
+        for iter_name, cand_name, model_dir in candidates:
+            print(f"  [{iter_name}/{cand_name}]")
+            checkpoints = get_model_checkpoints(model_dir)
+            if not checkpoints:
+                print(f"    No checkpoints found in {model_dir}, skipping")
+                continue
 
-        if last_only:
-            checkpoints = [checkpoints[-1]]
+            if last_only:
+                checkpoints = [checkpoints[-1]]
 
-        if not force:
-            pending = [c for c in checkpoints if not os.path.exists(os.path.join(c, "eval_results.pkl"))]
-            skipped = len(checkpoints) - len(pending)
-            if skipped:
-                print(f"  Skipping {skipped} already-evaluated checkpoints (--force to re-run)")
-            checkpoints = pending
+            if not force:
+                pending = [c for c in checkpoints if not os.path.exists(os.path.join(c, "eval_results.pkl"))]
+                skipped = len(checkpoints) - len(pending)
+                if skipped:
+                    print(f"    Skipping {skipped} already-evaluated checkpoints (--force to re-run)")
+                checkpoints = pending
 
-        if not checkpoints:
-            print("  All checkpoints already evaluated.")
-            continue
+            if not checkpoints:
+                print("    All checkpoints already evaluated.")
+                continue
 
-        print(f"  Evaluating {len(checkpoints)} checkpoints, {num_runs} runs each")
-        for checkpoint in checkpoints:
-            print(f"  Checkpoint: {os.path.basename(checkpoint)}")
-            agent.load(checkpoint)
-            eval_results = run_eval(evaluator, agent, env, num_runs)
-            out_path = os.path.join(checkpoint, "eval_results.pkl")
-            with open(out_path, "wb") as f:
-                pickle.dump(eval_results, f)
-            sr = eval_results["success_runs"] / eval_results["total_runs"] * 100
-            print(f"  success={sr:.1f}%  saved -> {out_path}")
+            print(f"    Evaluating {len(checkpoints)} checkpoint(s), {num_runs} runs each")
+            for checkpoint in checkpoints:
+                print(f"    Checkpoint: {os.path.basename(checkpoint)}")
+                agent.load(checkpoint)
+                eval_results = run_eval(evaluator, agent, env, num_runs)
+                out_path = os.path.join(checkpoint, "eval_results.pkl")
+                with open(out_path, "wb") as f:
+                    pickle.dump(eval_results, f)
+                sr = eval_results["success_runs"] / eval_results["total_runs"] * 100
+                print(f"    success={sr:.1f}%  saved -> {out_path}")
+
+
+# ──────────────────────────────────────────────
+# Per-task subprocess wrapper
+# ──────────────────────────────────────────────
+
+def _eval_task_worker(task, runs, num_runs, sim_device, rl_device, graphics_device_id, force, last_only, all_candidates):
+    """Spawned in a fresh process to isolate Isaac Gym (one instance per process only)."""
+    sys.argv = [sys.argv[0]]
+    eval_task_group(task, runs, num_runs, sim_device, rl_device, graphics_device_id, force, last_only=last_only, all_candidates=all_candidates)
 
 
 # ──────────────────────────────────────────────
@@ -248,21 +290,29 @@ def main():
              "or a root dir to scan recursively for all Eureka runs",
     )
     parser.add_argument("--num_runs", type=int, default=100, help="Eval episodes per checkpoint")
-    parser.add_argument("--sim_device", type=str, default="cuda:0")
-    parser.add_argument("--graphics_device_id", type=int, default=0)
+    parser.add_argument("--sim_device", type=str, default="cuda:0", help="Physics simulation device (e.g. cuda:0, cuda:1)")
+    parser.add_argument("--rl_device", type=str, default="cuda:0", help="RL algorithm device (e.g. cuda:0, cuda:1)")
+    parser.add_argument("--graphics_device_id", type=int, default=0, help="GPU index for rendering (e.g. 0, 1)")
     parser.add_argument("--force", action="store_true", help="Re-run even if eval_results.pkl exists")
     parser.add_argument(
-        "--best_only", action="store_true",
-        help="Only evaluate the single best run per task (highest best_candidate score)",
+        "--all_checkpoints", action="store_false", dest="last_only",
+        help="Evaluate all checkpoints instead of only the final one (default: last checkpoint only)",
+    )
+    parser.set_defaults(last_only=True)
+    parser.add_argument(
+        "--all_candidates", action="store_true",
+        help="Evaluate all iteration/candidate combinations, not just the best candidate",
     )
     args = parser.parse_args()
 
     dir_arg = args.dir
     num_runs = args.num_runs
     sim_device = args.sim_device
+    rl_device = args.rl_device
     graphics_device_id = args.graphics_device_id
     force = args.force
-    best_only = args.best_only
+    last_only = args.last_only
+    all_candidates = args.all_candidates
 
     # Clear sys.argv before isaacgym/openrl parse args.
     del args, parser
@@ -283,18 +333,19 @@ def main():
     for run_dir, task, summary in runs:
         by_task[task].append((run_dir, summary))
 
-    if best_only:
-        for task in by_task:
-            task_runs = by_task[task]
-            best = max(task_runs, key=lambda x: x[1]["best_candidate"].get("score", float("-inf")))
-            by_task[task] = [best]
-            print(f"[{task}] best_only: selected {best[0]} (score={best[1]['best_candidate'].get('score')})")
 
     for task, task_runs in by_task.items():
         print(f"\n{'='*60}")
         print(f"Task: {task}  ({len(task_runs)} run(s))")
         print(f"{'='*60}")
-        eval_task_group(task, task_runs, num_runs, sim_device, graphics_device_id, force, last_only=best_only)
+        p = mp.get_context("spawn").Process(
+            target=_eval_task_worker,
+            args=(task, task_runs, num_runs, sim_device, rl_device, graphics_device_id, force, last_only, all_candidates),
+        )
+        p.start()
+        p.join()
+        if p.exitcode != 0:
+            print(f"  Warning: task '{task}' worker exited with code {p.exitcode}")
 
     print("\nAll done.")
 

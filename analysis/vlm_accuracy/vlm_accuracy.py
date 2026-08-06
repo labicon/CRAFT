@@ -3,7 +3,7 @@ import os
 import pickle
 import re
 
-CRAFT_RUNS_ROOT = "CRAFT_runs"
+CRAFT_RUNS_ROOT = "/home/kanghyun/mqe-curriculum/logs/CRAFT_updated"
 
 # ── success rules ─────────────────────────────────────────────────────────────
 

@@ -22,6 +22,7 @@ import pickle
 import re
 import sys
 import argparse
+import multiprocessing as mp
 from collections import defaultdict
 
 import numpy as np
@@ -88,6 +89,22 @@ def find_successful_sample(task_dir):
     return None
 
 
+def find_last_sample(task_dir):
+    """Return the highest-numbered sample_N directory as a last-resort fallback."""
+    sample_dirs = []
+    for item in os.listdir(task_dir):
+        if re.match(r"^sample_\d+$", item):
+            try:
+                num = int(item.split("_")[1])
+                sample_dirs.append((num, os.path.join(task_dir, item)))
+            except (IndexError, ValueError):
+                continue
+    if not sample_dirs:
+        return None
+    sample_dirs.sort(key=lambda x: x[0])
+    return sample_dirs[-1][1]
+
+
 def find_llm_selected_sample(run_dir, task_name, task_dir):
     """Parse task-level [task_name].md for 'Decision: Experiment N', return sample_N path."""
     decision_file = os.path.join(run_dir, f"{task_name}.md")
@@ -122,6 +139,11 @@ def resolve_best_sample(run_dir):
     llm_sample = find_llm_selected_sample(run_dir, task_name, task_dir)
     if llm_sample:
         return llm_sample, "llm"
+
+    last_sample = find_last_sample(task_dir)
+    if last_sample:
+        print(f"  No decision found; falling back to last sample: {os.path.basename(last_sample)}")
+        return last_sample, "last"
 
     print(f"  Could not resolve best sample in {run_dir} (task: {task_name})")
     return None, None
@@ -211,7 +233,7 @@ def run_eval(evaluator, agent, env, num_runs):
 # Per-task evaluation driver
 # ──────────────────────────────────────────────
 
-def eval_task_group(task, run_dirs, num_runs, sim_device, graphics_device_id, force):
+def eval_task_group(task, run_dirs, num_runs, sim_device, rl_device, graphics_device_id, force):
     """Evaluate CRAFT best-policy for all runs of one task under a single Isaac Gym env."""
     from openrl_ws.utils import make_env, get_args
     from openrl_ws.eval import get_evaluator
@@ -227,7 +249,7 @@ def eval_task_group(task, run_dirs, num_runs, sim_device, graphics_device_id, fo
     env_args.separate_policy = True
     env_args.sim_device = sim_device
     env_args.sim_device_id = int(sim_device.split(":")[-1]) if ":" in sim_device else 0
-    env_args.rl_device = sim_device
+    env_args.rl_device = rl_device
     env_args.graphics_device_id = graphics_device_id
 
     env, _ = make_env(env_args, custom_cfg(env_args), single_agent=False)
@@ -274,6 +296,16 @@ def eval_task_group(task, run_dirs, num_runs, sim_device, graphics_device_id, fo
 
 
 # ──────────────────────────────────────────────
+# Per-task subprocess wrapper
+# ──────────────────────────────────────────────
+
+def _eval_task_worker(task, run_dirs, num_runs, sim_device, rl_device, graphics_device_id, force):
+    """Spawned in a fresh process to isolate Isaac Gym (one instance per process only)."""
+    sys.argv = [sys.argv[0]]
+    eval_task_group(task, run_dirs, num_runs, sim_device, rl_device, graphics_device_id, force)
+
+
+# ──────────────────────────────────────────────
 # Entry point
 # ──────────────────────────────────────────────
 
@@ -289,13 +321,15 @@ def main():
              "Can be repeated to process multiple tasks in one call.",
     )
     parser.add_argument("--num_runs", type=int, default=100, help="Eval episodes per checkpoint")
-    parser.add_argument("--sim_device", type=str, default="cuda:0")
-    parser.add_argument("--graphics_device_id", type=int, default=0)
+    parser.add_argument("--sim_device", type=str, default="cuda:0", help="Physics simulation device (e.g. cuda:0, cuda:1)")
+    parser.add_argument("--rl_device", type=str, default="cuda:0", help="RL algorithm device (e.g. cuda:0, cuda:1)")
+    parser.add_argument("--graphics_device_id", type=int, default=0, help="GPU index for rendering (e.g. 0, 1)")
     parser.add_argument("--force", action="store_true", help="Re-run even if eval_results.pkl exists")
     args = parser.parse_args()
 
     num_runs = args.num_runs
     sim_device = args.sim_device
+    rl_device = args.rl_device
     graphics_device_id = args.graphics_device_id
     force = args.force
     dirs = args.dir
@@ -329,7 +363,14 @@ def main():
         print(f"\n{'='*60}")
         print(f"Task: {task}  ({len(run_dirs)} run(s))")
         print(f"{'='*60}")
-        eval_task_group(task, run_dirs, num_runs, sim_device, graphics_device_id, force)
+        p = mp.get_context("spawn").Process(
+            target=_eval_task_worker,
+            args=(task, run_dirs, num_runs, sim_device, rl_device, graphics_device_id, force),
+        )
+        p.start()
+        p.join()
+        if p.exitcode != 0:
+            print(f"  Warning: task '{task}' worker exited with code {p.exitcode}")
 
     print("\nAll done.")
 

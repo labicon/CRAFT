@@ -7,7 +7,7 @@ line_num: 213
 eureka:
   num_iterations: 3
   num_candidates: 3
-  training_iter: 50_000_000
+  training_iter: 20_000_000
   intermediate_eval_seeds: [0]
   final_eval_seeds: [0, 1, 2, 3, 4]
   objective_terms:

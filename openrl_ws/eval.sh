@@ -1,8 +1,8 @@
-python ./openrl_ws/go2seesaw_eval.py \
-    --task go2seesaw \
+python ./openrl_ws/eval.py \
+    --task go2gate \
     --algo ppo \
     --sim_device cuda:0 \
     --rl_device cuda:0 \
-    --num_envs 1 --checkpoint "/home/kanghyun/mqe-curriculum/logs/go2seesaw/08-19_02-44/2_Seesaw Entry and Stability Task(08-19_02-44)/sample_0/model" \
+    --num_envs 1 --checkpoint "/home/kanghyun/mqe-curriculum/baselines/checkpoints/go2gate/go2gate_05-11_19-42_scratch/rl_model_80000000_steps" \
     --record_video \
     # --headless \

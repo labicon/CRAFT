@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Number of runs
-NUM_RUNS=5
+NUM_RUNS=1
 ENV_NAME="go2gate"
 MANUAL=false
 GPU=5
