@@ -402,8 +402,8 @@ class Curriculum_Module:
         if process.returncode != 0:
             raise RuntimeError(f"Evaluation subprocess failed with exit code {process.returncode} "
                                f"(signal {-process.returncode} if negative) for {task['Name']} "
-                               f"sample {sample_num} rollout {rollout}. IsaacGym segfaults here when "
-                               f"another sim is already running on GPU {self.gpu_id}.")
+                               f"sample {sample_num} rollout {rollout}. A negative code is usually "
+                               f"IsaacGym segfaulting while rendering camera frames on GPU {self.gpu_id}.")
 
         # Load the trajectory and reward data
         save_path = os.path.join("logs", self.experiment_time, task['Name'], f"sample_{sample_num}", "model")
