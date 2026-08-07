@@ -30,6 +30,14 @@ CONFIGS = {
             "/home/kanghyun/mqe-curriculum/logs/go2gate/08-15_00-32_no_refine_1",
             "/home/kanghyun/mqe-curriculum/logs/go2gate/08-17_04-20_no_refine_4",
         ],
+        "state_only_directories": [
+            # Populated by run_ablation.sh -M state_only -t go2gate
+            # "logs/ablation/state_only/go2gate/<MM-DD_HH-MM>",
+        ],
+        "vision_only_directories": [
+            # Populated by run_ablation.sh -M vision_only -t go2gate
+            # "logs/ablation/vision_only/go2gate/<MM-DD_HH-MM>",
+        ],
         "scratch_directories": [
             "baselines/checkpoints/go2gate/go2gate_08-02_12-13_scratch",
             "baselines/checkpoints/go2gate/go2gate_08-02_19-44_scratch",
@@ -87,6 +95,14 @@ CONFIGS = {
             "logs/go2seesaw/09-01_21-45_no_refine",
             "logs/go2seesaw/09-04_04-43_no_refine"
         ],
+        "state_only_directories": [
+            # Populated by run_ablation.sh -M state_only -t go2seesaw
+            # "logs/ablation/state_only/go2seesaw/<MM-DD_HH-MM>",
+        ],
+        "vision_only_directories": [
+            # Populated by run_ablation.sh -M vision_only -t go2seesaw
+            # "logs/ablation/vision_only/go2seesaw/<MM-DD_HH-MM>",
+        ],
         "scratch_directories": [
             "baselines/checkpoints/go2seesaw/go2seesaw_08-17_10-44_scratch",
             "baselines/checkpoints/go2seesaw/go2seesaw_08-18_09-25_scratch",
@@ -143,6 +159,8 @@ COLORS = {
     "example": "#d62728",     # Red
     "mqe": "#9467bd",         # Purple
     "eureka": "#e377c2",      # Pink
+    "state_only": "#8c564b",  # Brown
+    "vision_only": "#17becf", # Cyan
 }
 
 LABELS = {
@@ -152,6 +170,8 @@ LABELS = {
     "example": "Example Reward",
     "mqe": "Environment Reward",
     "eureka": "Eureka",
+    "state_only": "State Only",
+    "vision_only": "Vision Only",
 }
 
 
@@ -457,6 +477,13 @@ def main():
         results["example"] = process_evaluation(config["example_directories"], "example", extra_metrics)
         print("Processing MQE...")
         results["mqe"] = process_evaluation(config["mqe_directories"], "mqe", extra_metrics)
+
+        # Modality ablation arms share the CRAFT run layout, so they use method_type "curriculum".
+        for arm in ("state_only", "vision_only"):
+            arm_dirs = config.get(f"{arm}_directories", [])
+            if arm_dirs:
+                print(f"Processing {LABELS[arm]}...")
+                results[arm] = process_evaluation(arm_dirs, "curriculum", extra_metrics)
 
         eureka_eval = None
         eureka_root = config.get("eureka_root")

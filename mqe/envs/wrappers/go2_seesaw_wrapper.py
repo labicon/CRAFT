@@ -256,118 +256,62 @@ class Go2SeesawWrapper(EmptyWrapper):
 
         return eval_dict
     
+
     def gpt_reward(self, state, action):
-        device = self.env.device
 
-        reward = torch.zeros((self.num_envs, self.num_agents), device=device)
+        reward = torch.zeros((self.num_envs, self.num_agents), device=self.env.device)
         rew_dict = {}
-        max_reward = 18.0
+        max_reward = 12.0
 
-        agent_pos = state["agent_pos"]
-        seesaw_start = state["seesaw_start"]
-        seesaw_end = state["seesaw_end"]
-        target_pos = state["target_pos"]
+        # Assign Agent 0 to reach the start of the seesaw - max 5.0
+        seesaw_entry_reward = 5.0 * self._progress_to_seesaw_start(state, action)
+        seesaw_entry_reward[:, 1] = 0.0  # only reward agent 0 for this task
+        seesaw_entry_reward = self._check_reward_shape(seesaw_entry_reward)
+        reward += seesaw_entry_reward
+        rew_dict["agent_0_seesaw_entry"] = torch.mean(seesaw_entry_reward[:, 0])
 
-        # Dense forward/task progress
-        x_prog = self._progress_in_x(state, action)
-        x_prog = self._check_reward_shape(x_prog)
-        reward += 0.6 * x_prog
-        rew_dict["x_progress"] = torch.mean(x_prog)
+        # Reward for aligning agent 0's y position around y=0 for precise seesaw entry - max 2.0
+        y_alignment_reward = 2.0 * self._y_alignment(state, action)
+        y_alignment_reward[:, 1] = 0.0  # only reward agent 0 for this task
+        y_alignment_reward = self._check_reward_shape(y_alignment_reward)
+        reward += y_alignment_reward
+        rew_dict['y_alignment'] = torch.mean(y_alignment_reward[:, 0])
 
-        # Agent 0 should get onto the seesaw first and stabilize near the start
-        a0_to_start = self._progress_to_seesaw_start(state, action)
-        a0_to_start = self._check_reward_shape(a0_to_start)
-        a0_start_reward = torch.zeros_like(a0_to_start)
-        a0_start_reward[:, 0] = a0_to_start[:, 0]
-        reward += 1.4 * a0_start_reward
-        rew_dict["agent0_to_start"] = torch.mean(a0_start_reward[:, 0])
+        # Penalize falling - max 2.0 (negative reward)
+        fall_penalty = -2.0 * self._fall(state, action).float()
+        fall_penalty = self._check_reward_shape(fall_penalty)
+        reward += fall_penalty
+        rew_dict['fall_penalty'] = torch.mean(fall_penalty)
 
-        # Keep agent 0 near the start zone once it has entered, to help stabilize the seesaw
-        start_x = seesaw_start[..., 0]
-        start_y = seesaw_start[..., 1]
-        a0_x = agent_pos[:, 0, 0]
-        a0_y = agent_pos[:, 0, 1]
-        a0_hold = torch.exp(-((a0_x - start_x[:, 0]) ** 2) / 0.45) * torch.exp(-((a0_y - start_y[:, 0]) ** 2) / 0.20)
-        a0_hold = torch.clamp(a0_hold, 0.0, 1.0)
-        a0_hold_full = torch.zeros((self.num_envs, self.num_agents), device=device)
-        a0_hold_full[:, 0] = a0_hold
-        reward += 0.9 * a0_hold_full
-        rew_dict["agent0_hold_start"] = torch.mean(a0_hold_full[:, 0])
+        # Penalize wall collisions - max 1.0 (negative reward)
+        collision_penalty = -1.0 * self._wall_collision(state, action).float()
+        collision_penalty = self._check_reward_shape(collision_penalty)
+        reward += collision_penalty
+        rew_dict['collision_penalty'] = torch.mean(collision_penalty)
 
-        # Agent 1 should progress toward the far end and then the target platform
-        a1_to_end = self._progress_to_seesaw_end(state, action)
-        a1_to_end = self._check_reward_shape(a1_to_end)
-        a1_end_reward = torch.zeros_like(a1_to_end)
-        a1_end_reward[:, 1] = a1_to_end[:, 1]
-        reward += 1.8 * a1_end_reward
-        rew_dict["agent1_to_end"] = torch.mean(a1_end_reward[:, 1])
+        # Reward for progressing in x direction - max 1.0
+        x_progress_reward = self._progress_in_x(state, action)
+        x_progress_reward[:, 1] = 0.0  # Only agent 0 should progress in x for this task
+        x_progress_reward = self._check_reward_shape(x_progress_reward)
+        reward += x_progress_reward
+        rew_dict["x_progress"] = torch.mean(x_progress_reward[:, 0])
 
-        a1_to_target = self._progress_to_target(state, action)
-        a1_to_target = self._check_reward_shape(a1_to_target)
-        a1_target_reward = torch.zeros_like(a1_to_target)
-        a1_target_reward[:, 1] = a1_to_target[:, 1]
-        reward += 2.2 * a1_target_reward
-        rew_dict["agent1_to_target"] = torch.mean(a1_target_reward[:, 1])
+        # Small reward for Agent 0 standing at the seesaw start without falling - max 1.0
+        stable_reward = self._progress_to_seesaw_start(state, action)
+        stable_reward[:, 1] = 0.0  # Only agent 0 should stand at the start
+        stable_reward = self._check_reward_shape(stable_reward)
+        reward += stable_reward
+        rew_dict["stable_at_start"] = torch.mean(stable_reward[:, 0])
 
-        # Height shaping for successful climb onto the platform
-        height = self._normalized_height(state, action)
-        height = self._check_reward_shape(height)
-        a1_height = torch.zeros_like(height)
-        a1_height[:, 1] = torch.clamp(height[:, 1], 0.0, 1.0)
-        reward += 1.0 * a1_height
-        rew_dict["agent1_height"] = torch.mean(a1_height[:, 1])
-
-        # Keep both agents near the seesaw center line to avoid falling off
-        y_align = self._y_alignment(state, action)
-        y_align = self._check_reward_shape(y_align)
-        reward += 0.8 * y_align
-        rew_dict["y_alignment"] = torch.mean(y_align)
-
-        # Coordination spacing: avoid overlap but remain coordinated
-        dist = self._agent_distance(state, action)
-        dist_reward = torch.exp(-((dist - 1.5) ** 2) / 0.9)
-        dist_reward = torch.clamp(dist_reward, 0.0, 1.0)
-        dist_reward = self._check_reward_shape(dist_reward)
-        reward += 0.6 * dist_reward
-        rew_dict["agent_distance"] = torch.mean(dist_reward)
-
-        # Small bonus if the leading agent is farther along x than the stabilizing agent
-        lead_margin = torch.clamp(agent_pos[:, 1, 0] - agent_pos[:, 0, 0], min=-2.0, max=2.0)
-        lead_reward = torch.sigmoid(lead_margin)
-        lead_reward = lead_reward.unsqueeze(-1)
-        lead_full = torch.zeros((self.num_envs, self.num_agents), device=device)
-        lead_full[:, 1] = lead_reward[:, 0]
-        reward += 0.4 * lead_full
-        rew_dict["agent1_leads"] = torch.mean(lead_full[:, 1])
-
-        # Safety penalties
-        wall_collision = self._wall_collision(state, action).float()
-        wall_collision = self._check_reward_shape(wall_collision)
-        wall_pen = -1.5 * wall_collision
-        reward += wall_pen
-        rew_dict["wall_collision_penalty"] = torch.mean(wall_pen)
-
-        fall = self._fall(state, action).float()
-        fall = self._check_reward_shape(fall)
-        fall_pen = -2.5 * fall
-        reward += fall_pen
-        rew_dict["fall_penalty"] = torch.mean(fall_pen)
-
-        # Mild action regularization
-        action_pen = -0.02 * torch.sum(action ** 2, dim=-1)
-        action_pen = self._check_reward_shape(action_pen)
-        reward += action_pen
-        rew_dict["action_penalty"] = torch.mean(action_pen)
-
-        # Terminal success bonus for either agent reaching the target platform
-        success = self._success(state, action).float()
-        success = self._check_reward_shape(success)
-        success_reward = 10.0 * success
-        reward += success_reward
+        # Reward for success - just making sure it's initialized although success is not the focus here - max 0.0
+        success_reward = self._success(state, action)
+        success_reward = self._check_reward_shape(success_reward)
         rew_dict["success"] = torch.mean(success_reward)
 
+        # Normalize the reward
         reward = self._check_reward_shape(reward)
-        reward = torch.clamp(reward / max_reward, -1.0, 1.0)
+        reward *= 1 / max_reward
 
         return reward, rew_dict, max_reward
+
 

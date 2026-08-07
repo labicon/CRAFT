@@ -1,0 +1,7 @@
+Current task is:
+<<Current task>>
+Former tasks that RL succeeded to learn is:
+<<Former tasks>>
+
+Trajectory data:
+<<Trajectory>>

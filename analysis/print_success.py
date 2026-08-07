@@ -58,6 +58,13 @@ def main():
         "mqe":        (config["mqe_directories"],         "mqe"),
     }
 
+    # Modality ablation arms share the CRAFT run layout, so they resolve their final
+    # checkpoint the same way. Skipped entirely until the arm has runs configured.
+    for arm in ("state_only", "vision_only"):
+        arm_dirs = config.get(f"{arm}_directories", [])
+        if arm_dirs:
+            methods[arm] = (arm_dirs, "curriculum")
+
     print(f"\nFinal checkpoint success rates for task: {args.task}\n")
     print(f"{'Method':<20} {'Mean':>8}  {'Std':>8}  {'Values'}")
     print("-" * 70)

@@ -12,13 +12,24 @@ from curriculum.gpt.utils import *
 GPT_LLM_MODEL = "gpt-4o-2024-08-06" # gpt-4-1106-preview, gpt-4-0613, gpt-4-32k, gpt-3.5-turbo-1106 gpt-4-turbo-preview
 GPT_VLM_MODEL = "o4-mini-2025-04-16"
 
+MODALITIES = ("full", "state_only", "vision_only")
+
 class CurriculumAPI:
-    def __init__(self, prompt_path, log_path, line_num):
+    def __init__(self, prompt_path, log_path, line_num, modality="full"):
+        if modality not in MODALITIES:
+            raise ValueError(f"Unknown modality '{modality}'. Expected one of {MODALITIES}.")
         self.client = get_client()
         self.prompt_path = prompt_path
         self.log_path = log_path
         self.insert_line_num = line_num
+        self.modality = modality
         self.task_name = os.path.basename(os.path.normpath(prompt_path))
+
+    def _prompt(self, name):
+        """Load <name>_<modality>.txt if it exists, else fall back to <name>.txt."""
+        variant = f"{self.prompt_path}/{name}_{self.modality}.txt"
+        path = variant if os.path.exists(variant) else f"{self.prompt_path}/{name}.txt"
+        return file_to_string(path)
 
     def generate_curriculum(self):
         initial_system = file_to_string(self.prompt_path + "/curriculum_system.txt")
@@ -69,8 +80,8 @@ class CurriculumAPI:
         # Evalute success/failure of the subtask
         # traj_dict is the last trajectory in traj_rollout
 
-        evaluation_system = file_to_string(self.prompt_path + "/evaluation_system.txt")
-        evaluation_user = file_to_string(self.prompt_path + "/evaluation_user.txt")
+        evaluation_system = self._prompt("evaluation_system")
+        evaluation_user = self._prompt("evaluation_user")
 
         # Add task details
         task_detail = file_to_string(self.prompt_path + "/feedback_history.txt")
@@ -95,22 +106,24 @@ class CurriculumAPI:
             former_task_string = "No previous task learned."
         evaluation_user = evaluation_user.replace("<<Former tasks>>", former_task_string)
 
-        # Add trajectory
-        trajectory_string = ""
-        try:
-            for key in traj_dict.keys():
-                if 'orientation' in key or 'distance' in key:
-                    continue
-                trajectory_string += f"{key}:\n"
-                if type(traj_dict[key]) == str:  # if the value is a string, write it directly
-                    trajectory_string += f"{traj_dict[key]}\n"
-                else:
-                    trajectory_string += np.array2string(
-                        traj_dict[key],
-                        formatter={'float_kind': lambda x: f"{x:.3f}"}) + "\n"
-        except:
-            trajectory_string += "No statistics available\n\n"
-        evaluation_user = evaluation_user.replace("<<Trajectory>>", trajectory_string)
+        # Add trajectory. The vision_only ablation withholds the state channel entirely:
+        # its prompt template has no <<Trajectory>> placeholder, so nothing is substituted.
+        if self.modality != "vision_only":
+            trajectory_string = ""
+            try:
+                for key in traj_dict.keys():
+                    if 'orientation' in key or 'distance' in key:
+                        continue
+                    trajectory_string += f"{key}:\n"
+                    if type(traj_dict[key]) == str:  # if the value is a string, write it directly
+                        trajectory_string += f"{traj_dict[key]}\n"
+                    else:
+                        trajectory_string += np.array2string(
+                            traj_dict[key],
+                            formatter={'float_kind': lambda x: f"{x:.3f}"}) + "\n"
+            except:
+                trajectory_string += "No statistics available\n\n"
+            evaluation_user = evaluation_user.replace("<<Trajectory>>", trajectory_string)
         
         if curriculum_idx != len(curriculum) - 1: # not the last task in the curriculum
             evaluation_user += "\nNote that this is not the final goal in the curriculum, don't be too strict on the decision."
@@ -120,7 +133,8 @@ class CurriculumAPI:
         with open(self.log_path + f"{current_task['Name']}/sample_{sample_num}/" + "evaluation_user.md", "w") as file:
             file.write(evaluation_user)
 
-        encoded_image_list = snapshots # Snapshots are already base64 encoded
+        # Snapshots are already base64 encoded. The state_only ablation sends none.
+        encoded_image_list = [] if self.modality == "state_only" else snapshots
 
         gpt_answer = gpt_interaction_image(self.client, GPT_VLM_MODEL, evaluation_system, evaluation_user, encoded_image_list)
 
@@ -169,8 +183,8 @@ class CurriculumAPI:
     
 
     def get_advice(self, curriculum, curriculum_idx, sample_num, failed_reward, failure_reason):
-        advice_system = file_to_string(self.prompt_path + "/advice_system.txt")
-        advice_user = file_to_string(self.prompt_path + "/advice_user.txt")
+        advice_system = self._prompt("advice_system")
+        advice_user = self._prompt("advice_user")
 
         # Add current task
         task = curriculum[curriculum_idx]
@@ -197,20 +211,26 @@ class CurriculumAPI:
         ea = EventAccumulator(event_file)
         ea.Reload()
 
+        def remove_prefix(text, prefix):
+            if text.startswith(prefix):
+                return text[len(prefix):]
+            return text
+
         # Collect reward curve - save than reload (easier this way)
         curve_img_path = []
+        curve_text_blocks = []
         for tag in ea.Tags()["scalars"]:
             if 'Reward' in tag:
                 reward_curve = []
                 for scalar in ea.Scalars(tag):
                     reward_curve.append([scalar.step, scalar.value])
-                reward_curve = np.array(reward_curve)  
-                # name = tag # .removeprefix('Reward / ')
-                def remove_prefix(text, prefix):
-                    if text.startswith(prefix):
-                        return text[len(prefix):]
-                    return text
+                reward_curve = np.array(reward_curve)
                 name = remove_prefix(tag, 'Reward/')
+
+                if self.modality == "state_only":
+                    # Numeric ablation: serialize the curve as text instead of plotting it.
+                    curve_text_blocks.append(f"{name}:\n{serialize_reward_curve(reward_curve)}")
+                    continue
 
                 plt.figure(figsize=(5, 4))
                 plt.plot(reward_curve[:, 0], reward_curve[:, 1])
@@ -228,15 +248,29 @@ class CurriculumAPI:
                 img_path = self.log_path + f"{task['Name']}/sample_{sample_num}/{name}.png"
                 # os.makedirs(os.path.join(self.log_path, f"{task['Name']}/sample_{sample_num}/Reward"), exist_ok=True)
                 plt.savefig(img_path)
+                plt.close()
                 curve_img_path.append(img_path)
-        
-        # Encode reward curve images
+
+        # Encode reward curve images (state_only sends the numbers as text instead)
         encoded_image_list = []
         for img_path in curve_img_path:
             encoded_image_list.append(encode_image(img_path))
-        
+
+        if self.modality == "state_only":
+            curve_text = "\n\n".join(curve_text_blocks) if curve_text_blocks else "No reward statistics available"
+            advice_user = advice_user.replace("<<Reward_Curves>>", curve_text)
+
+        # Save the user prompt for advice so the modality actually used is auditable
+        sample_log_dir = self.log_path + f"{task['Name']}/sample_{sample_num}/"
+        os.makedirs(sample_log_dir, exist_ok=True)
+        with open(sample_log_dir + "advice_user.md", "w") as file:
+            file.write(advice_user)
+
         # Get advice from GPT
         gpt_answer = gpt_interaction_image(self.client, GPT_VLM_MODEL, advice_system, advice_user, encoded_image_list)
+
+        with open(sample_log_dir + "advice_answer.md", "w") as file:
+            file.write(gpt_answer)
 
         return gpt_answer
 
@@ -437,6 +471,24 @@ class CurriculumAPI:
             print("No number found in the decision.")
             return None
         
+def serialize_reward_curve(reward_curve, max_points=20):
+    """Format a (N, 2) [step, value] array as a compact 'step: value' text line.
+
+    Downsampled to at most max_points evenly spaced samples, matching the
+    convention analyze_trajectory uses for trajectory data. Values use
+    significant-digit formatting rather than fixed decimals: logged reward
+    components routinely sit around 1e-5, which fixed decimals would round
+    away entirely (the plot path escapes this because matplotlib autoscales).
+    """
+    if len(reward_curve) == 0:
+        return "no data"
+    stride = max(1, len(reward_curve) // max_points)
+    sampled = reward_curve[::stride]
+    if not np.array_equal(sampled[-1], reward_curve[-1]):
+        sampled = np.vstack([sampled, reward_curve[-1]])  # always keep the final value
+    return ", ".join(f"{int(step)}: {value:.4g}" for step, value in sampled)
+
+
 # Function to extract details from each task section
 def extract_task_details(task_section, datetime):
     details = {}

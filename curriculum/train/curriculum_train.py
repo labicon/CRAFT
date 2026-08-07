@@ -13,12 +13,13 @@ from curriculum.gpt.utils import *
 MAX_ATTEMPT = 10
 
 class Curriculum_Module:
-    def __init__(self, task, env_path, logger_path, run_datetime, cfg, seed=0, gpu_id=0):
+    def __init__(self, task, env_path, logger_path, run_datetime, cfg, seed=0, gpu_id=0, modality="full"):
         self.task = task
         self.env_path = env_path
         self.prompt_path = f"./curriculum/gpt/prompts/{task}"
+        self.modality = modality
         self.gpt_api = CurriculumAPI(self.prompt_path, logger_path,
-                                     line_num=cfg['line_num'])
+                                     line_num=cfg['line_num'], modality=modality)
         self.logger_path = logger_path
         self.best_reward_code = {}
         self.best_model_idx_list = []
@@ -195,6 +196,7 @@ class Curriculum_Module:
                     N_ROLLOUTS = 5 # Collect 5 rollouts to evaluate the task
                     task_success = False
                     evaluation_decision = -1
+                    rollout_failed = False
                     for rollout in range(N_ROLLOUTS):
                         try:
                             rew, traj, snapshots = self.collect_evaluation_data(task, sample_num, rollout)
@@ -231,7 +233,15 @@ class Curriculum_Module:
                                 shutil.rmtree(self.logger_path + f"{task['Name']}/sample_{sample_num}")
                             print("Discarded current reward code & directory. Retrying...")
 
+                            rollout_failed = True
                             break # If evaluation fails, break the loop and retry training
+
+                    # An evaluation crash must count against MAX_ATTEMPT. Without this the
+                    # loop retrains forever (rollout == 0, so the check below never fires),
+                    # which silently burns a full training run per iteration.
+                    if rollout_failed:
+                        trial_num += 1
+                        continue
 
                     if task_success or rollout == N_ROLLOUTS - 1:
                         break # If task is successfully trained, break the loop
@@ -324,6 +334,12 @@ class Curriculum_Module:
                                         env=subprocess_env,
                                         )
 
+        # IsaacGym failures (notably a segfault when several sims share one GPU) would
+        # otherwise surface much later as a missing-file error.
+        if process.returncode != 0:
+            raise RuntimeError(f"Training subprocess failed with exit code {process.returncode} "
+                               f"(signal {-process.returncode} if negative) for {task['Name']} "
+                               f"sample {sample_num}.")
 
     def generate_reward_code(self, curriculum_idx, sample_num, failure_reasons):
         # Generate reward weight
@@ -381,6 +397,13 @@ class Curriculum_Module:
                                     ],
                                     env=subprocess_env,
                                     )
+
+        # Same story as train_single: report the crash, not the missing pkl it causes.
+        if process.returncode != 0:
+            raise RuntimeError(f"Evaluation subprocess failed with exit code {process.returncode} "
+                               f"(signal {-process.returncode} if negative) for {task['Name']} "
+                               f"sample {sample_num} rollout {rollout}. IsaacGym segfaults here when "
+                               f"another sim is already running on GPU {self.gpu_id}.")
 
         # Load the trajectory and reward data
         save_path = os.path.join("logs", self.experiment_time, task['Name'], f"sample_{sample_num}", "model")

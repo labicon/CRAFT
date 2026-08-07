@@ -27,6 +27,9 @@ if __name__ == "__main__":
     parser.add_argument("--debug", action="store_true", help="Use a lightweight debug configuration when supported by the selected module")
     parser.add_argument("--resume", type=str, default=None, help="Path to a previous Eureka log directory to resume from (eureka module only)")
     parser.add_argument("--gpu", type=int, default=0, help="Physical GPU device ID (e.g. 0, 1, 2)")
+    parser.add_argument("--modality", type=str, default="full", choices=["full", "state_only", "vision_only"],
+                        help="Feedback modality ablation: full (images + trajectory), state_only (no images), "
+                             "vision_only (no trajectory text). Curriculum module only.")
     args = parser.parse_args()
 
     seed = args.seed
@@ -55,7 +58,8 @@ if __name__ == "__main__":
     if args.module == "manual":
         module = Manual_Module(args.task, env_path, logger_path, current_datetime, cfg, seed, args.gpu)
     elif args.module == "curriculum":
-        module = Curriculum_Module(args.task, env_path, logger_path, current_datetime, cfg, seed, args.gpu)
+        module = Curriculum_Module(args.task, env_path, logger_path, current_datetime, cfg, seed, args.gpu,
+                                   modality=args.modality)
     else:
         module = EurekaBaseline(args.task, env_path, logger_path, current_datetime, cfg, seed, args.gpu)
 
