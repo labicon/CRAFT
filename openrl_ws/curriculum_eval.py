@@ -70,7 +70,7 @@ def eval(task, load_dir, seed=0, sim_device="cuda:0", graphics_device_id=0):
             save_video(video_array, 50, output_path=os.path.join(load_dir, f"rollout_{seed}.mp4"))
             save_images(video_array, output_dir=os.path.join(load_dir, "images"))
 
-            break
+            os._exit(0)  # Skip Isaac Gym destructor which segfaults on desktop GPUs
 
 def analyze_go2gate_trajectory(traj_buffer, rew_buffer, target_pos):
     stepsize = len(traj_buffer)
