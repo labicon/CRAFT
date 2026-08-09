@@ -233,7 +233,25 @@ def run_eval(evaluator, agent, env, num_runs):
 # Per-task evaluation driver
 # ──────────────────────────────────────────────
 
-def eval_task_group(task, run_dirs, num_runs, sim_device, rl_device, graphics_device_id, force):
+def resolve_model_dir(run_dir, sample_dir, model_root=None):
+    """
+    Return the model dir for sample_dir, optionally falling back to model_root.
+    Ablation logs store eval data separately from the model checkpoints; when
+    model_root is given, map  <run_dir>/<rel>  →  <model_root>/<timestamp>/<rel>.
+    """
+    primary = os.path.join(sample_dir, "model")
+    if os.path.isdir(primary):
+        return primary
+    if model_root:
+        timestamp = os.path.basename(run_dir)
+        rel = os.path.relpath(sample_dir, run_dir)
+        fallback = os.path.join(model_root, timestamp, rel, "model")
+        if os.path.isdir(fallback):
+            return fallback
+    return None
+
+
+def eval_task_group(task, run_dirs, num_runs, sim_device, rl_device, graphics_device_id, force, model_root=None):
     """Evaluate CRAFT best-policy for all runs of one task under a single Isaac Gym env."""
     from openrl_ws.utils import make_env, get_args
     from openrl_ws.eval import get_evaluator
@@ -266,9 +284,14 @@ def eval_task_group(task, run_dirs, num_runs, sim_device, rl_device, graphics_de
         if sample_dir is None:
             continue
 
-        model_dir = os.path.join(sample_dir, "model")
-        if not os.path.isdir(model_dir):
-            print(f"  Model dir not found: {model_dir}")
+        model_dir = resolve_model_dir(run_dir, sample_dir, model_root)
+        if model_dir is None:
+            primary = os.path.join(sample_dir, "model")
+            print(f"  Model dir not found: {primary}")
+            if model_root:
+                timestamp = os.path.basename(run_dir)
+                rel = os.path.relpath(sample_dir, run_dir)
+                print(f"  Also tried: {os.path.join(model_root, timestamp, rel, 'model')}")
             continue
 
         checkpoint = get_final_checkpoint(model_dir)
@@ -299,10 +322,10 @@ def eval_task_group(task, run_dirs, num_runs, sim_device, rl_device, graphics_de
 # Per-task subprocess wrapper
 # ──────────────────────────────────────────────
 
-def _eval_task_worker(task, run_dirs, num_runs, sim_device, rl_device, graphics_device_id, force):
+def _eval_task_worker(task, run_dirs, num_runs, sim_device, rl_device, graphics_device_id, force, model_root=None):
     """Spawned in a fresh process to isolate Isaac Gym (one instance per process only)."""
     sys.argv = [sys.argv[0]]
-    eval_task_group(task, run_dirs, num_runs, sim_device, rl_device, graphics_device_id, force)
+    eval_task_group(task, run_dirs, num_runs, sim_device, rl_device, graphics_device_id, force, model_root)
 
 
 # ──────────────────────────────────────────────
@@ -325,6 +348,9 @@ def main():
     parser.add_argument("--rl_device", type=str, default="cuda:0", help="RL algorithm device (e.g. cuda:0, cuda:1)")
     parser.add_argument("--graphics_device_id", type=int, default=0, help="GPU index for rendering (e.g. 0, 1)")
     parser.add_argument("--force", action="store_true", help="Re-run even if eval_results.pkl exists")
+    parser.add_argument("--model_root", type=str, default=None,
+                        help="Fallback root for model checkpoints when they are stored separately "
+                             "from the log dir (e.g. 'logs' when ablation logs are in logs/ablation/...).")
     args = parser.parse_args()
 
     num_runs = args.num_runs
@@ -332,6 +358,7 @@ def main():
     rl_device = args.rl_device
     graphics_device_id = args.graphics_device_id
     force = args.force
+    model_root = os.path.abspath(args.model_root) if args.model_root else None
     dirs = args.dir
 
     # Clear sys.argv before isaacgym/openrl parse args.
@@ -365,7 +392,7 @@ def main():
         print(f"{'='*60}")
         p = mp.get_context("spawn").Process(
             target=_eval_task_worker,
-            args=(task, run_dirs, num_runs, sim_device, rl_device, graphics_device_id, force),
+            args=(task, run_dirs, num_runs, sim_device, rl_device, graphics_device_id, force, model_root),
         )
         p.start()
         p.join()
